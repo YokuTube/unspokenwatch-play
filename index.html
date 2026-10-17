@@ -8666,7 +8666,8 @@ window.HB = window.HB || {};
     const ta = el('textarea', { rows: 14, spellcheck: 'false' });
     ta.value = JSON.stringify(c, null, 1);
     return el('div', {},
-      el('p', { class: 'note' }, HB.app.cloudText()),
+      el('div', { class: 'row' }, el('p', { class: 'note' }, HB.app.cloudText()),
+        HB.app.cloud.ref ? btn('Jetzt online speichern', async () => { await HB.app.cloudPush(); render(); HB.app.toast(HB.app.cloud.state === 'ok' ? 'Online gespeichert.' : 'Online-Speichern fehlgeschlagen – Grund steht im Daten-Tab.'); }, 'mini sec') : null),
       el('p', { class: 'hint' }, 'Komplette Einstellung als JSON. Zum Sichern kopieren, zum Laden einfügen und „Übernehmen“.'),
       ta,
       el('div', { class: 'row' },
@@ -8914,22 +8915,25 @@ window.HB = window.HB || {};
     // Die Einstellung liegt zusätzlich online, damit sie in jedem Fenster und auf jedem Gerät gleich ist.
     // Regeln: Beim Start gewinnt der NEUERE Stand; der ältere wird vorher unter „Sicherungen“ abgelegt. Es wird nie
     // eine leere/Standard-Einstellung hochgeladen, solange nichts gespeichert wurde.
-    cloud: { state: 'off', at: 0, ref: null, busy: false, again: false, timer: null, readonly: false },
+    // why = Grund in Klartext, wenn es nicht klappt (wird im Daten-Tab angezeigt, damit Fehler sichtbar sind)
+    cloud: { state: 'off', at: 0, ref: null, busy: false, again: false, timer: null, readonly: false, why: '', user: null },
     localSavedAt() { try { return Number(localStorage.getItem(SAVED_AT)) || 0; } catch (e) { return 0; } },
     cloudText() {
       const c = app.cloud;
-      return { off: 'Online-Speicher: nicht verfügbar – die Einstellung liegt nur in diesem Browser.',
+      return ({ off: 'Online-Speicher: nicht verfügbar – die Einstellung liegt nur in diesem Browser.',
         ok: 'Online gespeichert ✓ – gilt in jedem Fenster und auf jedem Gerät, auf dem du angemeldet bist.',
         saving: 'Online-Speicher: speichert …',
         readonly: 'Online-Speicher: nur Ansicht (kein Schreibrecht) – die Einstellung liegt nur in diesem Browser.',
-        error: 'Online-Speichern fehlgeschlagen – die Einstellung ist lokal gesichert, nächster Versuch beim nächsten Ändern.' }[c.state] || '';
+        error: 'Online-Speichern fehlgeschlagen – die Einstellung ist lokal gesichert, nächster Versuch beim nächsten Ändern.' }[c.state] || '')
+        + (c.why ? ` (${c.why})` : '') + (c.at ? ` · zuletzt ${new Date(c.at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}` : '');
     },
     async cloudInit(api) {
       const c = app.cloud;
       try {
         const [db, user] = await Promise.all([api.use('db'), api.use('user')]);
+        c.user = user;
         const id = db && user ? await user.id() : null;
-        if (!db || !id) return;
+        if (!db || !id) { c.why = !db ? 'Datenbank hier nicht verfügbar – angemeldet?' : 'keine Nutzer-Kennung'; return; }
         c.ref = db.doc('data/users/' + id + '/settings');
         const snap = await c.ref.get();
         const remote = snap.exists ? snap.data() : null;
@@ -8954,9 +8958,8 @@ window.HB = window.HB || {};
         // Nirgends etwas gespeichert, aber die gesicherte Einstellung wurde als Start geladen: jetzt speichern + online ablegen
         else if (!hasLocal && !remote && HB.USER_BACKUP) { app.save(); app.toast('Deine gesicherte Einstellung ist geladen und gespeichert.'); }
       } catch (e) {
-        c.state = 'error';
+        c.state = 'error'; c.why = app.cloudErr(e);
         console.warn('Online-Speicher', e);
-        if (e && e.code === 'invalid_argument') c.state = 'readonly';
       } finally { if (document.querySelector('#editor .backups')) HB.editor.render(); }
     },
     cloudPushSoon(delay = 1500) {
@@ -8969,13 +8972,18 @@ window.HB = window.HB || {};
       if (!c.ref || c.readonly) return;
       if (c.busy) { c.again = true; return; }
       c.busy = true; c.state = 'saving';
+      const doc = { raw: JSON.stringify(app.config), savedAt: app.localSavedAt() || Date.now(), version: app.config.version };
       try {
-        await c.ref.set({ raw: JSON.stringify(app.config), savedAt: app.localSavedAt() || Date.now(), version: app.config.version });
-        c.state = 'ok'; c.at = Date.now();
+        try { await c.ref.set(doc); } catch (e) {
+          if (!(e && e.code === 'unavailable')) throw e;
+          await new Promise((r) => setTimeout(r, 800 + Math.random() * 800)); await c.ref.set(doc); // kurz weg: einmal neu versuchen
+        }
+        c.state = 'ok'; c.at = Date.now(); c.why = '';
       } catch (e) {
-        c.state = 'error';
-        // Kein Schreibrecht (z. B. nur Ansicht): nicht weiter versuchen
-        if (e && e.code === 'invalid_argument') { c.state = 'readonly'; c.readonly = true; }
+        c.state = 'error'; c.why = app.cloudErr(e);
+        // Kein Schreibrecht nur, wenn die Plattform das ausdrücklich sagt (sonst beim nächsten Ändern wieder versuchen)
+        let canWrite = null; try { canWrite = c.user && c.user.can ? await c.user.can('data.write') : null; } catch (x) { canWrite = null; }
+        if (canWrite === false) { c.state = 'readonly'; c.readonly = true; }
         console.warn('Online-Speichern', e);
       } finally {
         c.busy = false;
@@ -8983,6 +8991,7 @@ window.HB = window.HB || {};
         if (document.querySelector('#editor .backups') && !document.activeElement.matches('#editor input, #editor textarea, #editor select')) HB.editor.render();
       }
     },
+    cloudErr(e) { return e ? [e.code, e.message].filter(Boolean).join(': ').slice(0, 160) || String(e).slice(0, 160) : 'unbekannt'; },
     // ---- Sicherungen (im Browser-Speicher, die letzten 10) ----
     backups() { try { return JSON.parse(localStorage.getItem(BACKUPS) || '[]'); } catch (e) { return []; } },
     pushBackup(raw, label) {
@@ -11716,6 +11725,8 @@ window.HB = window.HB || {};
   });
   function boot(hotData) {
     app.config = app.load();
+    // Online-Speicher (nur im Artefakt) gleich am Anfang anmelden: antwortet erst später, und ein Fehler weiter unten im Start darf ihn nicht verhindern
+    if (window.claude && typeof window.claude.use === 'function') app.cloudInit(window.claude);
     if (app.loadError) setTimeout(() => app.toast(app.loadError), 500);
     R.init($('#board'));
     document.addEventListener('pointerdown', (ev) => { if (app.relicPin && !(ev.target.closest && ev.target.closest('#relictip, .relic'))) { app.relicPin = null; hideRelicTip(); } }, true);
@@ -11877,8 +11888,6 @@ window.HB = window.HB || {};
     const jm = /#join=([A-Z0-9]{5})/i.exec(location.hash);
     if (jm) { history.replaceState(null, '', location.href.split('#')[0]); showOnline(jm[1].toUpperCase()); } else if (!resumed && menuOn) showMenu();
     $('#btn-menu').onclick = () => showMenu();
-    // Online-Speicher (nur im Artefakt vorhanden; lokal ohne Server-Anbindung bleibt alles wie bisher)
-    if (window.claude && typeof window.claude.use === 'function') app.cloudInit(window.claude);
   }
 })(window.HB);
 
