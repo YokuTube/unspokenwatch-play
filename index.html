@@ -8324,7 +8324,18 @@ window.HB = window.HB || {};
           (() => { const b = el('input', { type: 'checkbox', onchange: (ev) => { if (ev.target.checked) t.elite = true; else delete t.elite; changed(true); } }); b.checked = !!t.elite; return b; })(), 'Elite'),
         el('label', { class: 'bosschk', title: 'Haken = der Typ kommt im Spiel vor. Ohne Haken bleibt er gespeichert, taucht aber nicht in Wellen („Gemischt“) und nicht bei der Auswahl zum Platzieren auf. Schon platzierte Gegner bleiben.', onclick: (ev) => ev.stopPropagation() },
           (() => { const b = el('input', { type: 'checkbox', onchange: (ev) => { t.disabled = !ev.target.checked; changed(true); } }); b.checked = !t.disabled; return b; })(), 'Aktiv'),
-        el('span', { class: 'rowbtns' }, btn('✕', () => { if (c.enemyTypes.length > 1) { c.enemyTypes.splice(i, 1); changed(true); } }, 'mini del')));
+        el('span', { class: 'rowbtns' }, (() => {
+          // Zweistufig (Dialoge erscheinen im Artefakt nicht): 1. Klick fragt nach, 2. Klick löscht. Gelöschte landen im Papierkorb (unten zurückholbar)
+          const b = btn('✕', (ev) => {
+            ev.stopPropagation();
+            if (c.enemyTypes.length <= 1) { HB.app.toast('Der letzte Gegnertyp kann nicht gelöscht werden.'); return; }
+            if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = `„${t.name || "Typ"}“ wirklich löschen?`; setTimeout(() => { if (b.isConnected) { delete b.dataset.armed; b.textContent = '✕'; } }, 4000); return; }
+            c.enemyTypes.splice(c.enemyTypes.indexOf(t), 1);
+            c.deletedTypes = [{ at: Date.now(), type: t }, ...(c.deletedTypes || []).filter((x) => x.type.id !== t.id)].slice(0, 20);
+            HB.app.toast(`„${t.name}“ gelöscht – unten unter „Gelöschte Gegner“ zurückholbar.`); changed(true);
+          }, 'mini del');
+          return b;
+        })()));
       const card = el('div', { class: 'icard' }, titleEl, head);
       if (open) card.append(...[
         // „Startet mit“: Zustände/Segen beim Erscheinen (gleiche Wirkungen wie bei Karten und Fallen)
@@ -8348,7 +8359,29 @@ window.HB = window.HB || {};
       box.append(card);
     });
     box.append(btn(bosses ? '+ Boss' : '+ Gegnertyp', () => { const id = 't' + Date.now().toString(36); c.enemyTypes.push({ id, name: bosses ? 'Neuer Boss' : 'Neuer Typ', hp: bosses ? 90 : 20, boss: bosses || undefined, ownIntents: true, intents: [{ steps: [{ type: 'move', amount: 2 }, { type: 'attack', amount: 5, range: 1 }] }] }); openTypes.add(id); changed(true); }));
+    box.append(deletedTypesBox(c, bosses));
     if (bosses) box.append(bossSetsBox(c));
+    return box;
+  }
+  // Gelöschte Gegnertypen zurückholen: aus dem Papierkorb (c.deletedTypes), den automatischen Sicherungen, der gesicherten Einstellung
+  // im Repo (HB.USER_BACKUP) und dem Standard (nur Namen, die es noch nicht gibt).
+  // Je Typ (id) gilt die neueste Fassung; Wellen, die den Typ noch nennen, passen wieder, weil die id gleich bleibt.
+  function deletedTypesBox(c, bosses) {
+    const have = new Set(c.enemyTypes.map((t) => t.id)), found = new Map();
+    const add = (t, from) => { if (t && t.id && !have.has(t.id) && !found.has(t.id) && !!t.boss === bosses) found.set(t.id, { t, from }); };
+    (c.deletedTypes || []).forEach((x) => add(x.type, 'Papierkorb'));
+    HB.app.backups().forEach((b) => { try { (JSON.parse(b.raw).enemyTypes || []).forEach((t) => add(t, 'Sicherung ' + new Date(b.at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))); } catch (e) { /* kaputte Sicherung überspringen */ } });
+    ((HB.USER_BACKUP && HB.USER_BACKUP.enemyTypes) || []).forEach((t) => add(t, 'Gesicherte Einstellung'));
+    const names = new Set(c.enemyTypes.map((t) => t.name));
+    (HB.defaultConfig().enemyTypes || []).forEach((t) => { if (!names.has(t.name)) add(t, 'Standard'); });
+    if (!found.size) return el('span');
+    const box = el('div', { class: 'icard' }, el('div', { class: 'ihead' }, el('b', {}, bosses ? 'Gelöschte Bosse' : 'Gelöschte Gegner')),
+      el('p', { class: 'hint' }, 'Zurückholen stellt den Typ mit seinen Intentionen wieder her (neueste gefundene Fassung).'));
+    found.forEach(({ t, from }) => box.append(el('div', { class: 'srow backuprow' }, el('b', {}, t.name || t.id), el('span', { class: 'muted' }, from),
+      btn('Zurückholen', () => {
+        c.enemyTypes.push(HB.util.clone(t)); c.deletedTypes = (c.deletedTypes || []).filter((x) => x.type.id !== t.id);
+        HB.app.toast(`„${t.name}“ ist wieder da.`); changed(true);
+      }, 'mini'))));
     return box;
   }
   // Auswahl für Wellen-Gruppen: besondere Typen (HB.WAVE_PICKS, Boss-Sets) + Gegnertypen. boss = Bosswelle; sets = Boss-Sets anbieten
