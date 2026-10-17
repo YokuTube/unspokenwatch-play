@@ -1162,6 +1162,19 @@ button { color: #17130a; }
 .cvcount { font-size: 12px; margin-left: auto; }
 .cardtile[hidden], .cardedit[hidden] { display: none !important; }
 
+/* Weiterziehen: Ausgänge am Feldrand und Frage „Weitergehen?“ (game-route.js, main.js renderRouteBox) */
+.exitmark polygon { fill: rgba(199, 158, 71, .22); stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; animation: exitpulse 1.6s ease-in-out infinite; }
+.exitmark svg { color: var(--accent); }
+.exitmark text { fill: var(--text); font-size: 9px; font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: #000; stroke-width: 2.5px; }
+.exitmark.ex-elite polygon, .exitmark.ex-boss polygon { stroke: #e05a4a; fill: rgba(224, 90, 74, .2); }
+.exitmark.ex-elite svg, .exitmark.ex-boss svg { color: #ff8a70; }
+@keyframes exitpulse { 50% { fill-opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .exitmark polygon { animation: none; } }
+#routebox { position: absolute; left: 50%; top: calc(var(--tb, 64px) + 8px); transform: translateX(-50%); z-index: 7; display: flex; gap: 10px; align-items: center;
+  padding: 8px 12px; border-radius: 10px; background: rgba(24, 28, 37, .94); border: 1px solid var(--accent); box-shadow: 0 6px 18px rgba(0, 0, 0, .5); }
+#routebox b { font-family: var(--display); color: var(--accent); }
+#routebox span { color: var(--muted); font-size: 13px; }
+
 </style>
 </head>
 <body data-mode="setup">
@@ -1510,6 +1523,7 @@ window.HB = window.HB || {};
     { id: 'draft', label: 'Kartendraft nach jeder Welle', get: (c) => !!(c.draft && c.draft.enabled), set: (c, v) => { c.draft.enabled = v; } },
     { id: 'classes', label: 'Klassen (Klassenwahl, Kartenpool und Startdeck je Klasse)', get: (c) => c.classesEnabled !== false, set: (c, v) => { c.classesEnabled = v; } },
     { id: 'relics', label: 'Relikte (Start-Relikte, Schatztruhen)', get: (c) => c.relicsEnabled !== false, set: (c, v) => { c.relicsEnabled = v; } },
+    { id: 'route', label: 'Weiterziehen statt neuer Wellen (Ausgänge am Rand, Boss nach N Feldern)', get: (c) => !!(c.route && c.route.enabled), set: (c, v) => { c.route = { ...(HB.defaultRoute ? HB.defaultRoute() : {}), ...(c.route || {}), enabled: v }; } },
     { id: 'collision', label: 'Aufprallschaden beim Wegstoßen', get: (c) => !!(c.collision && c.collision.enabled), set: (c, v) => { c.collision.enabled = v; } },
   ];
   HB.moduleOn = (cfg, id) => { const m = HB.MODULES.find((x) => x.id === id); return !m || !cfg || m.get(cfg); };
@@ -1682,7 +1696,7 @@ window.HB = window.HB || {};
     board: { cols: 10, rows: 10 },
     player: { hp: 40, energy: 3, draw: 5, handLimit: 10, start: A(4, 8) },
     playerCount: 1, // Koop-Probe: 1–4 Spieler am selben Rechner (weitere Spieler starten neben dem Startfeld)
-    classes: HB.defaultClasses(), playerClasses: [], classMarket: false, classChoice: true, // Klassen (HB.playerClass); classChoice: beim Kampfstart wählen
+    classes: HB.defaultClasses(), playerClasses: [], classMarket: false, route: HB.defaultRoute ? HB.defaultRoute() : { enabled: false }, classChoice: true, // route: Weiterziehen (game-route.js); Klassen (HB.playerClass); classChoice: beim Kampfstart wählen
     enemyDefaults: { hp: 20 },
     // Gegnertypen: Name, Leben, optional eigene Intentionen (sonst gilt die gemeinsame Intention)
     enemyTypes: [{ id: 'kaempfer', name: 'Kämpfer', hp: 20, icon: 'foeMelee', ownIntents: true, intents: [
@@ -2435,7 +2449,7 @@ window.HB = window.HB || {};
 
   // Felder, die beim Speichern/Wiederherstellen eines laufenden Kampfs 1:1 übernommen werden
   const SAVE_FIELDS = ['turn', 'kills', 'phase', 'typeIntents', 'typeIntentIdx', 'typePatternIdx', 'bossKilled',
-    'market', 'healer', 'marketBanished', 'waveNo', 'pendingWave', 'intentIndex', 'intent', 'logLines', 'eventSeq', 'rewardsUntilTurn', 'floor'];
+    'market', 'healer', 'marketBanished', 'waveNo', 'pendingWave', 'intentIndex', 'intent', 'logLines', 'eventSeq', 'rewardsUntilTurn', 'floor', 'route'];
   // Gehören einer ETAGE (Karte): game.floors[i]. Zugriff über die aktive Ebene (game.floor), siehe game-floors.js.
   const FLOOR_FIELDS = ['board', 'obstacles', 'objects', 'tileEffects', 'traps', 'corpses', 'enemies'];
   // Gehören jedem Spieler einzeln (Koop): Hand, Stapel, Abwerf-Auswahl, Markt- und Draft-Angebot. Zugriff über den aktiven Spieler (Game.player).
@@ -3070,7 +3084,8 @@ window.HB = window.HB || {};
         }
         this.upNoticed = false;
         // Gibt es noch eine Welle, geht es weiter (mit einer Runde Pause)
-        if (this.pendingWave || this.scheduleNextWave()) return false;
+        if (this.routeOn && this.routeOn()) { if (this.routeCleared()) return false; } // Modul „Weiterziehen“: Ausgänge statt neuer Welle (game-route.js)
+        else if (this.pendingWave || this.scheduleNextWave()) return false;
         this.phase = 'won'; this.log(this.bossKilled ? 'Boss besiegt – Sieg!' : 'Alle Gegner besiegt – Sieg!'); return true;
       }
       return false;
@@ -3300,7 +3315,8 @@ window.HB = window.HB || {};
           case 'marketClose': this.closeMarket(); return true;
           case 'armMove': { if (!card) return false; this.toggleMoveArmed(card); return true; }
           case 'followMove': return await this.followMove(cmd.hex); // await: Spieler bleibt bis zum Ende des Laufens aktiv
-          case 'freeWalk': return await this.freeWalk(cmd.hex); // zwischen den Wellen frei laufen (game-waves.js)
+          case 'freeWalk': return await this.freeWalk(cmd.hex);
+          case 'routeVote': return this.routeVote(p, cmd.exit); // Weiterziehen: Ausgang zustimmen (game-route.js) // zwischen den Wellen frei laufen (game-waves.js)
           case 'cancelMove': return this.cancelMove();
           case 'layRelic': return this.layRelic(p, cmd.relic);
           case 'destroyObject': return this.destroyOwnObject(p, cmd.hex);
@@ -4136,7 +4152,8 @@ window.HB = window.HB || {};
       return true;
     }
     // Freies Laufen zwischen den Wellen endet (Markt zu, Heiler benutzt, Welle erscheint)
-    endFreeMove(p = this.player) { if (p.freeMove) { delete p.freeMove; this.log(`${this.players.length > 1 ? this.unitName(p) + ': ' : ''}Freies Laufen vorbei – ab jetzt wieder mit Karten bewegen.`); } }
+    // Weiterziehen (game-route.js): solange Ausgänge offen sind, bleibt freies Laufen bis zum Aufbruch
+    endFreeMove(p = this.player) { if (this.route && this.route.exits) return; if (p.freeMove) { delete p.freeMove; this.log(`${this.players.length > 1 ? this.unitName(p) + ': ' : ''}Freies Laufen vorbei – ab jetzt wieder mit Karten bewegen.`); } }
     // Freies Laufen: Weg zum angeklickten Feld (beliebig weit, Fallen möglichst umgehen); null = nicht erreichbar
     freeMovePath(h) {
       if (!this.player.freeMove || !h || !this.board.has(h) || this.isPlayerAt(h)) return null;
@@ -4325,10 +4342,10 @@ window.HB = window.HB || {};
     }
 
     // ---- Kartendraft nach jeder geschafften Welle ----
-    startDraft() {
+    startDraft(extra = 0) {
       const dr = this.cfg.draft || {};
       if (!dr.enabled) return;
-      const offer = this.poolOffer(dr.offer || 3, 'draft');
+      const offer = this.poolOffer((dr.offer || 3) + extra, 'draft'); // extra: Elite-Feld bietet mehr Karten
       if (!offer.length) return;
       this.draftOffer = offer;
       this.log('Kartendraft: wähle eine Karte.');
@@ -4359,6 +4376,154 @@ window.HB = window.HB || {};
     }
     return null;
   };
+})(window.HB);
+
+</script>
+  <script>
+// Modul „Weiterziehen“ (HB.MODULES id 'route', Einstellung cfg.route): statt neuer Wellen zieht man nach jedem Sieg auf ein neues Feld.
+// Ablauf: alle Gegner tot → Belohnung je Feldart, alle laufen frei → am Rand erscheinen Ausgänge (Mitte einer Feldseite, nicht die
+// Eingangsseite) mit Vorschau der Feldart → Spieler stellen sich drauf und stimmen zu (Befehl routeVote) → haben alle Lebenden denselben
+// Ausgang gewählt, wird das neue Feld „angebaut“ (gleiche Form/Größe, zufällig), Spieler kommen an der Gegenseite an, Gegner erscheinen.
+// Auf jedem Feld wird gekämpft; die Art bestimmt Stärke und Belohnung (HB.ROUTE_KINDS). Boss nach cfg.route.bossAfter Feldern.
+// Teil der Klasse HB.Game (game.js) über HB.extendGame.
+window.HB = window.HB || {};
+(function (HB) {
+  const H = HB.hex;
+
+  // Feldarten: Name, Symbol, Kampf (mul = Anzahl Gegner, elite = Elite-Typen), Belohnung nach dem Sieg
+  HB.ROUTE_KINDS = {
+    fight: { label: 'Kampf', icon: 'sword', reward: 'draft' },
+    elite: { label: 'Elite', icon: 'crown', elite: true, reward: 'elite' },
+    market: { label: 'Markt', icon: 'market', easy: true, reward: 'market' },
+    healer: { label: 'Heiler', icon: 'heal', easy: true, reward: 'healer' },
+    crypt: { label: 'Krypta', icon: 'skull', reward: 'chest' }, // vorerst normaler Kampf + Truhe; später das Krypta-Ereignis
+    boss: { label: 'Boss', icon: 'crown', boss: true, reward: 'won' },
+  };
+  HB.defaultRoute = () => ({ enabled: false, bossAfter: 5, exitsMin: 2, exitsMax: 3, easyMul: 60, eliteRelic: 50,
+    weights: { fight: 4, elite: 2, market: 2, healer: 1, crypt: 1 } });
+
+  class GameRoute {
+    routeOn() { return HB.moduleOn(this.cfg, 'route'); }
+    routeCfg() { return { ...HB.defaultRoute(), ...(this.cfg.route || {}) }; }
+
+    // Seiten des Felds: Rechteck 4 (O, N, W, S), Sechseck 6 (Hex-Richtungen). Ausgang = Randfeld in der Mitte dieser Seite.
+    routeSides() {
+      const hex = this.board.bc && this.board.bc.shape === 'hex';
+      const angs = hex ? [0, -60, -120, 180, 120, 60] : [0, -90, 180, 90];
+      return angs.map((a) => ({ x: Math.cos(a * Math.PI / 180), y: Math.sin(a * Math.PI / 180) }));
+    }
+    routeSideTile(si) {
+      const d = this.routeSides()[si], pts = this.board.tiles.map((h) => ({ h, p: H.toPixel(h, 1) }));
+      const cx = pts.reduce((a, q) => a + q.p.x, 0) / pts.length, cy = pts.reduce((a, q) => a + q.p.y, 0) / pts.length;
+      // am weitesten in Richtung d, bei Gleichstand möglichst nah an der Mittellinie
+      const score = (q) => { const x = q.p.x - cx, y = q.p.y - cy; return (x * d.x + y * d.y) - Math.abs(x * d.y - y * d.x) * 0.35; };
+      const ordered = pts.sort((a, b) => score(b) - score(a)).map((q) => q.h);
+      return ordered.find((h) => this.freeTile(h) || this.isPlayerAt(h)) || ordered[0];
+    }
+    opposite(si) { const n = this.routeSides().length; return (si + n / 2) % n; }
+
+    // Alle Gegner tot: Belohnung, freies Laufen, Ausgänge (aufgerufen aus checkEnd statt scheduleNextWave)
+    routeCleared() {
+      const r = this.route = this.route || { stage: 1, kind: 'fight', entry: null };
+      if (r.exits) return true; // schon offen
+      const rc = this.routeCfg(), kind = HB.ROUTE_KINDS[r.kind] || HB.ROUTE_KINDS.fight;
+      if (kind.reward === 'won') return false; // Boss besiegt → Sieg (checkEnd)
+      this.floors.forEach((f) => { f.tileEffects = []; f.corpses = []; });
+      for (const p of this.players) { HB.CLEANSE_ORDER.forEach((k) => HB.STATUSES[k].clear(p)); Object.assign(p, { grace: 0, nextAttackPoison: 0 }); }
+      // Belohnung je Feldart
+      this.market = null; this.healer = null;
+      const spot = () => { const c = this.board.tiles.filter((h) => this.freeTile(h)); return c.length ? { pos: { ...this.pickRandom(c) } } : null; };
+      if (kind.reward === 'market') this.market = spot();
+      if (kind.reward === 'healer') this.healer = spot();
+      for (const p of this.livePlayers) this.as(p, () => {
+        if (kind.reward === 'draft' || kind.reward === 'elite') this.startDraft(kind.reward === 'elite' ? 1 : 0);
+        if (kind.reward === 'chest' || (kind.reward === 'elite' && Math.random() * 100 < rc.eliteRelic)) this.openChest(3);
+      });
+      for (const p of this.livePlayers) { p.freeMove = true; delete p.routeVote; }
+      // Ausgänge: zufällige Seiten (ohne Eingang), Art zufällig nach Gewicht; vor dem Boss nur ein Ausgang „Boss“
+      const n = this.routeSides().length, sides = [...Array(n).keys()].filter((s) => s !== r.entry);
+      const bossNext = r.stage >= rc.bossAfter;
+      const count = bossNext ? 1 : Math.min(sides.length, rc.exitsMin + Math.floor(Math.random() * (Math.max(rc.exitsMin, rc.exitsMax) - rc.exitsMin + 1)));
+      const pickKind = () => {
+        const w = Object.entries(rc.weights || {}).filter(([k, x]) => HB.ROUTE_KINDS[k] && x > 0 && k !== 'boss'), sum = w.reduce((a, [, x]) => a + x, 0);
+        let t = Math.random() * sum; for (const [k, x] of w) { t -= x; if (t <= 0) return k; } return 'fight';
+      };
+      const taken = new Set();
+      r.exits = this.shuffle(sides).slice(0, count).map((side) => {
+        let h = this.routeSideTile(side); const k = H.key(h); if (taken.has(k)) return null; taken.add(k);
+        return { side, pos: { ...h }, kind: bossNext ? 'boss' : pickKind() };
+      }).filter(Boolean);
+      const msg = `Feld ${r.stage} geschafft! Lauft frei herum und wählt einen Ausgang am Rand.`;
+      this.log(msg); this.notice(msg, 'wave');
+      this.emit('route_open', { exits: r.exits.map((e) => ({ ...e })) });
+      return true;
+    }
+    shuffle(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+    routeExitAt(h) { return this.route && this.route.exits ? this.route.exits.findIndex((e) => H.eq(e.pos, h)) : -1; }
+
+    // Zustimmung eines Spielers (steht auf dem Ausgang). Alle Lebenden für denselben Ausgang → weiter.
+    routeVote(p, i) {
+      const r = this.route; if (!r || !r.exits || !r.exits[i]) return false;
+      if (!H.eq(p.pos, r.exits[i].pos) && !this.livePlayers.some((q) => q !== p && H.eq(q.pos, r.exits[i].pos))) return false;
+      p.routeVote = i;
+      const live = this.livePlayers;
+      this.log(`${this.players.length > 1 ? this.unitName(p) + ' will' : 'Weiter'} nach: ${HB.ROUTE_KINDS[r.exits[i].kind].label}${this.players.length > 1 ? ` (${live.filter((q) => q.routeVote === i).length}/${live.length})` : ''}`);
+      if (live.every((q) => q.routeVote === i)) this.routeTravel(i);
+      this.changed();
+      return true;
+    }
+
+    // Neues Feld anbauen: Seite des Ausgangs → Eingang auf der Gegenseite
+    routeTravel(i) {
+      const r = this.route, ex = r.exits[i], kind = HB.ROUTE_KINDS[ex.kind] || HB.ROUTE_KINDS.fight;
+      this.emit('map_travel', { side: ex.side, sides: this.routeSides().length, kind: ex.kind });
+      r.stage += 1; r.kind = ex.kind; r.entry = this.opposite(ex.side); r.exits = null;
+      this.setFloor(0);
+      const f = this.floors[0];
+      Object.assign(f, { obstacles: [], objects: [], tileEffects: [], traps: [], corpses: [], enemies: [] });
+      this.market = null; this.healer = null; this.pendingWave = null; this.marketBanished = [];
+      // Spieler an der Eingangsseite (der erste auf dem Eingangsfeld, die anderen daneben)
+      const entry = this.routeSideTile(r.entry), spots = [entry, ...this.board.tiles.filter((h) => !H.eq(h, entry)).sort((a, b) => H.distance(a, entry) - H.distance(b, entry))];
+      this.livePlayers.forEach((p, k) => { p.pos = { ...spots[k] }; p.floor = 0; delete p.routeVote; delete p.freeMove; delete p.pendingMove; p.facing = H.dirTo(entry, this.routeSideTile(this.opposite(r.entry))); });
+      // Hindernisse wie beim Kampfstart (Einstellung randomObstacles), dann Gegner
+      const ro = this.cfg.randomObstacles || {};
+      if (ro.enabled) f.obstacles = this.randomObstacles(ro);
+      this.routeSpawn(kind);
+      this.forEachFloor(() => this.renumber());
+      this.aimStrikes(false);
+      const msg = `Feld ${r.stage}: ${kind.label}!${kind.boss ? ' Der Boss erwartet euch.' : ''} Ihr seid zuerst dran.`;
+      this.log(msg); this.notice(msg, 'wave');
+      this.emit('wave_spawned', { wave: r.stage, spots: this.enemies.map((e) => ({ ...e.pos })) });
+    }
+    // Gegner des neuen Felds: Wellenliste der Reihe nach (Feld n = Welle n, danach von vorn), Boss = Bosswelle,
+    // Elite = Elite-Typen (Haken „Elite“ beim Gegnertyp; ohne Elite-Typen: normale), leichte Felder (Markt/Heiler) = weniger Gegner
+    routeSpawn(kind) {
+      const w = this.cfg.waves || {}, list = w.list || [], rc = this.routeCfg(), types = this.cfg.enemyTypes || [];
+      const isBoss = (def) => (def.groups || []).some((g) => ((types.find((t) => t.id === g.type) || {}).boss));
+      const normal = list.filter((d) => !isBoss(d));
+      let def = kind.boss ? (list.find(isBoss) || list[list.length - 1]) : normal[(this.route.stage - 1) % Math.max(1, normal.length)];
+      if (!def) return;
+      const elites = types.filter((t) => t.elite && !t.disabled && !t.boss);
+      const queue = [];
+      for (const gr of this.expandGroups(def.groups || [])) {
+        let n = this.scaledCount(gr.count || 0, this.groupType(gr));
+        if (kind.easy) n = Math.max(1, Math.round(n * rc.easyMul / 100));
+        for (let k = 0; k < n; k++) {
+          let t = this.rollGroupType(gr, true);
+          if (kind.elite && elites.length && t && !t.boss) t = this.pickRandom(elites);
+          if (t && !t.disabled) queue.push(t);
+        }
+      }
+      const minD = w.minDist ?? 4;
+      for (const t of queue) {
+        const cands = this.board.tiles.filter((h) => this.freeTile(h) && this.livePlayers.every((p) => H.distance(h, p.pos) >= minD));
+        const all = cands.length ? cands : this.board.tiles.filter((h) => this.freeTile(h));
+        if (!all.length) break;
+        this.enemies.push(this.newEnemy(t.id, this.pickRandom(all), null, this.scaledHp(t.hp)));
+      }
+    }
+  }
+  HB.extendGame(GameRoute);
 })(window.HB);
 
 </script>
@@ -6685,6 +6850,11 @@ window.HB = window.HB || {};
         obj += `<g class="zonemark${z.active ? ' on' : ''}"><polygon points="${tc(p.x, p.y, SIZE - 3)}"/>${z.active ? '' : `<text x="${p.x}" y="${p.y + 4}">${HB.esc(z.name || '')}</text>`}</g>`;
       }
     }
+    // Weiterziehen: Ausgänge am Rand mit Vorschau der Feldart (game-route.js, HB.ROUTE_KINDS)
+    for (const ex of ((view.route && view.route.exits) || [])) {
+      const p = px(ex.pos), k = (HB.ROUTE_KINDS || {})[ex.kind] || { label: ex.kind, icon: 'flag' };
+      obj += `<g class="exitmark ex-${HB.esc(ex.kind)}"><title>Ausgang: ${HB.esc(k.label)} – hinlaufen und zustimmen</title><polygon points="${tc(p.x, p.y, SIZE - 2)}"/>${I.svgIcon(k.icon, p.x, p.y - 3, 22)}<text x="${p.x}" y="${p.y + 17}">${HB.esc(k.label)}</text></g>`;
+    }
     // Spawn-Markierungen der nächsten Welle
     for (const s of (view.pendingWave ? view.pendingWave.spots : [])) {
       if ((s.floor | 0) !== (view.floor | 0)) continue;
@@ -7920,7 +8090,25 @@ window.HB = window.HB || {};
       );
   }
   // Eigener Tab: alle Wellen (Welle 1 inklusive) plus Belohnungen nach jeder Welle
-  function wavesTab(c) { return el('div', {}, wavesBox(c), rewardsBox(c)); }
+  function wavesTab(c) { return el('div', {}, routeBox(c), wavesBox(c), rewardsBox(c)); }
+  // Modul „Weiterziehen“ (game-route.js): Schalter und Zahlen; Feldarten-Gewichte = wie oft ein Ausgang diese Art zeigt
+  function routeBox(c) {
+    const m = HB.MODULES.find((x) => x.id === 'route');
+    const box = el('div', { class: 'icard' }, el('div', { class: 'ihead' }, el('b', {}, 'Weiterziehen (statt neuer Wellen)')),
+      check('An: nach jedem Sieg Ausgänge am Rand, ihr zieht auf ein neues Feld', () => m.get(c), (v) => m.set(c, v), 'Modul „route“', true));
+    if (!m.get(c)) return box;
+    const r = c.route = { ...HB.defaultRoute(), ...(c.route || {}) }; r.weights = { ...HB.defaultRoute().weights, ...(r.weights || {}) };
+    box.append(el('p', { class: 'hint' }, 'Auf jedem Feld wird gekämpft. Die Wellenliste gilt der Reihe nach (Feld 1 = Welle 1 …), der Boss kommt aus der Bosswelle. Elite-Felder nehmen Gegnertypen mit Haken „Elite“ (Tab Gegner); Markt- und Heiler-Felder haben weniger Gegner.'),
+      el('div', { class: 'grid' },
+        num('Boss nach Feld', () => r.bossAfter, (v) => { r.bossAfter = Math.max(1, v); }, { icon: 'crown', min: 1 }),
+        num('Ausgänge mindestens', () => r.exitsMin, (v) => { r.exitsMin = Math.max(1, Math.min(6, v)); }, { min: 1, max: 6 }),
+        num('Ausgänge höchstens', () => r.exitsMax, (v) => { r.exitsMax = Math.max(1, Math.min(6, v)); }, { min: 1, max: 6 }),
+        num('Markt/Heiler: Gegner in %', () => r.easyMul, (v) => { r.easyMul = Math.max(10, Math.min(100, v)); }, { min: 10, max: 100 }),
+        num('Elite: Relikt-Chance in %', () => r.eliteRelic, (v) => { r.eliteRelic = Math.max(0, Math.min(100, v)); }, { min: 0, max: 100 })),
+      el('div', { class: 'fxlbl' }, 'Wie oft zeigt ein Ausgang … (Gewicht, 0 = nie)'),
+      el('div', { class: 'grid' }, ...Object.entries(HB.ROUTE_KINDS).filter(([k]) => k !== 'boss').map(([k, d]) => num(d.label, () => r.weights[k] ?? 0, (v) => { r.weights[k] = Math.max(0, v); }, { icon: d.icon, min: 0 }))));
+    return box;
+  }
 
   // Fallen-Schablonen: Name, Symbol, Wirkungen (HB.UNIT_EFFECTS). Karten („Falle legen“), Gegner-Aktion und Aufbau-Werkzeug nutzen sie.
   // Neue Standardinhalte (Karten/Fallen aus HB.defaultConfig, die in der Einstellung fehlen): Liste + „Übernehmen“. Vorher Sicherung.
@@ -8127,6 +8315,8 @@ window.HB = window.HB || {};
         })(),
         el('label', { class: 'bosschk', title: 'Boss: groß, mit Krone; wer ihn besiegt, gewinnt den Kampf (als letzte Welle einsetzen)', onclick: (ev) => ev.stopPropagation() },
           (() => { const b = el('input', { type: 'checkbox', onchange: (ev) => { t.boss = ev.target.checked; changed(true); } }); b.checked = !!t.boss; return b; })(), 'Boss'),
+        el('label', { class: 'bosschk', title: 'Elite: erscheint auf Elite-Feldern (Modul „Weiterziehen“) statt normaler Gegner', onclick: (ev) => ev.stopPropagation() },
+          (() => { const b = el('input', { type: 'checkbox', onchange: (ev) => { if (ev.target.checked) t.elite = true; else delete t.elite; changed(true); } }); b.checked = !!t.elite; return b; })(), 'Elite'),
         el('label', { class: 'bosschk', title: 'Haken = der Typ kommt im Spiel vor. Ohne Haken bleibt er gespeichert, taucht aber nicht in Wellen („Gemischt“) und nicht bei der Auswahl zum Platzieren auf. Schon platzierte Gegner bleiben.', onclick: (ev) => ev.stopPropagation() },
           (() => { const b = el('input', { type: 'checkbox', onchange: (ev) => { t.disabled = !ev.target.checked; changed(true); } }); b.checked = !t.disabled; return b; })(), 'Aktiv'),
         el('span', { class: 'rowbtns' }, btn('✕', () => { if (c.enemyTypes.length > 1) { c.enemyTypes.splice(i, 1); changed(true); } }, 'mini del')));
@@ -9889,6 +10079,13 @@ window.HB = window.HB || {};
   // damit er nie von der Gegnerphase (die den aktiven Spieler je Gegner wechselt) beeinflusst wird.
   // Speichern, Sicherungen, Online-Speicher: js/ui-store.js
   Object.assign(app, HB.uiStore(app, () => renderAll()));
+  // Weiterziehen: das neue Feld schiebt sich von der Seite des Ausgangs herein
+  function slideIn(ev) {
+    const wrap = $('.boardwrap'); if (!wrap || !wrap.animate) return;
+    const a = (ev.sides === 6 ? [0, -60, -120, 180, 120, 60] : [0, -90, 180, 90])[ev.side] * Math.PI / 180;
+    const dx = Math.cos(a) * 70, dy = Math.sin(a) * 70;
+    wrap.animate([{ transform: `translate(${dx}%, ${dy}%)`, opacity: 0.2 }, { transform: 'none', opacity: 1 }], { duration: 650, easing: 'cubic-bezier(.2,.7,.2,1)' });
+  }
   // Online als Mitspieler: immer der eigene Platz (app.netSeat), sonst der gewählte Spieler am selben Rechner
   const me = () => { const g = app.game; if (app.netSeat != null) { const s = g.players.find((p) => p.id === app.netSeat); if (s) return s; } return g.players[Math.min(app.viewIdx | 0, g.players.length - 1)]; };
   const asMe = (fn) => app.game.as(me(), fn);
@@ -9915,7 +10112,7 @@ window.HB = window.HB || {};
     log: (msg) => { const li = document.createElement('div'); li.textContent = msg; if (msg.startsWith('—')) li.className = 'round'; const box = $('#log'); box.appendChild(li); box.scrollTop = box.scrollHeight; },
     fx: (pos, text, kind) => R.fx(pos, text, kind),
     fxLine: (a, b, kind) => R.fxLine(a, b, kind),
-    event: (ev) => { HB.sound.onEvent(ev); if (HB.pixi) HB.pixi.onEvent(ev); },
+    event: (ev) => { HB.sound.onEvent(ev); if (HB.pixi) HB.pixi.onEvent(ev); if (ev.type === 'map_travel') slideIn(ev); },
     notice: (msg, kind) => { app.toast(msg); if (kind === 'discard') app.pulseDiscard = Date.now(); },
     wait: (ms) => new Promise((r) => setTimeout(r, ms)),
   };
@@ -9993,6 +10190,7 @@ window.HB = window.HB || {};
     view.markUid = app.mode === 'combat' && g && app.markOf ? app.markOf(g) : null;
     document.body.dataset.intents = (g ? g.cfg.intentMode : app.config.intentMode) === 'perEnemy' ? 'each' : 'shared';
     R.render(view);
+    renderRouteBox(g);
     document.body.dataset.mode = app.mode;
     document.body.dataset.live = app.liveActive ? '1' : '0';
     if (g && !drag) {
@@ -10015,9 +10213,10 @@ window.HB = window.HB || {};
     // Intention
     const intentBox = $('#intent');
     if (app.mode === 'combat' && g) {
-      const waveTxt = g.waveCount > 1 ? `<span class="wave${g.bossAlive() ? ' bosswave' : ''}">${g.bossAlive() ? `${I.icon('crown')} Boss` : `Welle ${g.waveNo}/${g.waveCount}`}</span>` : '';
+      const rt = g.routeOn && g.routeOn() ? { ...g.routeCfg(), ...(g.route || { stage: 1 }) } : null;
+      const waveTxt = rt ? `<span class="wave${rt.kind === 'boss' ? ' bosswave' : ''}">${rt.kind === 'boss' ? `${I.icon('crown')} Boss` : `Feld ${rt.stage} · Boss nach Feld ${rt.bossAfter}`}</span>` : g.waveCount > 1 ? `<span class="wave${g.bossAlive() ? ' bosswave' : ''}">${g.bossAlive() ? `${I.icon('crown')} Boss` : `Welle ${g.waveNo}/${g.waveCount}`}</span>` : '';
       const pend = g.pendingWave ? `<span class="wave pending">${I.icon('enemy')} Welle ${g.pendingWave.no} erscheint, wenn ${g.players.length > 1 ? 'alle den Zug beendet haben' : 'du den Zug beendest'}</span>` : '';
-      const free = me().freeMove && !me().ended ? `<span class="wave free">${I.icon('move')} Frei laufen: Feld anklicken (bis Markt zu / Heiler benutzt)</span>` : '';
+      const free = me().freeMove && !me().ended ? `<span class="wave free">${I.icon('move')} ${g.route && g.route.exits ? 'Frei laufen – dann einen Ausgang am Rand wählen' : 'Frei laufen: Feld anklicken (bis Markt zu / Heiler benutzt)'}</span>` : '';
       // Jeder Gegnertyp hat seine eigenen Intentionen (über dem Gegner und im Hover-Kärtchen); oben stehen nur Welle/Boss
       const fl = g.floors.length > 1 ? `<span class="floors">${g.floorInfo().map((f) => {
         const mine = f.i === (me().floor | 0), shown = app.peek != null ? f.i === app.peek : mine;
@@ -10263,6 +10462,19 @@ window.HB = window.HB || {};
       app.leaveArm = false; app.viewIdx = 0;
       g.apply({ type: 'leave', player: p.id }).then(() => renderAll());
     });
+  }
+  // ---------- Weiterziehen: steht der Spieler auf einem Ausgang, fragen; im Koop zeigen, wer schon zugestimmt hat ----------
+  function renderRouteBox(g) {
+    let box = $('#routebox');
+    const p = g && app.mode === 'combat' && g.route && g.route.exits ? me() : null, i = p ? g.routeExitAt(p.pos) : -1;
+    if (i < 0) { if (box) box.remove(); return; }
+    if (!box) { box = document.createElement('div'); box.id = 'routebox'; $('.play').appendChild(box); }
+    const ex = g.route.exits[i], k = HB.ROUTE_KINDS[ex.kind], live = g.livePlayers, yes = live.filter((q) => q.routeVote === i).length;
+    const sig = `${i}|${p.routeVote}|${yes}`; if (box.dataset.sig === sig) return; box.dataset.sig = sig;
+    box.innerHTML = p.routeVote === i
+      ? `<b>${I.icon(k.icon)} ${k.label}</b><span>Warte auf Mitspieler (${yes}/${live.length}) …</span>`
+      : `<b>${I.icon(k.icon)} Weiter: ${k.label}?</b>${live.length > 1 ? `<span>${yes}/${live.length} sind dafür</span>` : ''}<button type="button" class="primary">Weitergehen</button>`;
+    box.querySelector('button')?.addEventListener('click', () => g.apply({ type: 'routeVote', player: p.id, exit: i }).then(() => renderAll()));
   }
   // ---------- Hauptmenü: Titel, Kampf starten (mit Klassenwahl), Online, Aufbau & Editor ----------
   function showMenu() {
