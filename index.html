@@ -1152,6 +1152,9 @@ button { color: #17130a; }
     padding: 24px; box-sizing: border-box; text-align: center; background: var(--bg); color: var(--accent); font-family: var(--display); font-size: 22px; }
 }
 
+/* Handy: kein Markieren/Kontextmenü beim Antippen und Ziehen */
+.play, #dock, #hand, .card, .ghost, #board, .boardinfo { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
 </style>
 </head>
 <body data-mode="setup">
@@ -10556,7 +10559,8 @@ window.HB = window.HB || {};
     const r = el.getBoundingClientRect();
     document.body.classList.add('dragging'); // Hand/Leiste weichen aus, damit alle Felder erreichbar sind
     const ghost = el.cloneNode(true); ghost.classList.add('ghost');
-    ghost.style.width = r.width + 'px';
+    // Breite ohne Verkleinerung (Handy: die Hand ist per CSS-zoom kleiner) – sonst wird die gezogene Karte schmal
+    ghost.style.width = (parseFloat(getComputedStyle(el).width) || r.width) + 'px';
     document.body.appendChild(ghost);
     el.classList.add('lifted');
     const touch = ev.pointerType === 'touch' || ev.pointerType === 'pen';
@@ -11010,6 +11014,11 @@ window.HB = window.HB || {};
     window.addEventListener('pointermove', (ev) => {
       if (app.pick && !drag && app.game) { const h = hexUnder(ev.clientX, ev.clientY); pickPreview(h && app.game.board.has(h) ? h : null, ev); return; }
       if (ev.pointerType === 'mouse') updateTileTip(ev);
+    });
+    // Handy: Antippen eines Felds zeigt seine Infos (Hindernis, Objekt, Bodenfeld …) ein paar Sekunden lang
+    window.addEventListener('pointerup', (ev) => {
+      if (ev.pointerType === 'mouse' || drag || !app.game) return;
+      updateTileTip(ev); clearTimeout(app._tipT); app._tipT = setTimeout(() => { $('#tiletip').hidden = true; }, 3000);
     });
     $('#board').addEventListener('contextmenu', (ev) => {
       if (app.mode === 'setup') { if (Date.now() - paintEnd < 400) return; const h = hexUnder(ev.clientX, ev.clientY); if (h) setupClick(h, 'erase'); return; } // Aufbau: Rechtsklick löscht (beim Malen schon erledigt)
