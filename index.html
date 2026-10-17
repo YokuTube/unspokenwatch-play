@@ -592,7 +592,7 @@ body.dragging #dock { background: none; }
 .oc-hint { font-size: 9.5px; color: var(--muted); font-weight: 500; text-align: center; padding-top: 2px; }
 /* Absichten nur mit Alt, Lebensbalken bei vollem Leben aus (body.peek-orders = Alt gedrückt / Maus über den Schaltern) */
 body[data-intentview="alt"]:not(.peek-orders) .ichip { display: none; }
-body[data-fullhp="hidden"]:not(.peek-orders) .hpw.full { display: none; }
+body[data-fullhp="hidden"]:not(.peek-orders) .unit:not(.hovered) .hpw.full { display: none; } /* Maus über dem Gegner: Balken zeigen */
 
 /* Gegner, die gerade erscheinen */
 
@@ -1154,6 +1154,13 @@ button { color: #17130a; }
 
 /* Handy: kein Markieren/Kontextmenü beim Antippen und Ziehen */
 .play, #dock, #hand, .card, .ghost, #board, .boardinfo { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+/* Kartenliste im Editor: Suche, Sortierung, Filter (editor.js cardsTab) */
+.cardview { position: sticky; top: 0; z-index: 3; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 6px 0; background: var(--panel); }
+.cardview .cvsearch { flex: 1 1 180px; min-width: 140px; }
+.cardview .field { margin: 0; }
+.cvcount { font-size: 12px; margin-left: auto; }
+.cardtile[hidden], .cardedit[hidden] { display: none !important; }
 
 </style>
 </head>
@@ -8192,6 +8199,9 @@ window.HB = window.HB || {};
 
   // Welche Karten im Editor aufgeklappt sind (nur für diese Sitzung)
   const openCards = new Set();
+  // Kartenliste: Suche, Sortierung, Filter (je Browser gemerkt). Suche filtert ohne Neuzeichnen (Fokus bleibt im Feld).
+  const cardView = (() => { try { return { q: '', sort: 'orig', cat: '', cls: '', deck: false, ...JSON.parse(localStorage.getItem('hexdb.cardView') || '{}'), q: '' }; } catch (e) { return { q: '', sort: 'orig', cat: '', cls: '', deck: false }; } })();
+  const saveCardView = () => { try { const { q, ...rest } = cardView; localStorage.setItem('hexdb.cardView', JSON.stringify(rest)); } catch (e) { /* egal */ } };
   // Kategorien der Wirkungen (Auswahl im Editor). Ein Register-Eintrag kann `category` selbst setzen; unbekannte landen unter „Sonstiges“.
   const EFFECT_CATS = ['Schaden', 'Gift & Seuche', 'Kontrolle', 'Bewegung', 'Schutz & Heilung', 'Segen', 'Karten & Energie', 'Fallen', 'Sonstiges'];
   const EFFECT_CAT_OF = {
@@ -8340,12 +8350,38 @@ window.HB = window.HB || {};
         + ` Klick auf die Karte klappt Kosten, Ziel und Effekte zum Bearbeiten auf.` + (inCombat ? ' „+ Hand“ legt eine Kopie sofort auf die Hand des gesteuerten Spielers (Test).' : '')));
     if (!curses) box.append(newDefaultsBox(c));
     const grid = el('div', { class: 'cardgrid' });
-    c.deck.forEach((d, i) => {
-      if ((d.category === 'curse') !== curses) return;
+    // Werkzeugleiste: Suche (Name + Kartentext), Sortierung, Kategorie, Klasse, nur Startdeck
+    const v = cardView, cats = Object.entries(HB.CARD_CATEGORIES).filter(([k]) => (k === 'curse') === curses);
+    const countEl = el('span', { class: 'muted cvcount' });
+    const applySearch = () => {
+      const q = v.q.trim().toLowerCase(); let n = 0;
+      grid.querySelectorAll('.cardtile').forEach((t) => { const hit = !q || (t.dataset.search || '').includes(q); t.hidden = !hit; if (hit) n++; const ed = t.nextElementSibling; if (ed && ed.classList.contains('cardedit')) ed.hidden = !hit; });
+      countEl.textContent = `${n} Karten`;
+    };
+    const search = el('input', { type: 'search', class: 'cvsearch', placeholder: 'Suchen (Name, Text) …', value: v.q, oninput: (ev) => { v.q = ev.target.value; applySearch(); } });
+    const bar = el('div', { class: 'cardview' });
+    requestAnimationFrame(() => { const t = document.querySelector('#editor .tabs'); bar.style.top = (t ? t.offsetHeight - 8 : 0) + 'px'; }); // klebt unter der Tab-Leiste
+    box.append(bar); bar.append(...[search,
+      select('Sortieren', [['orig', 'Reihenfolge im Editor'], ['name', 'Name A–Z'], ['cost', 'Kosten'], ['cat', 'Kategorie'], ['deck', 'Im Startdeck zuerst']], () => v.sort, (x) => { v.sort = x; saveCardView(); }, true),
+      cats.length > 1 ? select('Kategorie', [['', 'alle'], ...cats.map(([k, x]) => [k, x.label])], () => v.cat, (x) => { v.cat = x; saveCardView(); }, true) : null,
+      !curses && (c.classes || []).length ? select('Klasse', [['', 'alle'], ['none', 'ohne Klasse'], ...c.classes.map((k) => [k.id, k.name])], () => v.cls, (x) => { v.cls = x; saveCardView(); }, true) : null,
+      !curses ? check('nur Startdeck', () => v.deck, (x) => { v.deck = x; saveCardView(); }, 'Nur Karten mit Anzahl im Startdeck', true) : null,
+      countEl].filter(Boolean));
+    const catOrder = Object.keys(HB.CARD_CATEGORIES);
+    const list = c.deck.map((d, i) => [d, i]).filter(([d]) => (d.category === 'curse') === curses
+      && (!v.cat || HB.cardCategoryKey(d) === v.cat)
+      && (!v.cls || (v.cls === 'none' ? !(d.classes || []).length : (d.classes || []).includes(v.cls)))
+      && (!v.deck || (d.count || 0) > 0));
+    const by = { name: ([a], [b]) => (a.name || '').localeCompare(b.name || '', 'de'), cost: ([a], [b]) => (a.cost || 0) - (b.cost || 0) || (a.name || '').localeCompare(b.name || '', 'de'),
+      cat: ([a], [b]) => catOrder.indexOf(HB.cardCategoryKey(a)) - catOrder.indexOf(HB.cardCategoryKey(b)) || (a.name || '').localeCompare(b.name || '', 'de'),
+      deck: ([a], [b]) => (b.count || 0) - (a.count || 0) || (a.name || '').localeCompare(b.name || '', 'de') }[v.sort];
+    if (by) list.sort(by);
+    list.forEach(([d, i]) => {
       d.effects = d.effects || [];
       const open = openCards.has(i);
       const tile = el('div', { class: 'cardtile' + (d.count ? '' : ' off') + (open ? ' open' : '') });
       const face = HB.cardFace(d);
+      tile.dataset.search = ((d.name || '') + ' ' + face.textContent).toLowerCase();
       face.title = 'Klicken: bearbeiten';
       face.onclick = () => { open ? openCards.delete(i) : openCards.add(i); render(); };
       const lab = (t, input) => el('label', { class: 'tb' }, t, input);
@@ -8390,6 +8426,7 @@ window.HB = window.HB || {};
           btn('+ Effekt', () => { d.effects.push({ type: 'damage', amount: 5 }); changed(true); }, 'sec')));
       }
     });
+    applySearch();
     box.append(grid, curses ? btn('+ Störkarte', () => {
       c.deck.push({ name: 'Neue Störkarte', category: 'curse', count: 0, cost: 1, target: 'self', range: 0, exhaust: true, inPool: false, inDraft: false, effects: [{ type: 'exhaustCard', amount: 1 }] });
       HB.ensureCardIds(c.deck); openCards.add(c.deck.length - 1); changed(true);
