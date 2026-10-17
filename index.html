@@ -1485,20 +1485,32 @@ window.HB = window.HB || {};
 // Module: größere Spielsysteme mit einem Schalter (Editor → Werte → Funktionen an/aus). Jedes Modul muss sich abschalten lassen,
 // ohne dass der Kampf hängt oder Fehler wirft – das prüft der Rausschneide-Test (tools/selftest.js, „Modul aus“).
 // Ein neues System bekommt hier einen Eintrag (id, Name, get/set auf der Einstellung) und fragt im Code HB.moduleOn(cfg, id).
+// Anschlüsse (optional, damit der Kern-Code für ein neues System nicht angefasst werden muss):
+//   saveFields: ['feld', …]           – Felder von HB.Game, die mit dem Kampf gespeichert/wiederhergestellt werden (immer, auch wenn aus)
+//   commands: { typ(game, spieler, cmd) } – eigene Befehle für game.apply({ type: typ, … }); nur, wenn das Modul an ist
+//   onCleared(game)                    – alle Gegner tot: true = es geht weiter (Modul übernimmt), false = Sieg, undefined = nicht zuständig.
+//                                        Reihenfolge der Liste zählt: das erste zuständige Modul entscheidet.
 window.HB = window.HB || {};
 (function (HB) {
   HB.MODULES = [
+    // Weiterziehen steht vor den Wellen: ist es an, entscheidet es nach dem Sieg (game-route.js hängt seine Anschlüsse an)
+    { id: 'route', label: 'Weiterziehen statt neuer Wellen (Ausgänge am Rand, Boss nach N Feldern)', get: (c) => !!(c.route && c.route.enabled), set: (c, v) => { c.route = { ...(HB.defaultRoute ? HB.defaultRoute() : {}), ...(c.route || {}), enabled: v }; } },
     { id: 'waves', label: 'Wellen (nächste Welle nach 1 Runde Pause)', get: (c) => !!(c.waves && c.waves.enabled), set: (c, v) => { c.waves.enabled = v; } },
     { id: 'market', label: 'Markt nach jeder Welle', get: (c) => !!(c.market && c.market.enabled), set: (c, v) => { c.market.enabled = v; } },
     { id: 'healer', label: 'Heiler nach jeder Welle', get: (c) => !!(c.healer && c.healer.enabled), set: (c, v) => { c.healer.enabled = v; } },
     { id: 'draft', label: 'Kartendraft nach jeder Welle', get: (c) => !!(c.draft && c.draft.enabled), set: (c, v) => { c.draft.enabled = v; } },
     { id: 'classes', label: 'Klassen (Klassenwahl, Kartenpool und Startdeck je Klasse)', get: (c) => c.classesEnabled !== false, set: (c, v) => { c.classesEnabled = v; } },
     { id: 'relics', label: 'Relikte (Start-Relikte, Schatztruhen)', get: (c) => c.relicsEnabled !== false, set: (c, v) => { c.relicsEnabled = v; } },
-    { id: 'route', label: 'Weiterziehen statt neuer Wellen (Ausgänge am Rand, Boss nach N Feldern)', get: (c) => !!(c.route && c.route.enabled), set: (c, v) => { c.route = { ...(HB.defaultRoute ? HB.defaultRoute() : {}), ...(c.route || {}), enabled: v }; } },
     { id: 'corpses', label: 'Leichen (tote Gegner bleiben liegen, Betreten kostet mehr; für alte Kadaverexplosion)', get: (c) => !!c.corpsesEnabled, set: (c, v) => { c.corpsesEnabled = v; } },
     { id: 'collision', label: 'Aufprallschaden beim Wegstoßen', get: (c) => !!(c.collision && c.collision.enabled), set: (c, v) => { c.collision.enabled = v; } },
   ];
   HB.moduleOn = (cfg, id) => { const m = HB.MODULES.find((x) => x.id === id); return !m || !cfg || m.get(cfg); };
+  HB.module = (id) => HB.MODULES.find((x) => x.id === id);
+  // Anschluss an einen Modul-Eintrag hängen (aus der Datei des Moduls, z. B. game-route.js), ohne die Liste oben aufzublähen
+  HB.moduleHooks = (id, hooks) => Object.assign(HB.module(id), hooks);
+  HB.moduleSaveFields = () => HB.MODULES.flatMap((m) => m.saveFields || []);
+  HB.moduleCommand = (g, type) => { for (const m of HB.MODULES) if (m.commands && m.commands[type] && HB.moduleOn(g.cfg, m.id)) return m.commands[type]; return null; };
+  HB.moduleCleared = (g) => { for (const m of HB.MODULES) if (m.onCleared && HB.moduleOn(g.cfg, m.id)) { const r = m.onCleared(g); if (r !== undefined) return r; } return undefined; };
 })(window.HB);
 
 </script>
@@ -2420,7 +2432,7 @@ window.HB = window.HB || {};
 
   // Felder, die beim Speichern/Wiederherstellen eines laufenden Kampfs 1:1 übernommen werden
   const SAVE_FIELDS = ['turn', 'kills', 'phase', 'typeIntents', 'typeIntentIdx', 'typePatternIdx', 'bossKilled',
-    'market', 'healer', 'marketBanished', 'waveNo', 'pendingWave', 'logLines', 'eventSeq', 'rewardsUntilTurn', 'floor', 'route'];
+    'market', 'healer', 'marketBanished', 'waveNo', 'pendingWave', 'logLines', 'eventSeq', 'rewardsUntilTurn', 'floor'];
   // Gehören einer ETAGE (Karte): game.floors[i]. Zugriff über die aktive Ebene (game.floor), siehe game-floors.js.
   const FLOOR_FIELDS = ['board', 'obstacles', 'objects', 'tileEffects', 'traps', 'corpses', 'enemies'];
   // Gehören jedem Spieler einzeln (Koop): Hand, Stapel, Abwerf-Auswahl, Markt- und Draft-Angebot. Zugriff über den aktiven Spieler (Game.player).
@@ -2435,7 +2447,7 @@ window.HB = window.HB || {};
       const data = { v: 3, cfg: this.cfg, players: this.players.map(unit),
         floors: this.floors.map((f) => ({ mapId: f.mapId, name: f.name, start: f.start, board: f.board.bc, obstacles: f.obstacles, objects: f.objects,
           tileEffects: f.tileEffects, traps: f.traps, corpses: f.corpses, enemies: f.enemies.map(unit) })) };
-      for (const f of SAVE_FIELDS) data[f] = this[f];
+      for (const f of [...SAVE_FIELDS, ...HB.moduleSaveFields()]) data[f] = this[f];
       // Mitten im Gegnerzug gespeichert: beim Laden geht es mit deinem Zug weiter
       if (data.phase === 'enemy') data.resumeEnemyPhase = true;
       data.outbreaks = [...obs].map(([o, id]) => ({ id, jumpRange: o.jumpRange, roundsLeft: Number.isFinite(o.roundsLeft) ? o.roundsLeft : -1, infected: [...o.infected] }));
@@ -2446,7 +2458,7 @@ window.HB = window.HB || {};
       g.hooks = hooks || {};
       g.cfg = fixCfg ? fixCfg(data.cfg) : data.cfg;
       g.busy = false; g.events = []; g.activeEnemy = null; g.actorIdx = 0;
-      for (const f of SAVE_FIELDS) g[f] = data[f];
+      for (const f of [...SAVE_FIELDS, ...HB.moduleSaveFields()]) g[f] = data[f];
       g.floor = g.floor || 0;
       g.logLines = g.logLines || []; g.eventSeq = g.eventSeq || 0;
       const obs = new Map((data.outbreaks || []).map((o) => [o.id, { id: uid(), jumpRange: o.jumpRange, roundsLeft: o.roundsLeft < 0 ? Infinity : o.roundsLeft, infected: new Set(o.infected) }]));
@@ -3045,9 +3057,8 @@ window.HB = window.HB || {};
           return false;
         }
         this.upNoticed = false;
-        // Gibt es noch eine Welle, geht es weiter (mit einer Runde Pause)
-        if (this.routeOn && this.routeOn()) { if (this.routeCleared()) return false; } // Modul „Weiterziehen“: Ausgänge statt neuer Welle (game-route.js)
-        else if (this.pendingWave || this.scheduleNextWave()) return false;
+        // Module entscheiden, wie es weitergeht (Weiterziehen, Wellen …; HB.moduleCleared in modules.js): true = weiter, false = Sieg
+        if (HB.moduleCleared(this)) return false;
         this.phase = 'won'; this.log(this.bossKilled ? 'Boss besiegt – Sieg!' : 'Alle Gegner besiegt – Sieg!'); return true;
       }
       return false;
@@ -3270,7 +3281,6 @@ window.HB = window.HB || {};
           case 'armMove': { if (!card) return false; this.toggleMoveArmed(card); return true; }
           case 'followMove': return await this.followMove(cmd.hex); // await: Spieler bleibt bis zum Ende des Laufens aktiv
           case 'freeWalk': return await this.freeWalk(cmd.hex);
-          case 'routeVote': return this.routeVote(p, cmd.exit); // Weiterziehen: Ausgang zustimmen (game-route.js) // zwischen den Wellen frei laufen (game-waves.js)
           case 'cancelMove': return this.cancelMove();
           case 'layRelic': return this.layRelic(p, cmd.relic);
           case 'destroyObject': return this.destroyOwnObject(p, cmd.hex);
@@ -3279,7 +3289,7 @@ window.HB = window.HB || {};
           case 'stairs': return this.useStairs(p);
           case 'join': return this.joinPlayer();
           case 'leave': return await this.leavePlayer(p);
-          default: return false;
+          default: { const fn = HB.moduleCommand(this, cmd.type); return fn ? await fn(this, p, cmd) : false; } // Befehle der Module (modules.js)
         }
       } finally { this.actorIdx = Math.min(prev || 0, this.players.length - 1); }
     }
@@ -4337,6 +4347,8 @@ window.HB = window.HB || {};
   };
   // Boss-Gruppe (Boss-Typ, zufälliger Boss, Boss-Set) und Bosswelle (Haken „Bosswelle“, sonst: enthält eine Boss-Gruppe) – Editor und Weiterziehen
   HB.isBossGroup = (cfg, type) => { const p = HB.wavePick(cfg, type); return p ? !!p.bossWave : !!((cfg.enemyTypes || []).find((t) => t.id === type) || {}).boss; };
+  // Modul „Wellen“: nach dem Sieg kommt die nächste Welle, solange es eine gibt (sonst nicht zuständig → Sieg)
+  HB.moduleHooks('waves', { onCleared: (g) => (g.pendingWave || g.scheduleNextWave() ? true : undefined) });
   HB.isBossWave = (cfg, wave) => wave.boss ?? (wave.groups || []).some((gr) => HB.isBossGroup(cfg, gr.type));
 })(window.HB);
 
@@ -4485,6 +4497,12 @@ window.HB = window.HB || {};
     }
   }
   HB.extendGame(GameRoute);
+  // Anschlüsse an den Kern (modules.js): eigenes Speicherfeld, Befehl „routeVote“, nach dem Sieg Ausgänge statt neuer Welle
+  HB.moduleHooks('route', {
+    saveFields: ['route'],
+    commands: { routeVote: (g, p, cmd) => g.routeVote(p, cmd.exit) },
+    onCleared: (g) => g.routeCleared(),
+  });
 })(window.HB);
 
 </script>
@@ -8933,7 +8951,15 @@ window.HB = window.HB || {};
         const [db, user] = await Promise.all([api.use('db'), api.use('user')]);
         c.user = user;
         const id = db && user ? await user.id() : null;
-        if (!db || !id) { c.why = !db ? 'Datenbank hier nicht verfügbar – angemeldet?' : 'keine Nutzer-Kennung'; return; }
+        if (!db || !id) {
+          // Ohne Kennung kein eigener Speicherbereich (nicht angemeldet oder Gast mit anderem Account): Grund möglichst genau nennen
+          let own = null, edit = null, write = null;
+          try { if (user) [own, edit, write] = await Promise.all([user.isOwner(), user.canEdit(), user.can ? user.can('data.write') : null]); } catch (e) { /* egal */ }
+          const yn = (v) => (v === true ? 'ja' : v === false ? 'nein' : '?');
+          c.why = !db ? 'Datenbank hier nicht verfügbar – angemeldet?' : `keine Nutzer-Kennung – Besitzer: ${yn(own)}, Bearbeiten: ${yn(edit)}, Schreiben: ${yn(write)}`
+            + (own === false ? '. Wahrscheinlich mit einem anderen Account angemeldet als dem, dem das Artefakt gehört' : '');
+          return;
+        }
         c.ref = db.doc('data/users/' + id + '/settings');
         const snap = await c.ref.get();
         const remote = snap.exists ? snap.data() : null;
