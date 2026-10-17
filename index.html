@@ -4211,8 +4211,6 @@ window.HB = window.HB || {};
         if (spot.length) { this.healer = { pos: { ...this.pickRandom(spot) } }; this.log('Ein Heiler ist erschienen!'); }
       }
     }
-    // Ein Spieler betritt Markt oder Heiler – das wirkt für ALLE lebenden Spieler (jeder bekommt sein eigenes Marktfenster bzw. wird geheilt),
-    // danach verschwinden beide vom Feld.
     // Markt/Heiler gelten für den Spieler, der draufsteht (dieser Spieler ist der aktive): jeder Spieler entscheidet selbst, ob und wann er
     // hingeht. Beide bleiben liegen, bis jeder lebende Spieler sie benutzt hat (oder die nächste Welle neue bringt).
     useReward(kind) {
@@ -4221,6 +4219,13 @@ window.HB = window.HB || {};
       thing.usedBy = thing.usedBy || [];
       if (thing.usedBy.includes(p.id)) return; // dieser Spieler war schon da
       thing.usedBy.push(p.id);
+      // Ohne Weiterziehen: Markt ODER Heiler – wer eins benutzt, für den ist das andere weg (Weiterziehen hat je Feld nur eins)
+      const other = kind === 'healer' ? this.market : this.healer, otherKey = kind === 'healer' ? 'market' : 'healer';
+      if (other && !this.routeOn()) {
+        other.usedBy = other.usedBy || [];
+        if (!other.usedBy.includes(p.id)) other.usedBy.push(p.id);
+        if (this.livePlayers.every((q) => other.usedBy.includes(q.id))) { this[otherKey] = null; if (otherKey === 'market' && !this.players.some((q) => q.marketOffer)) this.marketBanished = []; }
+      }
       this.emit(kind === 'healer' ? 'healer_used' : 'market_open', { pos: { ...p.pos }, by: p.id });
       const multi = this.players.length > 1;
       if (kind === 'healer') {
