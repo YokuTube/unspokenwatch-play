@@ -6355,7 +6355,15 @@ window.HB = window.HB || {};
       // eigene Befehle des Gastgebers: danach den neuen Stand an alle
       this.applyRaw = game.apply.bind(game);
       game.apply = async (cmd) => { const r = await this.applyRaw(cmd); await this.broadcast({}); return r; };
+      // Live mitschicken, was zwischendurch passiert (Gegnerzug Schritt für Schritt): jede Änderung, Zahl und Linie
+      const h = game.hooks || {}; this.fxBuf = [];
+      game.hooks = { ...h,
+        changed: () => { if (h.changed) h.changed(); this.soon(); },
+        fx: (pos, text, kind) => { if (h.fx) h.fx(pos, text, kind); this.fxBuf.push(['fx', pos, text, kind]); this.soon(); },
+        fxLine: (a, b, kind) => { if (h.fxLine) h.fxLine(a, b, kind); this.fxBuf.push(['line', a, b, kind]); this.soon(); },
+        event: (ev) => { if (h.event) h.event(ev); this.soon(); } };
     }
+    soon() { if (this.stopped || this.pending || !this.links.length) return; this.pending = setTimeout(() => { this.pending = null; this.broadcast({}); }, 60); }
     attach(transport, playerId) {
       const link = { transport, playerId };
       this.links.push(link);
@@ -6376,7 +6384,8 @@ window.HB = window.HB || {};
       if (this.stopped) return;
       const snap = this.snapshot(), seq = ++this.seq, events = (this.game.events || []).filter((e) => e.n > this.lastEv);
       this.lastEv = this.game.eventSeq || this.lastEv;
-      await Promise.all(this.links.map((l) => l.transport.send({ t: 'state', seq, snap, events, ...extra })));
+      const fx = (this.fxBuf || []).splice(0), active = this.game.activeEnemy ? this.game.activeEnemy.uid : null;
+      await Promise.all(this.links.map((l) => l.transport.send({ t: 'state', seq, snap, events, fx, active, ...extra })));
     }
   }
 
@@ -6393,8 +6402,10 @@ window.HB = window.HB || {};
         this.seq = msg.seq;
         this.game = HB.Game.restore({ ...msg.snap, cfg: this.cfg }, this.hooks);
         this.game.apply = (cmd) => this.apply(cmd); // Befehle gehen an den Gastgeber
+        if (msg.active != null) this.game.activeEnemy = this.game.enemies.find((e) => e.uid === msg.active) || null; // wer gerade zieht
         (msg.events || []).forEach((ev) => this.hooks.event && this.hooks.event(ev));
         if (this.hooks.state) this.hooks.state(this);
+        for (const f of msg.fx || []) { if (f[0] === 'fx' && this.hooks.fx) this.hooks.fx(f[1], f[2], f[3]); else if (f[0] === 'line' && this.hooks.fxLine) this.hooks.fxLine(f[1], f[2], f[3]); }
         if (msg.id != null && msg.from === this.me && this.waiting.has(msg.id)) { this.waiting.get(msg.id)(msg.ok); this.waiting.delete(msg.id); }
       }
     }
