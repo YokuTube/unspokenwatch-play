@@ -9125,63 +9125,83 @@ window.HB = window.HB || {};
 // etwas gespeichert ist – überschreibt nie vorhandene Einstellungen.
 window.HB = window.HB || {};
 HB.USER_BACKUP = {
- "version": 23,
+ "version": 24,
  "board": {
-  "cols": 10,
-  "rows": 10
+  "cols": 8,
+  "rows": 8,
+  "shape": "hex",
+  "size": 5,
+  "holes": []
  },
  "player": {
   "hp": 40,
   "energy": 3,
   "draw": 5,
   "handLimit": 10,
-  "start": {
-   "q": 0,
-   "r": 8
-  }
+  "start": null,
+  "starts": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "relics": []
  },
  "playerCount": 1,
+ "classes": [
+  {
+   "id": "dieb",
+   "name": "Dieb",
+   "relics": []
+  },
+  {
+   "id": "krieger",
+   "name": "Krieger",
+   "relics": []
+  },
+  {
+   "id": "heiler",
+   "name": "Heiler",
+   "relics": []
+  },
+  {
+   "id": "giftmagier",
+   "name": "Giftmagier",
+   "relics": []
+  },
+  {
+   "id": "blutmagier",
+   "name": "Blutmagier",
+   "relics": []
+  },
+  {
+   "id": "bogenschuetze",
+   "name": "Bogenschütze",
+   "relics": []
+  }
+ ],
+ "playerClasses": [],
+ "classMarket": false,
+ "route": {
+  "enabled": true,
+  "bossAfter": 5,
+  "exitsMin": 2,
+  "exitsMax": 3,
+  "easyMul": 60,
+  "eliteRelic": 50,
+  "weights": {
+   "fight": 4,
+   "elite": 2,
+   "market": 2,
+   "healer": 1,
+   "crypt": 1
+  }
+ },
+ "classChoice": true,
  "enemyDefaults": {
   "hp": 40
  },
  "enemyTypes": [
-  {
-   "id": "kaempfer",
-   "name": "Kämpfer",
-   "hp": 40,
-   "ownIntents": true,
-   "intents": [
-    {
-     "steps": [
-      {
-       "type": "move",
-       "amount": 3
-      },
-      {
-       "type": "attack",
-       "amount": 5,
-       "range": 1
-      }
-     ]
-    },
-    {
-     "steps": [
-      {
-       "type": "line",
-       "amount": 6,
-       "range": 2,
-       "shape": "disc",
-       "aim": "player"
-      }
-     ]
-    }
-   ],
-   "icon": "foeMelee",
-   "pattern": "sequence",
-   "disabled": false,
-   "approach": 1,
-   "startEffects": []
-  },
   {
    "id": "boss",
    "name": "Schlächter",
@@ -9256,6 +9276,91 @@ HB.USER_BACKUP = {
    "startEffects": []
   },
   {
+   "id": "tmvbexafo",
+   "name": "Heiler",
+   "hp": 15,
+   "ownIntents": true,
+   "intents": [
+    {
+     "steps": [
+      {
+       "type": "healAlly",
+       "amount": 6,
+       "range": "inf"
+      },
+      {
+       "type": "cleanseAlly",
+       "range": 3
+      }
+     ]
+    },
+    {
+     "steps": [
+      {
+       "type": "move",
+       "amount": 2,
+       "toward": "away"
+      }
+     ]
+    },
+    {
+     "steps": [
+      {
+       "type": "effect",
+       "effect": "strength",
+       "amount": 1,
+       "duration": 2,
+       "hits": 1,
+       "target": "ally",
+       "range": "inf"
+      }
+     ]
+    }
+   ],
+   "pattern": "sequence",
+   "approach": 1,
+   "startEffects": []
+  },
+  {
+   "id": "kaempfer",
+   "name": "Kämpfer",
+   "hp": 40,
+   "ownIntents": true,
+   "intents": [
+    {
+     "steps": [
+      {
+       "type": "move",
+       "amount": 3
+      },
+      {
+       "type": "attack",
+       "amount": 5,
+       "range": 1
+      }
+     ],
+     "name": "Charge"
+    },
+    {
+     "steps": [
+      {
+       "type": "line",
+       "amount": 6,
+       "range": 2,
+       "shape": "disc",
+       "aim": "player"
+      }
+     ],
+     "name": "Rundumschlag"
+    }
+   ],
+   "icon": "foeMelee",
+   "pattern": "sequence",
+   "disabled": false,
+   "approach": 1,
+   "startEffects": []
+  },
+  {
    "id": "tmvb74490",
    "name": "Fernkämpfer",
    "hp": 20,
@@ -9287,59 +9392,6 @@ HB.USER_BACKUP = {
    ],
    "icon": "foeRanged",
    "disabled": false,
-   "approach": 1
-  },
-  {
-   "id": "tmvbexafo",
-   "name": "Heiler",
-   "hp": 15,
-   "ownIntents": true,
-   "intents": [
-    {
-     "steps": [
-      {
-       "type": "healAlly",
-       "amount": 6,
-       "range": "inf"
-      }
-     ]
-    },
-    {
-     "steps": [
-      {
-       "type": "move",
-       "amount": 2,
-       "toward": "away"
-      }
-     ]
-    },
-    {
-     "steps": [
-      {
-       "type": "curse",
-       "card": "random",
-       "pool": [],
-       "amount": 1,
-       "to": "hand",
-       "range": "inf"
-      }
-     ]
-    },
-    {
-     "steps": [
-      {
-       "type": "effect",
-       "effect": "strength",
-       "amount": 1,
-       "duration": 2,
-       "hits": 1,
-       "target": "ally",
-       "range": "inf"
-      }
-     ]
-    }
-   ],
-   "pattern": "sequence",
    "approach": 1,
    "startEffects": []
   }
@@ -9348,11 +9400,16 @@ HB.USER_BACKUP = {
  "randomObstacles": {
   "enabled": true,
   "min": 4,
-  "max": 8,
-  "rockShare": 75
+  "max": 6,
+  "rockShare": 80
  },
  "rules": {
   "poisonDecay": 1,
+  "trapAbsorb": 1,
+  "poisonCloud": 1,
+  "woundPct": 50,
+  "confusePct": 50,
+  "hasteBonus": 1,
   "graceDecay": 1,
   "corpseMoveCost": 2,
   "spawnPauseTurns": 1,
@@ -9360,8 +9417,9 @@ HB.USER_BACKUP = {
   "quickCast": 1,
   "enemyFriendlyFire": 0,
   "friendlyFire": 1,
-  "coopEnemyCount": 50,
-  "coopEnemyHp": 25,
+  "coopEnemyCount": 0,
+  "coopEnemyHp": 75,
+  "coopEnemyDmg": 20,
   "spawnStunTurns": 0,
   "disarmDecay": 1,
   "approachMove": 3
@@ -9377,36 +9435,7 @@ HB.USER_BACKUP = {
    }
   }
  ],
- "obstacles": [
-  {
-   "pos": {
-    "q": 1,
-    "r": 4
-   },
-   "blocksSight": true
-  },
-  {
-   "pos": {
-    "q": 4,
-    "r": 6
-   },
-   "blocksSight": true
-  },
-  {
-   "pos": {
-    "q": -1,
-    "r": 7
-   },
-   "blocksSight": true
-  },
-  {
-   "pos": {
-    "q": 7,
-    "r": 1
-   },
-   "blocksSight": true
-  }
- ],
+ "obstacles": [],
  "tileEffects": [],
  "traps": [],
  "trapTypes": [
@@ -9454,9 +9483,19 @@ HB.USER_BACKUP = {
      "amount": 1
     }
    ]
+  },
+  {
+   "id": "trap",
+   "name": "Falle",
+   "icon": "sword",
+   "effects": [
+    {
+     "type": "damage",
+     "amount": 6
+    }
+   ]
   }
  ],
- "intentMode": "shared",
  "intents": [
   {
    "steps": [
@@ -9562,7 +9601,7 @@ HB.USER_BACKUP = {
  "deck": [
   {
    "name": "Stich",
-   "count": 5,
+   "count": 4,
    "cost": 1,
    "target": "enemy",
    "range": 1,
@@ -9571,7 +9610,7 @@ HB.USER_BACKUP = {
    "effects": [
     {
      "type": "damage",
-     "amount": 8
+     "amount": 6
     }
    ],
    "cid": "cd1wfnsj",
@@ -9580,7 +9619,7 @@ HB.USER_BACKUP = {
   },
   {
    "name": "Ausweichsprung",
-   "count": 1,
+   "count": 0,
    "cost": 0,
    "target": "tile",
    "range": 2,
@@ -9622,16 +9661,20 @@ HB.USER_BACKUP = {
    "count": 1,
    "cost": 1,
    "target": "enemy",
-   "range": 2,
+   "range": 3,
    "isAttack": true,
    "effects": [
+    {
+     "type": "damage",
+     "amount": 4
+    },
     {
      "type": "push",
      "amount": 2
     }
    ],
    "inPool": true,
-   "startHand": 1,
+   "startHand": 0,
    "cid": "c77fqftk",
    "inDraft": true
   },
@@ -9658,7 +9701,7 @@ HB.USER_BACKUP = {
    "count": 0,
    "cost": 2,
    "target": "enemy",
-   "range": 2,
+   "range": 3,
    "isAttack": true,
    "effects": [
     {
@@ -9667,14 +9710,15 @@ HB.USER_BACKUP = {
     },
     {
      "type": "plague",
-     "jumpRange": 2
+     "jumpRange": 3
     }
    ],
    "inPool": true,
    "startHand": 0,
    "cid": "c74ztgk8",
    "exhaust": true,
-   "inDraft": true
+   "inDraft": true,
+   "rarity": "legendary"
   },
   {
    "name": "Giftpfütze",
@@ -9716,7 +9760,7 @@ HB.USER_BACKUP = {
   },
   {
    "name": "Umsortieren",
-   "count": 1,
+   "count": 0,
    "cost": 0,
    "target": "self",
    "range": 0,
@@ -9724,17 +9768,17 @@ HB.USER_BACKUP = {
    "effects": [
     {
      "type": "draw",
-     "amount": 1
+     "amount": 3
     },
     {
      "type": "discard",
      "amount": 1
     }
    ],
-   "inPool": false,
-   "startHand": 1,
+   "inPool": true,
+   "startHand": 0,
    "cid": "c2am5655",
-   "inDraft": false
+   "inDraft": true
   },
   {
    "name": "Giftverdopplung",
@@ -9796,20 +9840,28 @@ HB.USER_BACKUP = {
    "name": "Kadaverexplosion",
    "count": 0,
    "cost": 1,
-   "target": "corpse",
+   "target": "enemy",
    "range": 2,
    "isAttack": false,
    "effects": [
     {
-     "type": "corpseExplosion",
-     "percent": 75,
-     "radius": 1
+     "type": "damage",
+     "amount": 10
+    },
+    {
+     "type": "corpseBomb",
+     "percent": 100,
+     "radius": 2
     }
    ],
    "inPool": true,
    "startHand": 0,
    "cid": "cjf6jt3t",
-   "inDraft": true
+   "inDraft": true,
+   "classes": [
+    "blutmagier"
+   ],
+   "category": "attack"
   },
   {
    "name": "Sog",
@@ -9832,7 +9884,7 @@ HB.USER_BACKUP = {
   },
   {
    "name": "Schild",
-   "count": 0,
+   "count": 4,
    "cost": 1,
    "target": "self",
    "range": 1,
@@ -9840,43 +9892,46 @@ HB.USER_BACKUP = {
    "effects": [
     {
      "type": "block",
-     "amount": 10
+     "amount": 5
     }
    ],
    "cid": "cz1959j8",
    "startHand": 0,
    "inPool": false,
-   "inDraft": false
+   "inDraft": false,
+   "classes": [
+    "blutmagier"
+   ]
   },
   {
    "name": "Sprint",
-   "count": 2,
-   "cost": 0,
+   "count": 1,
+   "cost": 1,
    "target": "enemy",
    "range": 1,
-   "isAttack": true,
    "effects": [
     {
      "type": "move",
-     "amount": 3
+     "amount": 4
     }
    ],
-   "cid": "cc7izvdd"
+   "cid": "cc7izvdd",
+   "category": "skill"
   },
   {
    "name": "Befehl",
-   "count": 1,
+   "count": 0,
    "cost": 0,
    "target": "enemy",
    "range": 2,
-   "isAttack": true,
    "effects": [
     {
      "type": "moveEnemy",
      "amount": 2
     }
    ],
-   "cid": "c2ew1nnj"
+   "cid": "c2ew1nnj",
+   "category": "skill"
   },
   {
    "name": "Zweifel",
@@ -9900,7 +9955,7 @@ HB.USER_BACKUP = {
   },
   {
    "name": "Gift-Meteor",
-   "count": 1,
+   "count": 0,
    "cost": 1,
    "target": "tile",
    "range": 4,
@@ -9924,7 +9979,332 @@ HB.USER_BACKUP = {
    ],
    "cid": "coq1kvtp",
    "exhaust": true,
-   "ethereal": true
+   "ethereal": true,
+   "inDraft": true,
+   "inPool": true
+  },
+  {
+   "name": "Gifttick",
+   "count": 0,
+   "cost": 1,
+   "target": "enemy",
+   "range": 3,
+   "category": "skill",
+   "effects": [
+    {
+     "type": "poisonTick"
+    }
+   ],
+   "cid": "c3e9iz47",
+   "rarity": "rare",
+   "inPool": true,
+   "inDraft": true
+  },
+  {
+   "name": "Knochenwand",
+   "cid": "std_knochenwand",
+   "count": 0,
+   "cost": 1,
+   "target": "tile",
+   "range": 3,
+   "category": "skill",
+   "effects": [
+    {
+     "type": "summon",
+     "object": "wall",
+     "hp": 10,
+     "shape": "arc3",
+     "radius": 1,
+     "thorns": 0,
+     "duration": 0
+    }
+   ],
+   "inPool": true,
+   "inDraft": true,
+   "startHand": 0
+  },
+  {
+   "name": "Lockvogel",
+   "cid": "std_lockvogel",
+   "count": 0,
+   "cost": 1,
+   "target": "tile",
+   "range": 3,
+   "category": "skill",
+   "effects": [
+    {
+     "type": "summon",
+     "object": "decoy",
+     "hp": 12,
+     "shape": "single",
+     "radius": 1,
+     "thorns": 0,
+     "duration": 0
+    }
+   ],
+   "inPool": true,
+   "inDraft": true,
+   "startHand": 0
+  },
+  {
+   "name": "Nebelbombe",
+   "cid": "std_nebelbombe",
+   "count": 0,
+   "cost": 1,
+   "target": "tile",
+   "range": 3,
+   "category": "skill",
+   "effects": [
+    {
+     "type": "fogZone",
+     "shape": "radius",
+     "radius": 1,
+     "duration": 3
+    }
+   ],
+   "inPool": true,
+   "inDraft": true,
+   "startHand": 0
+  },
+  {
+   "name": "Schattenstoß",
+   "cid": "std_schattenstoss",
+   "count": 0,
+   "cost": 1,
+   "target": "enemy",
+   "range": 1,
+   "category": "attack",
+   "effects": [
+    {
+     "type": "damage",
+     "amount": 8
+    },
+    {
+     "type": "cond",
+     "test": "has",
+     "of": "self",
+     "status": "invis",
+     "amount": 1,
+     "to": "target",
+     "effects": [
+      {
+       "type": "damage",
+       "amount": 10
+      }
+     ]
+    },
+    {
+     "type": "cond",
+     "test": "kill",
+     "to": "self",
+     "effects": [
+      {
+       "type": "invis",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "inPool": true,
+   "inDraft": true,
+   "startHand": 0
+  },
+  {
+   "name": "Seuchensaat",
+   "cid": "std_seuchensaat",
+   "count": 0,
+   "cost": 2,
+   "target": "enemy",
+   "range": 3,
+   "category": "skill",
+   "rarity": "legendary",
+   "effects": [
+    {
+     "type": "seed",
+     "radius": 2,
+     "who": "foes"
+    }
+   ],
+   "inPool": true,
+   "inDraft": true,
+   "startHand": 0
+  },
+  {
+   "name": "Spottschrei",
+   "cid": "std_spottschrei",
+   "count": 0,
+   "cost": 1,
+   "target": "self",
+   "range": 0,
+   "category": "skill",
+   "effects": [
+    {
+     "type": "taunt",
+     "amount": 1,
+     "radius": 2
+    },
+    {
+     "type": "lure",
+     "amount": 1,
+     "steps": 1,
+     "radius": 2
+    }
+   ],
+   "inPool": true,
+   "inDraft": true,
+   "startHand": 0
+  },
+  {
+   "name": "Rückstoßwelle",
+   "cid": "std_rueckstosswelle",
+   "count": 0,
+   "cost": 1,
+   "target": "self",
+   "range": 0,
+   "category": "skill",
+   "effects": [
+    {
+     "type": "pushWave",
+     "amount": 2,
+     "radius": 2
+    }
+   ],
+   "inPool": true,
+   "inDraft": true,
+   "startHand": 0
+  },
+  {
+   "name": "Abprallkugel",
+   "cid": "std_abprallkugel",
+   "count": 0,
+   "cost": 1,
+   "target": "any",
+   "range": 3,
+   "category": "attack",
+   "effects": [
+    {
+     "type": "chain",
+     "mode": "bounce",
+     "jumps": 5,
+     "jumpRange": 2,
+     "falloff": "pct",
+     "drop": 0,
+     "who": "foes",
+     "selfBounce": "start",
+     "effects": [
+      {
+       "type": "damage",
+       "amount": 3
+      }
+     ]
+    }
+   ],
+   "inPool": true,
+   "inDraft": true,
+   "startHand": 0
+  },
+  {
+   "name": "Segensfeld",
+   "cid": "std_segensfeld",
+   "count": 0,
+   "cost": 1,
+   "target": "tile",
+   "range": 2,
+   "category": "skill",
+   "effects": [
+    {
+     "type": "fieldZone",
+     "shape": "radius",
+     "radius": 1,
+     "duration": 3,
+     "renew": "turn",
+     "who": "friends",
+     "effects": [
+      {
+       "type": "grace",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "inPool": true,
+   "inDraft": true,
+   "startHand": 0
+  },
+  {
+   "name": "Giftentzug",
+   "cid": "std_giftentzug",
+   "count": 0,
+   "cost": 1,
+   "target": "enemy",
+   "range": 2,
+   "category": "attack",
+   "effects": [
+    {
+     "type": "damage",
+     "amount": 4
+    },
+    {
+     "type": "cond",
+     "test": "consume",
+     "of": "target",
+     "status": "poison",
+     "amount": 5,
+     "to": "target",
+     "effects": [
+      {
+       "type": "damage",
+       "amount": 12
+      }
+     ]
+    }
+   ],
+   "inPool": true,
+   "inDraft": true,
+   "startHand": 0
+  },
+  {
+   "name": "Hinterhalt",
+   "cid": "std_hinterhalt",
+   "count": 0,
+   "cost": 1,
+   "target": "enemy",
+   "range": 1,
+   "category": "attack",
+   "classes": [
+    "dieb"
+   ],
+   "effects": [
+    {
+     "type": "damage",
+     "amount": 5
+    },
+    {
+     "type": "cond",
+     "test": "behind",
+     "to": "target",
+     "effects": [
+      {
+       "type": "damage",
+       "amount": 7
+      }
+     ]
+    },
+    {
+     "type": "cond",
+     "test": "behindKill",
+     "to": "self",
+     "effects": [
+      {
+       "type": "invis",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "inPool": true,
+   "inDraft": true,
+   "startHand": 0
   }
  ],
  "startHandEnabled": true,
@@ -9938,6 +10318,30 @@ HB.USER_BACKUP = {
       "type": "kaempfer",
       "count": 1
      }
+    ],
+    "zones": [
+     {
+      "id": "zmvc6wez1",
+      "name": "A",
+      "tiles": [
+       {
+        "q": 5,
+        "r": 1
+       },
+       {
+        "q": 4,
+        "r": 2
+       },
+       {
+        "q": 4,
+        "r": 3
+       }
+      ]
+     }
+    ],
+    "extra": [
+     "mmvcdug6o54",
+     "mmvcdulj683"
     ]
    },
    {
@@ -9950,6 +10354,11 @@ HB.USER_BACKUP = {
       "type": "mixed",
       "count": 1
      }
+    ],
+    "zones": [],
+    "extra": [
+     "mmvcdug6o54",
+     "mmvcdulj683"
     ]
    },
    {
@@ -9958,6 +10367,11 @@ HB.USER_BACKUP = {
       "type": "mixed",
       "count": 3
      }
+    ],
+    "zones": [],
+    "extra": [
+     "mmvcdug6o54",
+     "mmvcdulj683"
     ]
    },
    {
@@ -9970,6 +10384,11 @@ HB.USER_BACKUP = {
       "type": "tmvbexafo",
       "count": 2
      }
+    ],
+    "zones": [],
+    "extra": [
+     "mmvcdug6o54",
+     "mmvcdulj683"
     ]
    }
   ]
@@ -9992,13 +10411,14 @@ HB.USER_BACKUP = {
  },
  "moveCostsEnergy": true,
  "speed": 1,
- "dwellMs": 750,
  "tiltEnabled": true,
  "tilt": 0.85,
  "collision": {
   "enabled": true,
   "damage": 8
  },
+ "intentMode": "shared",
+ "dwellMs": 750,
  "trapDefaults": {
   "poisonTrap": {
    "amount": 4
@@ -10008,7 +10428,75 @@ HB.USER_BACKUP = {
    "duration": 2
   }
  },
- "placeType": "boss"
+ "placeType": "kaempfer",
+ "maps": [
+  {
+   "id": "mmvcdug6o54",
+   "name": "Keller",
+   "board": {
+    "cols": 6,
+    "rows": 6,
+    "shape": "hex",
+    "size": 3,
+    "holes": []
+   },
+   "start": {
+    "q": 0,
+    "r": 0
+   },
+   "obstacles": [],
+   "tileEffects": [],
+   "traps": [],
+   "objects": [],
+   "waiting": [],
+   "starts": [
+    {
+     "q": 0,
+     "r": 0
+    },
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "id": "mmvcdulj683",
+   "name": "Keller 2",
+   "board": {
+    "cols": 6,
+    "rows": 6
+   },
+   "start": {
+    "q": 0,
+    "r": 0
+   },
+   "obstacles": [],
+   "tileEffects": [],
+   "traps": [],
+   "objects": [],
+   "waiting": []
+  }
+ ],
+ "cells": [
+  [
+   0,
+   0
+  ]
+ ],
+ "objects": [],
+ "waiting": [],
+ "mapName": "MainMap",
+ "relics": {
+  "scope": {},
+  "ring": {},
+  "heart": {},
+  "crystal": {},
+  "lens": {},
+  "satchel": {},
+  "amulet": {},
+  "fang": {}
+ },
+ "deletedTypes": []
 };
 
 </script>
