@@ -1115,6 +1115,13 @@ button { color: #17130a; }
 #mainmenu .mmbtns button { font-size: 17px; padding: 10px 16px; font-family: var(--display); }
 #mainmenu .mmcheck { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
 
+/* Online-Lobby */
+.netrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lobbylist { display: grid; gap: 4px; }
+.lobbyseat { display: flex; gap: 12px; align-items: baseline; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.lobbyseat.me { border-color: var(--accent); }
+.lobbyseat .muted { color: var(--muted); margin-left: auto; }
+
 </style>
 </head>
 <body data-mode="setup">
@@ -6321,8 +6328,9 @@ window.HB = window.HB || {};
       transport.send({ t: 'hello', you: playerId, cfg: this.game.cfg });
       return this.sendState(link);
     }
+    stop() { this.stopped = true; } // abgelöst (neuer Kampf im selben Raum)
     async receive(link, msg) {
-      if (!msg || msg.t !== 'cmd' || !msg.cmd) return;
+      if (this.stopped || !msg || msg.t !== 'cmd' || !msg.cmd) return;
       const cmd = { ...msg.cmd, player: link.playerId }; // nie für einen anderen Spieler handeln
       const ok = await this.applyRaw(cmd);
       await this.broadcast({ id: msg.id, from: link.playerId, ok: !!ok });
@@ -6330,6 +6338,7 @@ window.HB = window.HB || {};
     snapshot() { const s = this.game.serialize(); delete s.cfg; return s; } // Einstellung nur einmal (hello), sonst zu groß
     sendState(link) { return link.transport.send({ t: 'state', seq: ++this.seq, snap: this.snapshot() }); }
     async broadcast(extra) {
+      if (this.stopped) return;
       const snap = this.snapshot(), seq = ++this.seq, events = (this.game.events || []).filter((e) => e.n > this.lastEv);
       this.lastEv = this.game.eventSeq || this.lastEv;
       await Promise.all(this.links.map((l) => l.transport.send({ t: 'state', seq, snap, events, ...extra })));
@@ -6343,6 +6352,7 @@ window.HB = window.HB || {};
       transport.onMessage((msg) => this.receive(msg));
     }
     receive(msg) {
+      if (msg.t === 'lobby') { this.me = msg.you || this.me; if (this.hooks.lobby) this.hooks.lobby(msg); return; }
       if (msg.t === 'hello') { this.cfg = msg.cfg; this.me = msg.you; return; }
       if (msg.t === 'state' && msg.seq > this.seq && this.cfg) {
         this.seq = msg.seq;
@@ -6363,30 +6373,53 @@ window.HB = window.HB || {};
   const available = () => { try { if (!window.Peer || !window.RTCPeerConnection) return false; new RTCPeerConnection().close(); return true; } catch (e) { return false; } };
   const PREFIX = 'unspokenwatch-';
   const newCode = () => Array.from({ length: 5 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('');
-  // Gastgeber öffnet einen Raum. seatFor(n) gibt die Spieler-Id für den n-ten Mitspieler (fügt ihn bei Bedarf dem Spiel hinzu)
-  function openRoom(game, { onStatus, seatFor }) {
-    const code = newCode(), host = new Host(game), peer = new window.Peer(PREFIX + code);
-    let joined = 0;
-    peer.on('open', () => onStatus && onStatus({ code, joined }));
-    peer.on('error', (e) => onStatus && onStatus({ code, joined, error: String(e && e.type || e) }));
+  // ---------- Raum mit Lobby ----------
+  // Gastgeber öffnet einen Raum (Code). Vor dem Kampf: Lobby – Mitspieler treten bei, jeder wählt seine Klasse, alle sehen die Liste.
+  // startGame(game) startet für alle; wer später kommt, steigt in den laufenden Kampf ein (seatFor fügt ihn dem Spiel hinzu).
+  const SEATS = ['player', 'p2', 'p3', 'p4'];
+  function openRoom({ onUpdate, seatFor, hostClass = '' }) {
+    const code = newCode(), peer = new window.Peer(PREFIX + code);
+    const room = { code, seats: [{ id: 'player', cls: hostClass, host: true }], links: [], host: null, error: '', ready: false };
+    const update = () => {
+      const msg = { t: 'lobby', code, seats: room.seats, started: !!room.host };
+      room.links.forEach((l) => { if (!l.closed) l.transport.send({ ...msg, you: l.seat }); });
+      onUpdate && onUpdate(room);
+    };
+    room.update = update;
+    room.setClass = (id, cls) => { const s = room.seats.find((x) => x.id === id); if (s) { s.cls = cls; update(); } };
+    peer.on('open', () => { room.ready = true; update(); });
+    peer.on('error', (e) => { room.error = String((e && e.type) || e); update(); });
     peer.on('connection', (conn) => conn.on('open', async () => {
-      const seat = await seatFor(++joined);
-      if (!seat) { conn.close(); return; }
-      await host.attach(peerTransport(conn), seat);
-      onStatus && onStatus({ code, joined });
+      const free = SEATS.find((id) => !room.seats.some((s) => s.id === id));
+      if (!free) { conn.close(); return; }
+      const link = { transport: peerTransport(conn), seat: free, closed: false };
+      room.seats.push({ id: free, cls: '' }); room.links.push(link);
+      link.transport.onMessage((msg) => { if (msg && msg.t === 'lobbyPick' && !room.host) room.setClass(link.seat, String(msg.cls || '')); });
+      conn.on('close', () => { link.closed = true; if (!room.host) { room.seats = room.seats.filter((s) => s.id !== link.seat); room.links = room.links.filter((l) => l !== link); update(); } });
+      if (room.host) { const id = await seatFor(link.seat); if (id) await room.host.attach(link.transport, id); }
+      update();
     }));
-    return { code, host, close: () => peer.destroy() };
+    // Kampf starten: Spiel mit so vielen Spielern wie Plätzen (Klassen aus der Lobby), dann alle verbinden
+    room.startGame = async (game) => {
+      const seq = room.host ? room.host.seq : 0;
+      if (room.host) room.host.stop();
+      room.host = new Host(game); room.host.seq = seq; // Zähler läuft weiter, sonst verwerfen Mitspieler die neuen Stände
+      for (const l of room.links) if (!l.closed) await room.host.attach(l.transport, l.seat);
+      update();
+    };
+    room.close = () => peer.destroy();
+    return room;
   }
   function joinRoom(code, hooks, onStatus) {
     const peer = new window.Peer();
-    let client = null;
+    const j = { client: null, close: () => peer.destroy(), pick: (cls) => j.client && j.client.transport.send({ t: 'lobbyPick', cls }) };
     peer.on('open', () => {
       const conn = peer.connect(PREFIX + String(code).trim().toUpperCase(), { reliable: true });
-      conn.on('open', () => { client = new Client(peerTransport(conn), hooks); onStatus && onStatus({ connected: true }); });
+      conn.on('open', () => { j.client = new Client(peerTransport(conn), hooks); onStatus && onStatus({ connected: true }); });
       conn.on('close', () => onStatus && onStatus({ closed: true }));
     });
-    peer.on('error', (e) => onStatus && onStatus({ error: String(e && e.type || e) }));
-    return { close: () => peer.destroy(), get client() { return client; } };
+    peer.on('error', (e) => onStatus && onStatus({ error: String((e && e.type) || e) }));
+    return j;
   }
 
   HB.net = { loopback, Host, Client, available, openRoom, joinRoom };
@@ -9724,7 +9757,10 @@ window.HB = window.HB || {};
       clearTimeout(app._toast); app._toast = setTimeout(() => { t.hidden = true; }, 3500);
     },
     // classes: gewählte Klasse je Spieler ('' = ohne Klasse). Ohne Angabe und mit Klassen im Editor erscheint erst die Klassenwahl.
-    startCombat(classes) {
+    startCombat(classes, players) {
+      // Raum offen und Kampf läuft schon: Neustart mit denselben Plätzen und Klassen wie in der Lobby
+      const room = app.net && app.net.room;
+      if (room && room.host && !classes) { classes = room.seats.map((x) => x.cls || ''); players = room.seats.length; }
       // Welle 1 ist der erste Eintrag der Wellenliste: mindestens ein Gegner eines aktiven Typs nötig
       const w1 = ((app.config.waves || {}).list || [])[0], ts = app.config.enemyTypes;
       const ok = (gr) => (gr.count || 0) > 0 && (gr.type === 'mixed' ? ts.some((t) => !t.boss && !t.disabled) : !!ts.find((t) => t.id === gr.type && !t.disabled));
@@ -9735,7 +9771,8 @@ window.HB = window.HB || {};
       $('#log').innerHTML = '';
       app.viewIdx = 0;
       HB.ensureCardIds(app.config.deck);
-      app.game = new HB.Game(app.config, hooks, classes ? { classes } : {});
+      app.game = new HB.Game(players ? { ...app.config, playerCount: players } : app.config, hooks, classes ? { classes } : {});
+      if (app.net && app.net.room && app.net.room.host) app.net.room.startGame(app.game); // Raum offen: neuer Kampf für alle
       saveCombatSoon();
       renderAll(); HB.editor.render();
     },
@@ -10164,41 +10201,101 @@ window.HB = window.HB || {};
     ov.querySelector('#mmshow').onchange = (ev) => { try { localStorage.setItem('hexdb.menu', ev.target.checked ? 'on' : 'off'); } catch (e) { /* egal */ } };
     document.body.appendChild(ov);
   }
-  // ---------- Online-Koop (js/net.js): Raum öffnen (Gastgeber rechnet) oder mit Code beitreten ----------
-  function showOnline() {
+  // ---------- Online-Koop mit Lobby (js/net.js) ----------
+  // Raum eröffnen → Code + Einladungslink (Kopieren-Knöpfe); Mitspieler treten mit Code bei (Einfügen-Knopf) oder über den Link
+  // (#join=CODE); in der Lobby wählt jeder seine Klasse; der Gastgeber startet den Kampf für alle.
+  const inviteLink = (code) => location.href.split('#')[0] + '#join=' + code;
+  async function copyText(txt, btn) {
+    let ok = false;
+    try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) { ok = false; }
+    if (btn) { const t = btn.textContent; btn.textContent = ok ? 'Kopiert ✓' : 'Bitte markieren + Strg+C'; setTimeout(() => { btn.textContent = t; }, 1600); }
+  }
+  function showOnline(autoCode) {
+    $('#classpick')?.remove();
     const ov = document.createElement('div'); ov.id = 'classpick';
+    const cfg = app.config, classesOn = HB.moduleOn(cfg, 'classes') && (cfg.classes || []).length;
+    const clsName = (id) => (id ? ((cfg.classes || []).find((k) => k.id === id) || {}).name || id : 'Ohne Klasse');
+    const clsButtons = (cur, attr) => !classesOn ? '' : '<div class="cpopts">' + [['', 'Ohne Klasse'], ...cfg.classes.map((k) => [k.id, k.name])]
+      .map(([id, n]) => `<button type="button" class="cpopt${cur === id ? ' on' : ''}" ${attr}="${HB.esc(id)}">${HB.esc(n)}</button>`).join('') + '</div>';
+    const seatList = (seats, mine) => '<div class="lobbylist">' + seats.map((s, i) => `<div class="lobbyseat${s.id === mine ? ' me' : ''}"><b>Spieler ${i + 1}</b>`
+      + `<span>${s.host ? 'Gastgeber' : 'Mitspieler'}${s.id === mine ? ' (du)' : ''}</span>${classesOn ? `<span class="muted">${HB.esc(clsName(s.cls))}</span>` : ''}</div>`).join('') + '</div>';
     const close = () => ov.remove();
     const draw = () => {
       const net = app.net || {}, ok = HB.net.available();
-      ov.innerHTML = `<div class="modalbox cpbox"><div class="mtitle">${I.icon('player')} Online-Koop</div>`
-        + (!ok ? '<p class="cphint">Online geht hier nicht: Das Artefakt sperrt Verbindungen zu anderen Rechnern. Es klappt, sobald das Spiel auf itch.io oder einer eigenen Seite liegt (oder als Datei im Browser geöffnet ist).</p>'
-          : (net.room ? `<p>Raum offen. Code für deine Freunde: <b class="netcode">${net.room.code}</b></p><p class="cphint">${net.status || 'Warte auf Mitspieler …'}</p><div class="cpbtns"><button type="button" class="cpclose-room">Raum schließen</button></div>`
-            : net.join ? `<p class="cphint">${net.status || 'Verbinde …'}</p><div class="cpbtns"><button type="button" class="cpleave">Verlassen</button></div>`
-              : `${app.mode === 'combat' && app.game ? '<div class="cprow"><span class="cpwho">Gastgeber</span><div class="cpbtns" style="justify-content:flex-start"><button type="button" class="primary cphost">Raum öffnen</button></div><span class="cphint">Dein laufender Kampf wird geteilt; jeder Mitspieler bekommt einen eigenen Platz.</span></div>' : '<p class="cphint">Zum Öffnen eines Raums erst einen Kampf starten.</p>'}`
-                + `<div class="cprow"><span class="cpwho">Beitreten</span><div class="cpbtns" style="justify-content:flex-start"><input id="netcode" maxlength="5" placeholder="Code" autocomplete="off"><button type="button" class="cpjoin">Beitreten</button></div></div>`))
-        + '<div class="cpbtns"><button type="button" class="cpcancel">Schließen</button></div></div>';
+      let h = `<div class="modalbox cpbox"><div class="mtitle">${I.icon('player')} Online-Koop</div>`;
+      if (!ok) h += '<p class="cphint">Online geht hier nicht: Das Claude-Artefakt sperrt Verbindungen zu anderen Rechnern. Spiel stattdessen über die Webseite: <b>yokutube.github.io/unspokenwatch-play</b></p>';
+      else if (net.room) {
+        const r = net.room, mine = r.seats.find((s) => s.host) || {};
+        h += r.error ? `<p class="cphint">Keine Verbindung (${HB.esc(r.error)}).</p>` : !r.ready ? '<p class="cphint">Raum wird geöffnet …</p>'
+          : `<div class="netrow"><span>Code</span><b class="netcode">${r.code}</b><button type="button" class="sec" data-a="copycode">Code kopieren</button><button type="button" class="sec" data-a="copylink">Einladungslink kopieren</button></div>`;
+        h += seatList(r.seats, 'player');
+        if (!r.host) h += (classesOn ? '<div class="cprow"><span class="cpwho">Deine Klasse</span>' + clsButtons(mine.cls || '', 'data-hcls') + '</div>' : '')
+          + `<div class="cpbtns"><button type="button" class="sec" data-a="closeroom">Raum schließen</button><button type="button" class="primary" data-a="start">Kampf starten (${r.seats.length} ${r.seats.length > 1 ? 'Spieler' : 'Spieler'})</button></div>`;
+        else h += '<p class="cphint">Der Kampf läuft. Wer jetzt noch beitritt, steigt mitten im Kampf ein.</p><div class="cpbtns"><button type="button" class="sec" data-a="closeroom">Raum schließen</button></div>';
+      } else if (net.join) {
+        const lob = net.lobby;
+        h += `<p class="cphint">${HB.esc(net.status || 'Verbinde …')}</p>`;
+        if (lob && !lob.started) {
+          const me = lob.seats.find((s) => s.id === lob.you) || {};
+          h += seatList(lob.seats, lob.you) + (classesOn ? '<div class="cprow"><span class="cpwho">Deine Klasse</span>' + clsButtons(me.cls || '', 'data-jcls') + '</div>' : '')
+            + '<p class="cphint">Warte, bis der Gastgeber den Kampf startet …</p>';
+        }
+        h += '<div class="cpbtns"><button type="button" class="sec" data-a="leave">Verlassen</button></div>';
+      } else {
+        h += '<div class="cprow"><span class="cpwho">Raum eröffnen</span><span class="cphint">Du bist Gastgeber: Freunde treten mit Code oder Link bei, dann startest du den Kampf für alle.</span>'
+          + '<div class="cpbtns" style="justify-content:flex-start"><button type="button" class="primary" data-a="host">Raum eröffnen</button></div></div>'
+          + `<div class="cprow"><span class="cpwho">Beitreten</span><div class="netrow"><input id="netcode" maxlength="5" placeholder="Code" autocomplete="off" value="${HB.esc(autoCode || '')}">`
+          + '<button type="button" class="sec" data-a="paste">Einfügen</button><button type="button" class="primary" data-a="join">Beitreten</button></div></div>';
+      }
+      h += '<div class="cpbtns"><button type="button" class="cpcancel">Schließen</button></div></div>';
+      ov.innerHTML = h;
+      const on = (a, fn) => ov.querySelector(`[data-a="${a}"]`)?.addEventListener('click', fn);
       ov.querySelector('.cpcancel').onclick = close;
-      ov.querySelector('.cphost')?.addEventListener('click', () => {
-        const room = HB.net.openRoom(app.game, {
-          seatFor: async (n) => { if (n > 3) return null; while (app.game.players.length < n + 1) await app.game.apply({ type: 'join', player: me().id }); renderAll(); return app.game.players[n].id; },
-          onStatus: (st) => { app.net.status = st.error ? 'Keine Verbindung (' + st.error + '). Im Claude-Artefakt ist das gesperrt – Online geht auf itch.io oder einer eigenen Seite.' : st.joined ? `${st.joined} Mitspieler verbunden` : 'Warte auf Mitspieler …'; if (ov.isConnected) draw(); },
+      on('copycode', (ev) => copyText(app.net.room.code, ev.currentTarget));
+      on('copylink', (ev) => copyText(inviteLink(app.net.room.code), ev.currentTarget));
+      on('host', () => {
+        const room = HB.net.openRoom({
+          hostClass: (cfg.playerClasses || [])[0] || '',
+          seatFor: async (id) => { while (app.game.players.length < 4 && !app.game.players.some((p) => p.id === id)) await app.game.apply({ type: 'join', player: me().id }); renderAll(); return app.game.players.some((p) => p.id === id) ? id : null; },
+          onUpdate: () => { if (ov.isConnected) draw(); },
         });
         app.net = { room }; draw();
       });
-      ov.querySelector('.cpclose-room')?.addEventListener('click', () => { app.net.room.close(); app.net = null; draw(); });
-      ov.querySelector('.cpjoin')?.addEventListener('click', () => {
-        const code = (ov.querySelector('#netcode').value || '').trim(); if (code.length < 5) return;
-        const hooks2 = { ...hooks, state: (cl) => {
-          app.game = cl.game; app.netSeat = cl.me; app.mode = 'combat'; app.tool = 'inspect';
-          if (app.net) app.net.status = 'Verbunden – du spielst ' + (cl.game.unitName ? cl.game.unitName(cl.game.players.find((p) => p.id === cl.me) || cl.game.player) : cl.me) + '.';
-          renderAll(); if (ov.isConnected) draw();
-        } };
-        const join = HB.net.joinRoom(code, hooks2, (st) => { app.net.status = st.error ? 'Keine Verbindung (' + st.error + '). Code richtig? Im Claude-Artefakt ist Online gesperrt.' : st.closed ? 'Verbindung beendet.' : 'Verbunden, warte auf Spielstand …'; if (st.closed || st.error) app.netSeat = null; if (ov.isConnected) draw(); });
+      ov.querySelectorAll('[data-hcls]').forEach((b) => { b.onclick = () => app.net.room.setClass('player', b.dataset.hcls); });
+      on('start', () => {
+        const r = app.net.room;
+        close(); if (app.mode === 'combat') app.toSetup();
+        app.startCombat(r.seats.map((s) => s.cls || ''), r.seats.length);
+        if (app.game) r.startGame(app.game);
+      });
+      on('closeroom', () => { app.net.room.close(); app.net = null; draw(); });
+      on('paste', async () => {
+        const inp = ov.querySelector('#netcode');
+        try { const t = (await navigator.clipboard.readText()) || ''; const m = t.match(/join=([A-Z0-9]{5})/i) || t.match(/\b([A-Z0-9]{5})\b/i); if (m) inp.value = m[1].toUpperCase(); } catch (e) { inp.focus(); app.toast('Einfügen nicht erlaubt – Strg+V ins Feld.'); }
+      });
+      on('join', () => {
+        const code = (ov.querySelector('#netcode').value || '').trim().toUpperCase(); if (code.length < 5) return;
+        const hooks2 = { ...hooks,
+          lobby: (msg) => { if (app.net) { app.net.lobby = msg; app.net.status = msg.started ? 'Der Kampf läuft, du steigst ein …' : `Verbunden mit Raum ${msg.code}.`; } if (ov.isConnected) draw(); },
+          state: (cl) => {
+            const first = app.netSeat == null;
+            app.game = cl.game; app.netSeat = cl.me; app.mode = 'combat'; app.tool = 'inspect';
+            if (app.net) app.net.status = 'Im Kampf – du bist ' + (cl.game.unitName(cl.game.players.find((p) => p.id === cl.me) || cl.game.player)) + '.';
+            renderAll(); if (first && ov.isConnected) close();
+          } };
+        const join = HB.net.joinRoom(code, hooks2, (st) => {
+          if (!app.net) return;
+          app.net.status = st.error ? `Keine Verbindung (${st.error}). Stimmt der Code?` : st.closed ? 'Verbindung beendet.' : 'Verbunden …';
+          if (st.closed || st.error) app.netSeat = null;
+          if (ov.isConnected) draw();
+        });
         app.net = { join }; draw();
       });
-      ov.querySelector('.cpleave')?.addEventListener('click', () => { app.net.join.close(); app.net = null; app.netSeat = null; app.toSetup(); draw(); });
+      ov.querySelectorAll('[data-jcls]').forEach((b) => { b.onclick = () => app.net.join.pick(b.dataset.jcls); });
+      on('leave', () => { app.net.join.close(); app.net = null; app.netSeat = null; if (app.mode === 'combat') app.toSetup(); draw(); });
     };
     draw(); document.body.appendChild(ov);
+    if (autoCode && !app.net) ov.querySelector('[data-a="join"]')?.click();
   }
   // Klassenwahl vor dem Kampf: je Spieler eine Klasse oder „Ohne Klasse“ (dann alle Karten). Vorauswahl = Editor → Klassen.
   function showClassPick(done) {
@@ -10963,7 +11060,8 @@ window.HB = window.HB || {};
     renderAll();
     // Hauptmenü beim Öffnen (nicht, wenn ein Kampf weiterläuft; abschaltbar im Menü)
     let menuOn = true; try { menuOn = localStorage.getItem('hexdb.menu') !== 'off'; } catch (e) { /* egal */ }
-    if (!resumed && menuOn) showMenu();
+    const jm = /#join=([A-Z0-9]{5})/i.exec(location.hash);
+    if (jm) { history.replaceState(null, '', location.href.split('#')[0]); showOnline(jm[1].toUpperCase()); } else if (!resumed && menuOn) showMenu();
     $('#btn-menu').onclick = () => showMenu();
     // Online-Speicher (nur im Artefakt vorhanden; lokal ohne Server-Anbindung bleibt alles wie bisher)
     if (window.claude && typeof window.claude.use === 'function') app.cloudInit(window.claude);
