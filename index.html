@@ -218,7 +218,7 @@ body[data-mode="setup"] .tile:hover, body[data-live="1"] .tile:hover { fill: #36
 
 /* ---------- Handy ---------- */
 .card, #hand { -webkit-user-select: none; -webkit-touch-callout: none; }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 541px) {
   header { padding: 8px 10px; flex-wrap: wrap; gap: 6px; }
   header h1 { font-size: 16px; }
   main { padding: 8px; gap: 8px; }
@@ -250,7 +250,7 @@ body[data-mode="setup"] .tile:hover, body[data-live="1"] .tile:hover { fill: #36
 
 /* Handy: Leiste + Hand unten angeheftet, Hand als wischbare Reihe (hochziehen = spielen) */
 .card .cname { overflow-wrap: anywhere; hyphens: auto; }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 541px) {
   #dock { position: sticky; bottom: 0; z-index: 20; background: var(--bg); padding: 6px 0 calc(6px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
   #hand { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; padding: 10px 2px 2px; scrollbar-width: thin; }
@@ -259,7 +259,7 @@ body[data-mode="setup"] .tile:hover, body[data-live="1"] .tile:hover { fill: #36
   .pickhint, .hint-enemy, .setup-hint, .banner { flex: none; }
   .banner { font-size: 18px; flex-wrap: wrap; }
 }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 541px) {
   /* Reihenfolge am Handy: Intention, Spielfeld, Hand, dann Liste und Protokoll */
   .boardwrap { display: contents; }
   .topbar { order: 0; } #board { order: 1; } #dock { order: 2; } .side { order: 3; }
@@ -320,7 +320,7 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 /* Ohne Kopfzeile: Knöpfe in der Intentionsleiste; am PC passt alles in die Fensterhöhe */
 .topbar { justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .topbar .hbtns { margin-left: auto; }
-@media (min-width: 761px) {
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) {
   .play { height: calc(100vh - 24px); }
   .boardwrap { flex: 1 1 auto; min-height: 0; }
   #board { height: 100%; max-height: none; }
@@ -333,7 +333,7 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 
 /* PC: Hand mit fester Höhe in einer Reihe – Karten werden erst schmaler, dann scrollt die Reihe.
    So bleibt das Spielfeld immer gleich groß. */
-@media (min-width: 761px) {
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) {
   #hand { flex-wrap: nowrap; height: 252px; min-height: 0; overflow-x: auto; overflow-y: hidden; padding: 12px 4px 4px; align-items: stretch; scrollbar-width: thin; }
   #hand .card { flex: 0 1 176px; min-width: 128px; height: 228px; min-height: 0; }
   #hand .pickhint, #hand .hint-enemy, #hand .setup-hint, #hand .banner { flex: none; align-self: center; }
@@ -397,7 +397,7 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 .legend .lg-sep { margin-top: 4px; color: var(--text); }
 
 /* ---------- Größeres Spielfeld (PC) ---------- */
-@media (min-width: 761px) {
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) {
   body[data-editor="hidden"] main { grid-template-columns: minmax(0, 1fr); }
   body[data-editor="hidden"] #editor { display: none; }
   /* Hand liegt über dem unteren Spielfeldrand; das Spielfeld hat dort extra Platz (render.js bottomPad) */
@@ -417,8 +417,8 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 }
 
 @media (min-width: 1101px) { html, body { overflow: hidden; } }
-@media (min-width: 761px) { body[data-editor="hidden"] { overflow: hidden; } }
-@media (min-width: 761px) {
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) { body[data-editor="hidden"] { overflow: hidden; } }
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) {
   /* Im Fächer bleibt die linke Kante sichtbar: Name und Symbole links ausrichten */
   #hand .card .cname { text-align: left; padding-left: 24px; }
   #hand .card .cfx { justify-content: flex-start; }
@@ -428,8 +428,9 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 .hud-left { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .hud-right { display: flex; align-items: center; }
 
+/* Arena-Ansicht = PC und Handy quer (gleiche Bedingung in HB.ARENA_MQ, util.js) */
 /* ---------- PC: Arena-Ansicht – alles schwebt über dem Spielfeld ---------- */
-@media (min-width: 761px) {
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) {
   .play { position: relative; display: block; height: calc(100vh - 24px); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   .topbar { position: absolute; top: 8px; left: 8px; right: 8px; z-index: 6; background: rgba(30, 33, 41, .82); backdrop-filter: blur(2px); }
   .boardwrap { display: block; position: absolute; inset: 0; }
@@ -449,7 +450,7 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 .tiltfield input[type=range] { flex: 1; accent-color: var(--accent); }
 .tiltfield b { width: 44px; text-align: right; font-size: 12px; }
 
-@media (min-width: 761px) {
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) {
   /* Spielfeld nutzt die volle Höhe; Leiste oben und Karten unten liegen darüber */
   #board { top: 40px; height: calc(100% - 40px - 96px); }
   #dock { background: linear-gradient(to bottom, rgba(21, 23, 28, 0), rgba(21, 23, 28, .55) 90px, rgba(21, 23, 28, .85)); }
@@ -497,14 +498,14 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 .kw-ground { border-left-color: var(--move); } .kw-heal { border-left-color: var(--ok); }
 
 /* Hover: Karte kommt ganz heraus; Erklärungen kurz und gut lesbar */
-@media (min-width: 761px) { #hand .card:hover { transform: translateY(-92px) scale(1.04); transform-origin: 50% 100%; } }
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) { #hand .card:hover { transform: translateY(-92px) scale(1.04); transform-origin: 50% 100%; } }
 #kwtip { width: 230px; gap: 5px; }
 .kw { padding: 6px 9px; }
 .kw-t { font-size: 14px; font-weight: 800; }
 .kw-x { font-size: 13.5px; font-weight: 600; color: var(--text); line-height: 1.3; }
 
 /* Spielerwerte groß, links am Spielfeld; „Zug beenden“ groß, rechts am Spielfeld */
-@media (min-width: 761px) {
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) {
   #hud .hud-left { position: absolute; bottom: 30px; left: max(0px, calc(var(--bl, 260px) - 268px)); max-width: none; width: 250px;
     grid-template-columns: 1fr 1fr; gap: 8px 14px; padding: 12px 16px; font-size: 22px; }
   #hud .hud-left .ic { width: 1.05em; height: 1.05em; }
@@ -733,19 +734,19 @@ body.dragging .aim text { display: none; }
 
 /* Editor: Tab-Leiste bleibt beim Scrollen oben sichtbar */
 #editor .tabs { position: sticky; top: -8px; z-index: 8; margin: -8px -8px 8px; padding: 8px 8px 6px; background: var(--panel); }
-@media (max-width: 760px) {
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 541px) {
   #editor { overflow: visible; }
   #editor .tabs { top: 0; }
 }
 
 /* Spielfeld unter der Leiste oben (Höhe wird in main.js gemessen), damit Intentionen der obersten Reihe sichtbar sind */
-@media (min-width: 761px) {
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) {
   #board { top: var(--tb, 56px); height: calc(100% - var(--tb, 56px) - 96px); }
 }
 
 /* Unterste Hexreihe: Die Hand-Leiste fängt nur noch mit den Karten selbst die Maus ab (nicht mit ihrem ganzen leeren Kasten),
    und das Spielfeld endet etwas höher, damit die letzte Reihe nicht unter den Karten liegt. */
-@media (min-width: 761px) {
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) {
   #dock #hand { pointer-events: none; }
   #dock #hand .card, #dock #hand .banner, #dock #hand button, #dock #hand .pickhint { pointer-events: auto; }
   #board { height: calc(100% - var(--tb, 56px) - 124px); }
@@ -753,7 +754,7 @@ body.dragging .aim text { display: none; }
 
 /* Rechts schwebt die Seitenleiste (Reihenfolge, Legende, Protokoll): das Spielfeld bekommt dafür eigenen Platz,
    damit sie keine Hexfelder und Gegner verdeckt. */
-@media (min-width: 761px) {
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) {
   /* links: Zugnummern-Schalter, rechts: Seitenleiste – beide liegen neben dem Spielfeld statt darüber */
   #board { left: 100px; right: auto; width: calc(100% - 100px - 212px); }
 }
@@ -1074,7 +1075,7 @@ body[data-mode="setup"] #board .tile:hover { stroke: #ffffff55; }
 svg.boardinfo { position: absolute; pointer-events: none; overflow: visible; }
 svg.boardinfo .ring { display: none; }
 #board.pixi .tfx polygon { fill: transparent; stroke: transparent; } /* Bodenfelder zeichnet die PixiJS-Welt; Symbol + Zahl bleiben */
-@media (min-width: 761px) { #board.pixi { position: absolute; } .pixiworld { border-radius: 0; } } /* Arena-Ansicht: Leinwand füllt die ganze Spielfläche */
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) { #board.pixi { position: absolute; } .pixiworld { border-radius: 0; } } /* Arena-Ansicht: Leinwand füllt die ganze Spielfläche */
 
 /* Klassenwahl vor dem Kampf (main.js showClassPick) */
 #classpick { position: fixed; inset: 0; z-index: 85; background: rgba(8, 9, 12, .7); display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -1121,6 +1122,35 @@ button { color: #17130a; }
 .lobbyseat { display: flex; gap: 12px; align-items: baseline; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
 .lobbyseat.me { border-color: var(--accent); }
 .lobbyseat .muted { color: var(--muted); margin-left: auto; }
+
+/* ---------- Handy quer (niedrige Höhe): Spielfeld groß, Leiste schmal, Karten und Werte verkleinert ---------- */
+@media (min-width: 561px) and (max-height: 540px) and (orientation: landscape) {
+  main { padding: 3px; gap: 3px; }
+  .play { height: calc(100dvh - 6px); border-radius: 6px; }
+  .topbar { top: 3px; left: 3px; right: 3px; padding: 2px 6px; min-height: 0; font-size: 12px; gap: 6px; }
+  .topbar #intent .lbl { display: none; }
+  .hbtns { gap: 4px; }
+  .hbtns button { padding: 3px 8px; font-size: 12px; line-height: 1.2; }
+  .vol input[type=range] { display: none; }
+  #btn-editor { display: none; }
+  #board { top: 32px; height: calc(100% - 32px - 46px); }
+  #orderctl { display: none !important; }
+  #hand { zoom: .52; margin: 0 330px; }
+  #hud { left: 4px; right: 4px; bottom: 4px; }
+  #hud .hud-left { zoom: .62; left: 4px !important; bottom: 4px; }
+  #hud .hud-right { zoom: .68; left: auto !important; right: 6px; bottom: 6px; }
+  #dock { background: linear-gradient(to bottom, rgba(21, 23, 28, 0), rgba(21, 23, 28, .6) 40px, rgba(21, 23, 28, .85)); }
+  #classpick .cpbox, #modal .modalbox { max-height: calc(100dvh - 16px); overflow: auto; }
+  #mainmenu .mmtitle { font-size: 34px; }
+  #mainmenu .mmbtns button { padding: 6px 12px; font-size: 15px; }
+}
+/* ---------- Handy hoch: Hinweis zum Drehen (das Spiel ist für Querformat gebaut) ---------- */
+@media (max-width: 560px) and (orientation: portrait) {
+  html, body { overflow: hidden; }
+  body > * { display: none !important; }
+  body::after { content: "Bitte das Handy quer halten"; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 200; display: grid; place-items: center;
+    padding: 24px; box-sizing: border-box; text-align: center; background: var(--bg); color: var(--accent); font-family: var(--display); font-size: 22px; }
+}
 
 </style>
 </head>
@@ -1431,6 +1461,8 @@ window.HB = window.HB || {};
   // starts[i] = Feld oder null (null = neben Spieler 1, ohne jeden Start zufällig). start = erster gesetzter Start (oder null).
   HB.startsOf = (holder) => (Array.isArray(holder.starts) ? [0, 1, 2, 3].map((i) => holder.starts[i] || null) : [holder.start || null, null, null, null]);
   HB.setStarts = (holder, list) => { holder.starts = [0, 1, 2, 3].map((i) => (list[i] ? { q: list[i].q, r: list[i].r } : null)); holder.start = holder.starts.find(Boolean) || null; };
+  // Arena-Ansicht (alles schwebt über dem Spielfeld): PC und Handy quer – gleiche Bedingung wie im CSS
+  HB.ARENA_MQ = '(min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape)';
   HB.util = {
     // Laufende Kennungen für Karten/Gegner im Kampf; bumpUid: nach dem Wiederherstellen größer als alle geladenen
     uid: () => nextUid++,
@@ -7100,7 +7132,7 @@ window.HB = window.HB || {};
   const tween = (dur, fn) => new Promise((res) => tweens.push({ t: 0, dur, fn, res }));
 
   // Arena-Ansicht (PC): die Leinwände füllen die ganze Spielfläche (.boardwrap), nicht nur den SVG-Kasten
-  const arena = window.matchMedia ? matchMedia('(min-width: 761px)') : { matches: false };
+  const arena = window.matchMedia ? matchMedia(HB.ARENA_MQ) : { matches: false };
   const place = (el, r, op, opr) => { el.style.left = (r.left - opr.left - op.clientLeft + op.scrollLeft) + 'px'; el.style.top = (r.top - opr.top - op.clientTop + op.scrollTop) + 'px'; };
   function frame(tk) {
     const sr = svg.getBoundingClientRect(), cover = arena.matches && svg.parentElement ? svg.parentElement : svg;
@@ -10121,8 +10153,8 @@ window.HB = window.HB || {};
     if (tb && play) play.style.setProperty('--tb', (tb.offsetTop + tb.offsetHeight + 6) + 'px');
     // Zugnummern-Schalter links mittig neben dem Spielfeld
     const oc = $('#orderctl');
-    oc.hidden = app.mode !== 'combat' || !window.matchMedia('(min-width: 761px)').matches;
-    if (!window.matchMedia('(min-width: 761px)').matches || !svg.viewBox.baseVal) { hud.style.removeProperty('--bl'); return; }
+    oc.hidden = app.mode !== 'combat' || !window.matchMedia(HB.ARENA_MQ).matches;
+    if (!window.matchMedia(HB.ARENA_MQ).matches || !svg.viewBox.baseVal) { hud.style.removeProperty('--bl'); return; }
     const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal, h = hud.getBoundingClientRect();
     const scale = Math.min(r.width / vb.width, r.height / vb.height);
     const left = r.left + (r.width - vb.width * scale) / 2 - h.left;
