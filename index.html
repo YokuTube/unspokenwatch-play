@@ -210,7 +210,6 @@ body[data-mode="setup"] .tile:hover, body[data-live="1"] .tile:hover { fill: #36
 .ihead.clickable { cursor: pointer; }
 .ihead.off { opacity: .55; }
 .ihead .chev { color: var(--muted); width: 12px; }
-.ihead .cn { flex: 1; font-weight: 600; }
 .fxlbl { font-size: 12px; color: var(--accent); margin: 8px 0 2px; }
 .fxrow { flex-wrap: wrap; background: #161922; border-radius: 6px; padding: 3px 5px; margin: 3px 0; }
 .fxrow .fic { color: var(--poison); }
@@ -370,17 +369,6 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 #hud .pickhint { width: auto; color: var(--bad); font-size: 14px; font-weight: 700; }
 .offerrow .card .cname { white-space: normal; overflow: visible; text-overflow: clip; }
 
-/* Verweilen: Ring füllt sich, dann ist der Bodeneffekt scharf */
-.card.ghost.charging::after, .card.ghost.armed::after {
-  content: ''; position: absolute; right: -14px; top: -14px; width: 34px; height: 34px; border-radius: 50%;
-  background: conic-gradient(var(--ok) var(--p, 0%), rgba(255, 255, 255, .15) 0);
-  -webkit-mask: radial-gradient(circle, transparent 10px, #000 11px); mask: radial-gradient(circle, transparent 10px, #000 11px);
-}
-@property --p { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
-.card.ghost.charging::after { animation: dwellFill var(--dwell, 500ms) linear forwards; }
-.card.ghost.armed::after { --p: 100%; }
-.card.ghost.armed { border-color: var(--ok); box-shadow: 0 0 0 3px var(--ok), 0 10px 30px rgba(0, 0, 0, .6); }
-@keyframes dwellFill { from { --p: 0%; } to { --p: 100%; } }
 
 /* Kartenliste: Deck/Start/Markt direkt in der Zeile */
 .deckhead { display: grid; grid-template-columns: 12px 1fr 46px 46px 40px 58px; gap: 4px; font-size: 11px; color: var(--muted); padding: 0 7px; margin-top: 6px; }
@@ -390,7 +378,6 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 
 .ihead.clickable { display: grid; grid-template-columns: 12px 1fr 34px 46px 46px 40px 62px; gap: 4px; align-items: center; }
 .ihead.clickable > span { flex: none; }
-.ihead.clickable > .cn { text-align: left; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ihead.clickable > .mini { justify-self: end; }
 .deckhead { grid-template-columns: 12px 1fr 34px 46px 46px 40px 62px !important; }
 .rowbtns { display: flex; gap: 3px; justify-content: flex-end; }
@@ -526,9 +513,7 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 /* Zugnummern ausblendbar; Hover auf Knopf oder Gegner zeigt sie */
 body[data-orders="hidden"] .unit.enemy .badge { display: none; }
 body[data-orders="hidden"].peek-orders .unit.enemy .badge, body[data-orders="hidden"] .unit.enemy.hovered .badge { display: inline; }
-#btn-order { display: inline-flex; gap: 5px; align-items: center; }
 
-#hud .hud-left #btn-order { grid-column: 1 / -1; font-size: 15px; padding: 8px 10px; display: flex; gap: 6px; align-items: center; justify-content: center; width: 100%; }
 
 /* Gegnertypen- und Regeln-Tabelle */
 .typehead, .ihead.typerow { grid-template-columns: 12px 1fr 58px 44px 40px !important; }
@@ -950,7 +935,6 @@ body[data-peek="1"] #board { outline: 2px dashed var(--accent); }
 
 /* Entfernte Felder (Werkzeug „Felder entfernen“) */
 .ghosttile polygon { fill: rgba(120, 130, 170, .06); stroke: #6b7390; stroke-width: 1.2; stroke-dasharray: 3 3; opacity: .8; cursor: pointer; }
-.mapbar .srow input[type=text] { width: 140px; }
 
 /* Seitenleiste (Reihenfolge, Legende, Kampflog): nur auf Wunsch (Editor → Werte → Funktionen) */
 body[data-side="0"] .side { display: none; }
@@ -1713,8 +1697,7 @@ window.HB = window.HB || {};
     traps: [],
     // Fallen-Schablonen (Editor-Tab „Fallen“): Name, Symbol, Wirkungen (HB.UNIT_EFFECTS)
     trapTypes: HB.defaultTrapTypes(),
-    // 'shared' = alle Gegner haben dieselbe Intention. 'perEnemy' ist vorbereitet.
-    intentMode: 'shared',
+    // Alte gemeinsame Intentionsliste: nur noch Vorlage für Migrationen (Gegnertypen ohne eigene Intentionen bekommen sie, migrate.js)
     intents: [
       { steps: [{ type: 'move', amount: 2 }, { type: 'attack', amount: 6, range: 1 }] },
       { steps: [{ type: 'move', amount: 3 }, { type: 'attack', amount: 4, range: 1 }] },
@@ -1759,7 +1742,6 @@ window.HB = window.HB || {};
     moveCostsEnergy: true,
     speed: 1,
     // Bodenkarten im Bewegungsbereich: so lange über dem Ziel halten, bis der Effekt statt Laufen ausgelöst wird
-    dwellMs: 750,
     // 2,5D: Spielfeld schräg von oben (senkrecht gestaucht), Figuren aufrecht
     tiltEnabled: true, tilt: 0.85,
     // Aufprallschaden beim Wegstoßen (Push): gegen Wand/Hindernis/Rand, gegen Figur = beide
@@ -2438,7 +2420,7 @@ window.HB = window.HB || {};
 
   // Felder, die beim Speichern/Wiederherstellen eines laufenden Kampfs 1:1 übernommen werden
   const SAVE_FIELDS = ['turn', 'kills', 'phase', 'typeIntents', 'typeIntentIdx', 'typePatternIdx', 'bossKilled',
-    'market', 'healer', 'marketBanished', 'waveNo', 'pendingWave', 'intentIndex', 'intent', 'logLines', 'eventSeq', 'rewardsUntilTurn', 'floor', 'route'];
+    'market', 'healer', 'marketBanished', 'waveNo', 'pendingWave', 'logLines', 'eventSeq', 'rewardsUntilTurn', 'floor', 'route'];
   // Gehören einer ETAGE (Karte): game.floors[i]. Zugriff über die aktive Ebene (game.floor), siehe game-floors.js.
   const FLOOR_FIELDS = ['board', 'obstacles', 'objects', 'tileEffects', 'traps', 'corpses', 'enemies'];
   // Gehören jedem Spieler einzeln (Koop): Hand, Stapel, Abwerf-Auswahl, Markt- und Draft-Angebot. Zugriff über den aktiven Spieler (Game.player).
@@ -2487,7 +2469,6 @@ window.HB = window.HB || {};
         traps: f.traps || [], corpses: f.corpses || [], enemies: (f.enemies || []).map(unit) }));
       g.players.forEach((p) => { p.floor = p.floor | 0; });
       [...g.floors.flatMap((f) => f.enemies), ...g.players.flatMap((p) => [...p.hand, ...p.drawPile, ...p.discard, ...p.exhausted])].forEach((x) => bumpUid(x.uid));
-      if (!g.intent) g.intent = (g.cfg.intents || [])[g.intentIndex] || { steps: [] };
       if (data.resumeEnemyPhase) { g.phase = 'player'; g.log('Spiel aktualisiert – der Rest des Gegnerzugs wurde übersprungen.'); g.rollIntent(); g.startPlayerTurn(); }
       return g;
     }
@@ -2660,8 +2641,7 @@ window.HB = window.HB || {};
           anchor = { ...(free.length ? this.pickRandom(free) : this.board.tiles[0]) };
           out.push({ ...anchor }); continue;
         }
-        const near = this.board.tiles.filter((h) => !taken(h)).sort((a, b) => H.distance(a, anchor) - H.distance(b, anchor) || a.r - b.r || a.q - b.q);
-        out.push({ ...(near[0] || anchor) });
+        out.push({ ...(this.tilesNear(anchor, (h) => !taken(h))[0] || anchor) });
       }
       return out;
     }
@@ -2789,8 +2769,6 @@ window.HB = window.HB || {};
     notice(msg, kind) { this.hooks.notice && this.hooks.notice(msg, kind); }
     // Wartezeiten gehören nur der Darstellung: ohne hooks.wait (Selbsttest, Host) oder mit hooks.instant läuft alles sofort durch
     wait(ms) { return this.hooks.wait && !this.hooks.instant ? this.hooks.wait(ms) : Promise.resolve(); }
-    // Wartet, bis alle bisher eingegangenen Befehle (apply) abgearbeitet sind
-    settle() { return this.cmdQueue || Promise.resolve(); }
     unitName(u) { return u.isPlayer ? (this.players.length > 1 ? `Spieler ${u.num || u.idx + 1}` : 'Du') : u.name; }
     get alive() { return this.enemies.filter((e) => e.alive); }
 
@@ -3252,14 +3230,6 @@ window.HB = window.HB || {};
     // Neue Kartenkopie (eigene uid) – für Hand, Ablage, Draft …
     newCard(def) { return { uid: uid(), def: HB.migrateCard(clone(def)) }; }
 
-    // Intentionen aus der Konfiguration übernehmen, aktuelle Intention möglichst behalten
-    syncIntents(intents, intentMode) {
-      this.cfg.intents = clone(intents); this.cfg.intentMode = intentMode;
-      if (this.cfg.intents[this.intentIndex]) { this.intent = this.cfg.intents[this.intentIndex]; this.aimStrikes(true); }
-      else { const l = this.cfg.intents; this.intentIndex = l.length ? Math.floor(Math.random() * l.length) : -1; this.intent = l[this.intentIndex] || { steps: [] }; }
-      this.changed();
-    }
-
     // Aktuelle Kampfaufstellung als Aufbau-Konfiguration
     toSetupConfig(base) {
       const c = clone(base);
@@ -3291,7 +3261,6 @@ window.HB = window.HB || {};
         switch (cmd.type) {
           case 'play': { if (!card || !p.hand.includes(card)) return false; return !!(await this.dropCard(card, cmd.hex, cmd.mode, cmd.via, cmd.grab)); }
           case 'endTurn': { const was = p.ended; await this.endTurn(p); return !was && p.ended; }
-          case 'discard': // alter Name
           case 'choose': { if (!card) return false; return this.choose(card); }
           case 'chooseDone': return this.chooseDone();
           case 'draft': this.chooseDraftCard(cmd.index); return true;
@@ -3345,20 +3314,15 @@ window.HB = window.HB || {};
 window.HB = window.HB || {};
 (function (HB) {
   const H = HB.hex;
+  const NO_INTENT = { steps: [] };
   const { uid, clone, shuffle, stepDef, targetsPlayer, threatOf, reach: rangeOf, isInf } = HB.util;
   class GameEnemies {
     // ---------- Intention ----------
-    // Gemeinsame Intention würfeln; Gegner, deren Typ eigene Intentionen hat, würfeln zusätzlich ihre eigene
+    // Jeder Gegnertyp hat eigene Intentionen: EINE Intention pro Typ – alle Gegner dieses Typs tun dasselbe
     rollIntent() {
-      const list = this.cfg.intents;
-      this.intentIndex = list.length ? Math.floor(Math.random() * list.length) : -1;
-      this.intent = list[this.intentIndex] || { steps: [] };
-      // Jeder Typ hat eigene Intentionen: EINE Intention pro Typ – alle Gegner dieses Typs tun dasselbe
       this.typeIntents = {}; this.typeIntentIdx = {};
       for (const e of this.allAlive) this.rollEnemyIntent(e);
       this.nextPlan = {};
-      // Die gemeinsame Intention gilt nur noch als Rückfall für Typen ohne eigene Intentionen (sollte nicht vorkommen)
-      if (this.allAlive.some((e) => !e.intent)) this.log(`Intention der Gegner: ${HB.describeIntent(this.intent)}`);
       this.aimStrikes(true);
     }
 
@@ -3543,7 +3507,7 @@ window.HB = window.HB || {};
       }
       this.aimStrikes(true);
     }
-    intentFor(e) { return (e && e.intent) || this.intent; }
+    intentFor(e) { return (e && e.intent) || NO_INTENT; } // ohne Intention (alle aus): tut nichts
     // Die Intention der NÄCHSTEN Runde steht schon vor der Gegnerphase fest (rollIntent übernimmt sie später), damit die Gegner
     // ihre Bewegung danach ausrichten können (z. B. nicht so nah heranlaufen, dass sie mit der nächsten Intention nicht mehr treffen).
     planNextIntents() {
@@ -3579,14 +3543,6 @@ window.HB = window.HB || {};
       this.log(`Intention von ${t.name} gesetzt: ${HB.intentTitle(t.intents[idx])}`);
       this.changed();
     }
-    // Bei Muster-Typen: die Intention, die als Nächstes kommt (für die Vorschau)
-    nextIntentFor(e) {
-      const t = this.typeOf(e);
-      if (!t || t.pattern !== 'sequence' || !t.intents || !t.intents.length) return null;
-      const i = this.seqNext(t, (this.typePatternIdx || {})[t.id]);
-      return i == null ? null : t.intents[i];
-    }
-    hasOwnIntents() { return this.allAlive.some((e) => e.intent); }
     // ---------- Gegner ----------
     // Gegner laufen durch andere Gegner, aber nie durch den Spieler oder Bewegungs-Obstacles,
     // und enden nie auf einem besetzten Feld. Ziel: Abstand zum Spieler minimieren.
@@ -4083,6 +4039,10 @@ window.HB = window.HB || {};
         && !(this.pendingWave && this.pendingWave.spots.some((s) => (s.floor | 0) === this.floor && H.eq(s.pos, h)));
     }
     pickRandom(list) { return list[Math.floor(Math.random() * list.length)]; }
+    // Felder (Standard: frei), nach Abstand zu anchor sortiert – bei Gleichstand fest nach Reihe/Spalte (gleiches Ergebnis bei allen)
+    tilesNear(anchor, ok = (h) => this.freeTile(h)) {
+      return this.board.tiles.filter(ok).sort((a, b) => H.distance(a, anchor) - H.distance(b, anchor) || a.r - b.r || a.q - b.q);
+    }
     // Wellen-Gruppe „Anzahl × Typ“: Typ der Gruppe (null bei „Gemischt“) und je Gegner der gezogene Typ.
     // Gemischt = zufällig aus aktiven Nicht-Boss-Typen; fallback = unbekannter Typ → erster Typ (sonst keiner)
     // Besondere Gruppen-Typen: HB.WAVE_PICKS / HB.wavePick (unten) – boss = zählt als Boss (keine Koop-Vermehrung)
@@ -4170,7 +4130,7 @@ window.HB = window.HB || {};
       this.floors.forEach((f) => { f.enemies = f.enemies.filter((e) => e.alive); });
       pw.spots.forEach((s, i) => this.withFloor(s.floor | 0, () => {
         let pos = s.pos;
-        if (!this.freeTile(pos)) { const alt = this.board.tiles.filter((h) => this.freeTile(h)).sort((a, b) => H.distance(a, pos) - H.distance(b, pos))[0]; if (!alt) return; pos = alt; }
+        if (!this.freeTile(pos)) { const alt = this.tilesNear(pos)[0]; if (!alt) return; pos = alt; }
         // Die Welle erscheint zu Beginn deines Zugs und handelt erst nach ihm – keine Betäubung
         this.enemies.push(this.newEnemy(s.type, pos, null, s.hp));
       }));
@@ -4375,6 +4335,9 @@ window.HB = window.HB || {};
     }
     return null;
   };
+  // Boss-Gruppe (Boss-Typ, zufälliger Boss, Boss-Set) und Bosswelle (Haken „Bosswelle“, sonst: enthält eine Boss-Gruppe) – Editor und Weiterziehen
+  HB.isBossGroup = (cfg, type) => { const p = HB.wavePick(cfg, type); return p ? !!p.bossWave : !!((cfg.enemyTypes || []).find((t) => t.id === type) || {}).boss; };
+  HB.isBossWave = (cfg, wave) => wave.boss ?? (wave.groups || []).some((gr) => HB.isBossGroup(cfg, gr.type));
 })(window.HB);
 
 </script>
@@ -4448,7 +4411,7 @@ window.HB = window.HB || {};
         let t = Math.random() * sum; for (const [k, x] of w) { t -= x; if (t <= 0) return k; } return 'fight';
       };
       const taken = new Set();
-      r.exits = this.shuffle(sides).slice(0, count).map((side) => {
+      r.exits = HB.util.shuffle([...sides]).slice(0, count).map((side) => {
         let h = this.routeSideTile(side); const k = H.key(h); if (taken.has(k)) return null; taken.add(k);
         return { side, pos: { ...h }, kind: bossNext ? 'boss' : pickKind() };
       }).filter(Boolean);
@@ -4457,7 +4420,6 @@ window.HB = window.HB || {};
       this.emit('route_open', { exits: r.exits.map((e) => ({ ...e })) });
       return true;
     }
-    shuffle(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
     routeExitAt(h) { return this.route && this.route.exits ? this.route.exits.findIndex((e) => H.eq(e.pos, h)) : -1; }
 
     // Zustimmung eines Spielers (steht auf dem Ausgang). Alle Lebenden für denselben Ausgang → weiter.
@@ -4482,7 +4444,7 @@ window.HB = window.HB || {};
       Object.assign(f, { obstacles: [], objects: [], tileEffects: [], traps: [], corpses: [], enemies: [] });
       this.market = null; this.healer = null; this.pendingWave = null; this.marketBanished = [];
       // Spieler an der Eingangsseite (der erste auf dem Eingangsfeld, die anderen daneben)
-      const entry = this.routeSideTile(r.entry), spots = [entry, ...this.board.tiles.filter((h) => !H.eq(h, entry)).sort((a, b) => H.distance(a, entry) - H.distance(b, entry))];
+      const entry = this.routeSideTile(r.entry), spots = [entry, ...this.tilesNear(entry, (h) => !H.eq(h, entry))];
       this.livePlayers.forEach((p, k) => { p.pos = { ...spots[k] }; p.floor = 0; delete p.routeVote; delete p.freeMove; delete p.pendingMove; p.facing = H.dirTo(entry, this.routeSideTile(this.opposite(r.entry))); });
       // Hindernisse wie beim Kampfstart (Einstellung randomObstacles), dann Gegner
       const ro = this.cfg.randomObstacles || {};
@@ -4498,7 +4460,7 @@ window.HB = window.HB || {};
     // Elite = Elite-Typen (Haken „Elite“ beim Gegnertyp; ohne Elite-Typen: normale), leichte Felder (Markt/Heiler) = weniger Gegner
     routeSpawn(kind) {
       const w = this.cfg.waves || {}, list = w.list || [], rc = this.routeCfg(), types = this.cfg.enemyTypes || [];
-      const isBoss = (def) => (def.groups || []).some((g) => ((types.find((t) => t.id === g.type) || {}).boss));
+      const isBoss = (def) => HB.isBossWave(this.cfg, def);
       const normal = list.filter((d) => !isBoss(d));
       let def = kind.boss ? (list.find(isBoss) || list[list.length - 1]) : normal[(this.route.stage - 1) % Math.max(1, normal.length)];
       if (!def) return;
@@ -4624,8 +4586,7 @@ window.HB = window.HB || {};
       const base = back ? back.pos : to.start;
       const pos = this.withFloor(ti, () => {
         if (u.isPlayer && back && !this.enemyAt(back.pos) && !this.isPlayerAt(back.pos)) return { ...back.pos };
-        const near = this.board.tiles.filter((h) => this.freeTile(h) && !(back && H.eq(h, back.pos))).sort((a, b) => H.distance(a, base) - H.distance(b, base) || a.r - b.r || a.q - b.q);
-        return near[0] || base;
+        return this.tilesNear(base, (h) => this.freeTile(h) && !(back && H.eq(h, back.pos)))[0] || base;
       });
       const dir = ti > fi ? 'hinein' : 'hinaus';
       if (u.isPlayer) { u.floor = ti; u.pos = { ...pos }; this.setFloor(ti); }
@@ -4825,8 +4786,7 @@ window.HB = window.HB || {};
         const own = defs[num - 1];
         if (own && this.board.has(own) && free(own)) return { ...own };
         const anchor = defs.find(Boolean) || (this.players.find((q) => (q.floor | 0) === 0) || {}).pos || this.board.tiles[0];
-        const near = this.board.tiles.filter(free).sort((a, b) => H.distance(a, anchor) - H.distance(b, anchor) || a.r - b.r || a.q - b.q);
-        return { ...(near[0] || anchor) };
+        return { ...(this.tilesNear(anchor, free)[0] || anchor) };
       });
     }
     joinPlayer() {
@@ -4951,18 +4911,18 @@ window.HB = window.HB || {};
       const path = custom ? custom.path : best && !H.eq(dest, this.player.pos) ? this.playerPath(dest, n) : [{ ...this.player.pos }];
       return { path: path || [{ ...this.player.pos }], dest, reaches, cands };
     }
+    // Darf der aktive Spieler über dieses Feld laufen? (kein Gegner, kein Mitspieler, kein Hindernis – außer fliegend)
+    playerPassable(h) { const me = this.player; return this.canPass(me, h) && !this.enemyAt(h) && !this.otherPlayerAt(h, me); }
     // Fliegend: über Hindernisse/Objekte hinweg, aber nicht darauf landen (diese Felder fallen aus dist heraus, Wege bleiben)
     playerReach(maxSteps) {
       const me = this.player;
-      const passable = (h) => this.canPass(me, h) && !this.enemyAt(h) && !this.otherPlayerAt(h, me);
-      const res = H.dijkstra(this.player.pos, passable, maxSteps, (h) => this.stepCost(h));
+      const res = H.dijkstra(this.player.pos, (h) => this.playerPassable(h), maxSteps, (h) => this.stepCost(h));
       if (HB.isFlying(this, me)) for (const k of [...res.dist.keys()]) if (this.blocksMove(H.parse(k))) res.dist.delete(k);
       return res;
     }
     // Weg zum Ziel: wenn möglich ohne Falle unterwegs (das Ziel selbst darf eine Falle sein)
     playerPath(h, maxSteps) {
-      const me = this.player;
-      const safe = H.dijkstra(this.player.pos, (x) => this.canPass(me, x) && !this.enemyAt(x) && !this.otherPlayerAt(x, me) && (!this.trapAt(x) || H.eq(x, h)), maxSteps, (x) => this.stepCost(x));
+      const safe = H.dijkstra(this.player.pos, (x) => this.playerPassable(x) && (!this.trapAt(x) || H.eq(x, h)), maxSteps, (x) => this.stepCost(x));
       if (safe.dist.has(H.key(h))) return H.pathTo(safe, h);
       return H.pathTo(this.playerReach(maxSteps), h);
     }
@@ -4970,8 +4930,7 @@ window.HB = window.HB || {};
     // Eigener Weg: von deinem Feld über die Zwischenfelder `via` (der Reihe nach, Anfang = dein Feld) bis zum Ziel. Zwischen zwei Feldern
     // gilt der kürzeste Weg. Liefert { path, cost } oder null, wenn ein Feld nicht erreichbar ist oder der Weg mehr als maxCost kostet.
     routeVia(via, target, maxCost) {
-      const me = this.player;
-      const passable = (x) => this.canPass(me, x) && !this.enemyAt(x) && !this.otherPlayerAt(x, me);
+      const me = this.player, passable = (x) => this.playerPassable(x);
       const pts = (via || []).map((p) => ({ q: p.q, r: p.r }));
       if (!pts.length || !H.eq(pts[0], me.pos)) pts.unshift({ ...me.pos });
       if (!H.eq(pts[pts.length - 1], target)) pts.push({ q: target.q, r: target.r });
@@ -5358,7 +5317,6 @@ window.HB = window.HB || {};
       return true;
     }
     settleChoices() { while (this.choice && (this.choice.left <= 0 || !this.choiceCards().length)) this.choices.shift(); }
-    chooseDiscard(card) { return this.choose(card); } // alter Name
   }
   HB.extendGame(GameCards);
 })(window.HB);
@@ -6108,7 +6066,6 @@ window.HB = window.HB || {};
   const foesOf = (g, src) => (src.isPlayer ? g.alive : g.livePlayers);
   const friendsOf = (g, src) => (src.isPlayer ? g.hitPlayers() : g.alive);
   const ownerOf = (g, c) => (srcOf(g, c).isPlayer ? srcOf(g, c).id : undefined);
-  HB.cardSides = { srcOf, foesOf, friendsOf };
   // Karteneffekte ohne eigenen APPLY-Eintrag, die eine Wirkung auf eine Figur sind (HB.UNIT_EFFECTS): wirken auf das Ziel;
   // CARD_EFFECTS[typ].orSelf = ohne Gegner-Ziel auf dich (z. B. Block, Schonfrist)
   const unitCardEffect = (g, fx, c) => {
@@ -6956,7 +6913,7 @@ window.HB = window.HB || {};
       // Unsichtbar (invis): wirklich nicht zu sehen – keine Figur, keine Leiste, keine Absicht, nicht anklickbar
       const unseen = !view.setup && e.invis > 0;
       g.setAttribute('class', 'unit enemy' + (active ? ' active' : '') + (hovered ? ' hovered' : '') + (view.markUid === e.uid ? ' marked' : '') + (stunned ? ' stunned' : '') + (e.boss ? ' boss' : '') + (unseen ? ' unseen' : ''));
-      const intent = view.intentFor ? view.intentFor(e) : view.intent;
+      const intent = view.intentFor ? view.intentFor(e) : null;
       if (pix) g.setAttribute('data-sprite', HB.pixi.spriteFor(e)); face(g, e);
       if (unseen) { split(g, e.uid, '', '', e.pos); continue; }
       split(g, e.uid, `<circle class="ring" r="${SIZE * 0.74}"/>` + body(view.enemyIcon ? view.enemyIcon(e) : 'enemy'), ''
@@ -7133,7 +7090,7 @@ window.HB = window.HB || {};
 // Die Leinwand liegt HINTER dem SVG #board; das SVG bleibt Info- und Eingabe-Schicht (Klickflächen, Lebensbalken,
 // Zustände, Absichten, Vorschau). Die Welt liest jedes Bild die Lage der SVG-Figuren (.unit mit data-uid/data-sprite),
 // dadurch laufen Bild und Lebensbalken immer gleich. Effekte hängen am Ereignis-Strom (game.emit → onEvent).
-// Ohne PixiJS/WebGL bleibt das alte SVG-Bild (HB.pixi.on bleibt false). Vorlage: probe/pixi.html.
+// Ohne PixiJS/WebGL bleibt das alte SVG-Bild (HB.pixi.on bleibt false).
 window.HB = window.HB || {};
 (function (HB) {
   const P = window.PIXI;
@@ -8036,10 +7993,10 @@ window.HB = window.HB || {};
       el('p', { class: 'hint' }, 'Alle Wellen sind gleich, auch Welle 1: Jede besteht aus Gruppen „Anzahl × Typ“ („Gemischt“ = zufälliger Typ, kein Boss, nur aktive Typen; Boss-Typen nur mit Haken „Bosswelle“) und erscheint zufällig auf dem Feld. Leben stellst du beim Gegnertyp ein.'),
       num('Mindestabstand zum Spieler beim Erscheinen', () => w.minDist ?? 4, (v) => w.minDist = v, { min: 0 }));
     // Boss-Typen, Zufälliger Boss und Boss-Sets nur in Bosswellen wählbar (Haken je Welle; ohne Haken: Bosswelle, wenn schon ein Boss drin ist).
-    const isBoss = (id) => { const p = HB.wavePick(c, id); return p ? !!p.bossWave : (c.enemyTypes.find((t) => t.id === id) || {}).boss; };
+    const isBoss = (id) => HB.isBossGroup(c, id);
     w.list.forEach((wave, i) => {
       wave.groups = wave.groups || [{ type: wave.type || 'mixed', count: wave.count || 1 }];
-      const bossWave = wave.boss ?? wave.groups.some((gr) => isBoss(gr.type));
+      const bossWave = HB.isBossWave(c, wave);
       const typeOpts = groupOptions(c, bossWave, true);
       const total = wave.groups.reduce((n, gr) => n + (gr.count || 0), 0);
       const card = el('div', { class: 'icard wavecard' },
@@ -8133,7 +8090,6 @@ window.HB = window.HB || {};
       el('p', { class: 'hint' }, 'Fallen-Arten und ihre Wirkung stellst du im Tab „Fallen“ ein.'),
       el('h4', {}, 'Tempo'),
       num('Aufprallschaden (Push gegen Wand/Figur)', () => c.collision.damage, (v) => c.collision.damage = v, { icon: 'push' }),
-      num('Bodeneffekt: stillhalten (ms)', () => c.dwellMs || 750, (v) => c.dwellMs = Math.max(100, v), { min: 100, max: 3000, title: 'So lange musst du eine Bodenkarte im Bewegungsbereich über dem Ziel halten, damit der Effekt statt Laufen ausgelöst wird' }),
       num('Animationstempo (1–5)', () => c.speed || 1, (v) => c.speed = Math.min(5, Math.max(1, v)), { min: 1, max: 5 }),
       );
   }
@@ -10105,7 +10061,6 @@ window.HB = window.HB || {};
       g.cfg.trapTypes = JSON.parse(JSON.stringify(c.trapTypes || [])); g.traps = g.traps.filter((t) => HB.TRAP_TYPES[t.type]); // gelöschte Fallen-Arten verschwinden
       g.cfg.player.draw = c.player.draw; g.cfg.player.handLimit = c.player.handLimit;
       g.players.forEach((pl) => { pl.maxEnergy = c.player.energy; });
-      g.syncIntents(c.intents, c.intentMode);
       g.refreshIntents(); // Intentionen im Kampf sofort aus der aktuellen Liste ersetzen (gelöschte Schritte sind weg)
     },
     // Darf gerade live bearbeitet werden? (nicht während die Gegner ziehen)
@@ -10285,7 +10240,6 @@ window.HB = window.HB || {};
     const view = app.mode === 'combat' && g ? g : R.viewFromConfig(app.mapCfg ? app.mapCfg() : app.config);
     view.inspectUid = app.inspect || null;
     view.markUid = app.mode === 'combat' && g && app.markOf ? app.markOf(g) : null;
-    document.body.dataset.intents = (g ? g.cfg.intentMode : app.config.intentMode) === 'perEnemy' ? 'each' : 'shared';
     R.render(view);
     renderRouteBox(g);
     document.body.dataset.mode = app.mode;
@@ -10923,8 +10877,7 @@ window.HB = window.HB || {};
     const touch = ev.pointerType === 'touch' || ev.pointerType === 'pen';
     if (touch) ghost.classList.add('touch');
     if (forceMove) ghost.classList.add('as-move');
-    ghost.style.setProperty('--dwell', dwellMs() + 'ms');
-    drag = { card, el, ghost, touch, forceMove, ctx: asMe(() => g.dragContext(card, forceMove)), dx: ev.clientX - r.left, dy: ev.clientY - r.top, x0: ev.clientX, y0: ev.clientY, hover: null, mode: null, dwellKey: null, armed: false, timer: null, lastEv: ev, trail: null, trailKey: null };
+    drag = { card, el, ghost, touch, forceMove, ctx: asMe(() => g.dragContext(card, forceMove)), dx: ev.clientX - r.left, dy: ev.clientY - r.top, x0: ev.clientX, y0: ev.clientY, hover: null, mode: null, lastEv: ev, trail: null, trailKey: null };
     moveGhost(ev.clientX, ev.clientY);
     app.inspect = null; showIntentCard(g, null); $('#tiletip').hidden = true; tipKey = null;
     asMe(() => R.renderOverlay(g, drag.ctx, null, null));
@@ -10938,7 +10891,6 @@ window.HB = window.HB || {};
     window.removeEventListener('pointerup', onDragEnd);
     document.body.classList.remove('dragging');
     if (!drag) return;
-    clearTimeout(drag.timer);
     drag.ghost.remove(); drag.el.classList.remove('lifted');
     $('#droptip').hidden = true;
     R.clearOverlay();
@@ -10985,33 +10937,16 @@ window.HB = window.HB || {};
     const g = app.game;
     const h = hexUnder(ev.clientX, ev.clientY);
     if (!(h && g.board.has(h))) {
-      clearTimeout(drag.timer); drag.dwellKey = null; drag.armed = false; drag.ghost.classList.remove('charging', 'armed');
       drag.hover = null; drag.mode = null; showTip(ev, '', '');
       R.renderOverlay(g, drag.ctx, null, null);
       return;
     }
-    const k = H.key(h);
     updateTrail(g, h);
     // „Gegner bewegen/greift an“: erster Gegner in Reichweite, über den die Karte fährt, ist gegriffen; zurück aufs eigene Feld = loslassen
     if (!drag.forceMove && g.grabCard(drag.card.def)) {
       const he = g.enemyAt(h);
       if (H.eq(h, g.player.pos)) drag.grab = null;
       else if (he && drag.grab == null && g.inRangeAndSight(g.player.pos, he.pos, drag.card.def.range).ok) drag.grab = he.uid;
-    }
-    // Verweilen starten, wenn eine Bodenkarte über einem Feld steht, auf dem sie laufen ODER wirken könnte
-    const canDwell = false; // Verweilen gibt es nicht mehr (Bodenkarten laufen über das Bewegen-Symbol)
-    if (k !== drag.dwellKey) {
-      clearTimeout(drag.timer); drag.dwellKey = k; drag.armed = false;
-      drag.ghost.classList.remove('charging', 'armed');
-      if (canDwell) {
-        void drag.ghost.offsetWidth; // Animation neu starten
-        drag.ghost.classList.add('charging');
-        drag.timer = setTimeout(() => {
-          if (!drag || drag.dwellKey !== k) return;
-          drag.armed = true; drag.ghost.classList.remove('charging'); drag.ghost.classList.add('armed');
-          updateDrag(drag.lastEv);
-        }, dwellMs());
-      }
     }
     const mode = decideMode(h);
     const via = drag.trail && drag.trail.length > 1 ? drag.trail : null;
@@ -11022,7 +10957,6 @@ window.HB = window.HB || {};
     let text = res.text;
     if (res.ok && res.action === 'move') {
       text = 'LAUFEN ' + res.text.replace(/^Bewegen /, '');
-      if (canDwell && !drag.armed) text += ` · stillhalten für ${drag.card.def.name}`;
     } else if (res.ok && res.action === 'pick') {
       text = res.text;
     } else if (res.ok) {
@@ -11049,7 +10983,6 @@ window.HB = window.HB || {};
     if (idx >= 0) { drag.trail = t.slice(0, idx + 1); return; }
     if (g.routeVia([...t, h], h, g.playerMoveRange(drag.card))) t.push({ q: h.q, r: h.r });
   }
-  function dwellMs() { return Math.max(100, app.config.dwellMs || 750); }
   function onDragMove(ev) {
     if (!drag) return;
     drag.lastEv = ev;
@@ -11064,7 +10997,6 @@ window.HB = window.HB || {};
     document.body.classList.remove('dragging');
     if (!drag) return;
     const d = drag; drag = null;
-    clearTimeout(d.timer);
     d.ghost.remove(); d.el.classList.remove('lifted');
     $('#droptip').hidden = true;
     R.clearOverlay();
