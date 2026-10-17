@@ -167,6 +167,7 @@ body[data-mode="setup"] .tile:hover, body[data-live="1"] .tile:hover { fill: #36
 .field .fic { color: var(--accent); }
 .field.check { gap: 6px; }
 .icard { background: var(--panel2); border: 1px solid var(--line); border-radius: 7px; padding: 7px; margin: 6px 0; }
+.icard.ioff > *:not(.ihead), .icard.ioff .ihead > :not(.check) { opacity: .45; } /* ausgeschaltete Intention */
 .ihead { display: flex; gap: 4px; align-items: center; font-size: 12px; margin-bottom: 4px; }
 .ihead span { flex: 1; }
 .srow { display: flex; gap: 4px; align-items: center; }
@@ -536,9 +537,14 @@ body[data-orders="hidden"].peek-orders .unit.enemy .badge, body[data-orders="hid
 .rulestbl .rl { font-size: 13px; font-weight: 600; }
 .rulestbl .rh { grid-column: 1 / -1; font-size: 11px; color: var(--muted); margin: -2px 0 6px; }
 
-/* Bewegungs-Ansicht der Karte (Maus über dem Energie-Kreis) */
-.card .cost { cursor: grab; z-index: 3; }
-.card .cost:hover { transform: scale(1.15); box-shadow: 0 0 0 3px var(--move); }
+/* Bewegungs-Ansicht der Karte (Maus über dem Bewegen-Symbol oben rechts, nur Bodenkarten) */
+.card .cost { z-index: 3; }
+.card .movebtn { position: absolute; top: -8px; right: -8px; z-index: 3; width: 38px; height: 38px; border-radius: 50%; background: #12233a; border: 2px solid var(--move); color: #cfe6ff; display: grid; place-items: center; cursor: grab; }
+.card .movebtn .ic { position: absolute; width: 12px; height: 12px; top: -4px; left: -4px; background: #12233a; border-radius: 50%; color: var(--move); }
+.card .movebtn b { font-size: 18px; font-weight: 800; }
+.card .movebtn.noenergy { opacity: .5; }
+.card .movebtn:hover { transform: scale(1.15); box-shadow: 0 0 0 3px var(--move); }
+.card.ghost .movebtn { display: none; }
 .card .moveface { display: none; }
 .card.as-movecard { border-color: var(--move); background: linear-gradient(#1d3557, #14243b); }
 .card.as-movecard > .cname, .card.as-movecard > .cfx, .card.as-movecard > .ctext { opacity: .12; filter: grayscale(1); }
@@ -556,27 +562,6 @@ body.dragging #hand { transform: translateY(150px); opacity: .25; }
 body.dragging #hud { opacity: .3; }
 body.dragging #dock { background: none; }
 
-/* Energie-Kreis verrät sich: beim Hover über die Karte blauer Ring + » */
-.card .cost::after { content: '»'; position: absolute; left: 30px; top: 50%; transform: translate(-6px, -50%); opacity: 0;
-  background: var(--move); color: #08111f; font-weight: 900; font-size: 13px; line-height: 1; padding: 2px 5px 3px 7px; border-radius: 0 8px 8px 0; z-index: -1;
-  transition: opacity .15s, transform .15s; pointer-events: none; }
-.card:hover .cost { box-shadow: 0 0 0 2px var(--move); }
-.card:hover .cost::after { opacity: 1; transform: translate(0, -50%); }
-.card.ghost .cost::after { display: none; }
-/* Schild am Energie-Kreis (überschreibt den kleinen Pfeil) */
-.card .cost::after { content: '» Bewegen'; left: 26px; top: -12px; transform: translate(-6px, 0); z-index: 5; font-size: 11px; font-weight: 800;
-  padding: 3px 7px; border-radius: 8px; color: #fff; background: var(--move); box-shadow: 0 2px 6px rgba(0, 0, 0, .5); white-space: nowrap; }
-.card:hover .cost::after { transform: translate(0, 0); }
-
-/* Bewegungs-Hinweis: Symbol + Zahl rechts neben dem Energie-Kreis, dezent; weg, sobald die Karte sich verwandelt */
-.card .cost::after { content: '» ' attr(data-mv); left: 36px; top: 50%; transform: translate(-4px, -50%); z-index: 5;
-  font-size: 15px; font-weight: 900; padding: 2px 8px 3px; border-radius: 9px; color: #fff; background: rgba(74, 163, 255, .85);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, .4); }
-.card:hover .cost::after { transform: translate(0, -50%); opacity: .9; }
-.card:hover .cost { box-shadow: 0 0 0 1.5px rgba(74, 163, 255, .7); }
-.card.as-movecard .cost::after { opacity: 0 !important; }
-/* Bewegungs-Hinweis ein Stück höher, damit er nicht über dem Kartennamen liegt */
-.card .cost::after { top: 2px; }
 
 /* Zugnummern-Schalter links mittig neben dem Spielfeld */
 /* Anzeige-Schalter oben links: klein und zurückhaltend */
@@ -1163,6 +1148,7 @@ button { color: #17130a; }
 .cardtile[hidden], .cardedit[hidden] { display: none !important; }
 
 /* Weiterziehen: Ausgänge am Feldrand und Frage „Weitergehen?“ (game-route.js, main.js renderRouteBox) */
+.exitmark { pointer-events: none; } /* Klick geht ans Feld darunter (frei hinlaufen) */
 .exitmark polygon { fill: rgba(199, 158, 71, .22); stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; animation: exitpulse 1.6s ease-in-out infinite; }
 .exitmark svg { color: var(--accent); }
 .exitmark text { fill: var(--text); font-size: 9px; font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: #000; stroke-width: 2.5px; }
@@ -1174,6 +1160,7 @@ button { color: #17130a; }
   padding: 8px 12px; border-radius: 10px; background: rgba(24, 28, 37, .94); border: 1px solid var(--accent); box-shadow: 0 6px 18px rgba(0, 0, 0, .5); }
 #routebox b { font-family: var(--display); color: var(--accent); }
 #routebox span { color: var(--muted); font-size: 13px; }
+#pileview .card .movebtn, .cardtile .card .movebtn { display: none; }
 
 </style>
 </head>
@@ -1524,6 +1511,7 @@ window.HB = window.HB || {};
     { id: 'classes', label: 'Klassen (Klassenwahl, Kartenpool und Startdeck je Klasse)', get: (c) => c.classesEnabled !== false, set: (c, v) => { c.classesEnabled = v; } },
     { id: 'relics', label: 'Relikte (Start-Relikte, Schatztruhen)', get: (c) => c.relicsEnabled !== false, set: (c, v) => { c.relicsEnabled = v; } },
     { id: 'route', label: 'Weiterziehen statt neuer Wellen (Ausgänge am Rand, Boss nach N Feldern)', get: (c) => !!(c.route && c.route.enabled), set: (c, v) => { c.route = { ...(HB.defaultRoute ? HB.defaultRoute() : {}), ...(c.route || {}), enabled: v }; } },
+    { id: 'corpses', label: 'Leichen (tote Gegner bleiben liegen, Betreten kostet mehr; für alte Kadaverexplosion)', get: (c) => !!c.corpsesEnabled, set: (c, v) => { c.corpsesEnabled = v; } },
     { id: 'collision', label: 'Aufprallschaden beim Wegstoßen', get: (c) => !!(c.collision && c.collision.enabled), set: (c, v) => { c.collision.enabled = v; } },
   ];
   HB.moduleOn = (cfg, id) => { const m = HB.MODULES.find((x) => x.id === id); return !m || !cfg || m.get(cfg); };
@@ -1555,7 +1543,7 @@ window.HB = window.HB || {};
   ];
   // Ab Version 4
   HB.newCardsV4 = () => [
-    { name: 'Kadaverexplosion', count: 0, cost: 1, target: 'corpse', range: 2, category: 'skill', effects: [{ type: 'corpseExplosion', percent: 75, radius: 1 }] },
+    { name: 'Kadaverexplosion', count: 0, cost: 1, target: 'enemy', range: 2, category: 'attack', effects: [{ type: 'damage', amount: 10 }, { type: 'corpseBomb', percent: 100, radius: 2 }] },
   ];
   // Ab Version 6
   HB.newCardsV6 = () => [
@@ -1580,8 +1568,6 @@ window.HB = window.HB || {};
       effects: [{ type: 'taunt', amount: 1, radius: 2 }, { type: 'lure', amount: 1, steps: 1, radius: 2 }] },
     { name: 'Rückstoßwelle', cid: 'std_rueckstosswelle', count: 0, cost: 1, target: 'self', range: 0, category: 'skill',
       effects: [{ type: 'pushWave', amount: 2, radius: 2 }] },
-    { name: 'Billardstoß', cid: 'std_billardstoss', count: 0, cost: 1, target: 'enemy', range: 1, category: 'attack',
-      effects: [{ type: 'damage', amount: 4 }, { type: 'push', amount: 3, aim: 'choose' }] },
     { name: 'Abprallkugel', cid: 'std_abprallkugel', count: 0, cost: 1, target: 'any', range: 3, category: 'attack',
       effects: [{ type: 'chain', mode: 'bounce', jumps: 5, jumpRange: 2, falloff: 'pct', drop: 0, who: 'foes', selfBounce: 'start', effects: [{ type: 'damage', amount: 3 }] }] },
     { name: 'Segensfeld', cid: 'std_segensfeld', count: 0, cost: 1, target: 'tile', range: 2, category: 'skill',
@@ -1590,7 +1576,8 @@ window.HB = window.HB || {};
       effects: [{ type: 'damage', amount: 4 }, { type: 'cond', test: 'consume', of: 'target', status: 'poison', amount: 5, to: 'target', effects: [{ type: 'damage', amount: 12 }] }] },
     // Vorn/hinten (u.facing, HB.isBehind): mehr Schaden, wenn du hinter dem Ziel stehst
     { name: 'Hinterhalt', cid: 'std_hinterhalt', count: 0, cost: 1, target: 'enemy', range: 1, category: 'attack', classes: ['dieb'],
-      effects: [{ type: 'damage', amount: 5 }, { type: 'cond', test: 'behind', to: 'target', effects: [{ type: 'damage', amount: 7 }] }] },
+      effects: [{ type: 'damage', amount: 5 }, { type: 'cond', test: 'behind', to: 'target', effects: [{ type: 'damage', amount: 7 }] },
+        { type: 'cond', test: 'behindKill', to: 'self', effects: [{ type: 'invis', amount: 1 }] }] },
   ];
   // Standardinhalte, die in der Einstellung des Nutzers fehlen (Karten nach Kennung/Namen, Fallen nach id) – nur anzeigen/anbieten,
   // nie automatisch einfügen (Einstellungen des Nutzers nie überschreiben)
@@ -1620,7 +1607,7 @@ window.HB = window.HB || {};
     const id = HB.playerClass(cfg, p), k = id && (cfg.classes || []).find((x) => x.id === id);
     return (k && k.sprite) || '';
   };
-  // Startdeck: Klasse mit „eigenem Startdeck“ (k.ownDeck) nimmt Anzahl/1. Hand je Karte aus k.deck[cid], sonst gelten die Werte der Karte
+  // Startdeck: Klasse mit „eigenem Startdeck“ (k.ownDeck) nimmt die Anzahl je Karte aus k.deck[cid], sonst gilt die Anzahl der Karte
   HB.deckCounts = (cfg, p, d) => {
     const id = HB.playerClass(cfg, p), k = id && (cfg.classes || []).find((x) => x.id === id);
     if (k && k.ownDeck) { const e = (k.deck || {})[d.cid] || {}; return { count: e.count || 0, startHand: e.startHand || 0 }; }
@@ -1667,7 +1654,7 @@ window.HB = window.HB || {};
     ] },
   ];
   HB.ENEMY_ICONS = [['foeMelee', 'Nahkämpfer'], ['foeRanged', 'Fernkämpfer'], ['foeMage', 'Magier'], ['foeHealer', 'Heiler'], ['foeBoss', 'Boss'], ['enemy', 'Standard']];
-  HB.CONFIG_VERSION = 23;
+  HB.CONFIG_VERSION = 24;
   // Standard-Fallen (auch Grundlage der Migration auf Version 21)
   HB.defaultTrapTypes = (td = {}) => [
     { id: 'poisonTrap', name: 'Giftfalle', icon: 'trapPoison', effects: [{ type: 'poison', amount: (td.poisonTrap || {}).amount ?? 4 }] },
@@ -1829,7 +1816,7 @@ window.HB = window.HB || {};
     heal: { title: 'Heilen', icon: 'heal', text: () => 'Gibt Leben zurück.' },
     draw: { title: 'Ziehen', icon: 'draw', text: () => 'Zieh Karten nach.' },
     discard: { title: 'Abwerfen', icon: 'discard', text: () => 'Wähle Handkarten zum Abwerfen.' },
-    ground: { title: 'Bodenkarte', icon: 'poisonField', text: () => 'Kurz über dem Feld halten = Effekt.' },
+    ground: { title: 'Bodenkarte', icon: 'poisonField', text: () => 'Aufs Feld ziehen = Effekt. Am Bewegen-Symbol oben rechts ziehen = laufen.' },
     moveFx: { title: 'Bewegen', icon: 'move', text: () => 'Erst laufen, dann der Rest der Karte.' },
     range: { title: 'Reichweite', icon: 'range', text: () => 'So weit darf das Ziel weg sein (mit Sicht).' },
     wound: { title: 'Verwundet', icon: 'wound', text: (cfg) => `Nächster Treffer (je Stapel) +${(cfg.rules || {}).woundPct ?? 50} % Schaden.` },
@@ -1839,15 +1826,16 @@ window.HB = window.HB || {};
     fly: { title: 'Fliegen', icon: 'fly', text: () => 'Bodenfelder und Fallen wirken nicht, über Hindernisse. Zugbeginn −1.' },
     haste: { title: 'Eile', icon: 'haste', text: (cfg) => `Jede Bewegung +${(cfg.rules || {}).hasteBonus ?? 1}. Zugende −1.` },
     bleed: { title: 'Blutung', icon: 'bleed', text: () => 'Zugbeginn: Blutfeld unter dem Träger, dann −1.' },
-    invis: { title: 'Unsichtbar', icon: 'eyeOff', text: () => 'Kein Ziel für Gegner. Zugende und jeder Angriff −1.' },
+    invis: { title: 'Unsichtbar', icon: 'eyeOff', text: () => 'Kein Ziel für die Gegenseite. −1 zu Beginn des eigenen Zugs und bei jedem Angriff.' },
     lure: { title: 'Anlocken', icon: 'lure', text: () => 'Ziel geht zu Zugbeginn Schritte auf dich zu.' },
     fear: { title: 'Furcht', icon: 'fear', text: () => 'Ziel geht zu Zugbeginn Schritte von dir weg.' },
     taunt: { title: 'Verspotten', icon: 'taunt', text: () => 'Ziel greift nur dich an.' },
     cond: { title: 'Bedingung', icon: 'condition', text: () => 'Der Zusatz wirkt nur, wenn die Bedingung erfüllt ist. „Verbrauche“: ohne genug Stapel nichts. „Hinter dem Ziel“: du stehst auf einem der drei Felder in seinem Rücken – jede Figur schaut in die Richtung, in die sie zuletzt selbst gelaufen ist (Schieben dreht nicht).' },
     pushWave: { title: 'Rückstoßwelle', icon: 'wave', text: () => 'Stößt alle Gegner im Umkreis von der Mitte weg.' },
+    corpseBomb: { title: 'Kadaver', icon: 'corpse', text: () => 'Hält bis zum Tod (oder Reinigen). Stirbt das Ziel, explodiert es: Schaden nach seinen Max-Leben an alle drumherum – auch an dich.' },
     seed: { title: 'Seuchensaat', icon: 'seed', text: () => 'Stirbt das Ziel, bekommen alle im Umkreis seine Zustände – und eine neue Saat.' },
     aura: { title: 'Aura', icon: 'aura', text: () => 'Wandert mit. Zu deinem Zugbeginn wirkt sie auf alle im Umkreis.' },
-    fog: { title: 'Nebel', icon: 'fog', text: () => 'Wer darin steht, ist unsichtbar. Mit Gift wird daraus eine Giftwolke.' },
+    fog: { title: 'Nebel', icon: 'fog', text: () => 'Wer von der Seite des Werfers darin steht, ist unsichtbar. Mit Gift wird daraus eine Giftwolke.' },
     fieldZone: { title: 'Bodenfläche', icon: 'blessField', text: () => 'Wirkt auf jeden, der hineinläuft – je nach Karte jede Runde oder einmal.' },
     summon: { title: 'Objekt', icon: 'wall', text: () => 'Gehört dir: Rechtsklick reißt es ab. Gegner schlagen Wände ein, wenn sie keinen Weg finden.' },
   };
@@ -1969,10 +1957,11 @@ window.HB = window.HB || {};
   HB.tileEffectTypes.fog = {
     label: 'Nebel', icon: 'fog', tags: ['fog'], color: '#b8c4d8', look: 'mist',
     stack(old, add) { old.duration = Math.max(old.duration || 0, add.duration || 0); },
-    info: (t, x) => ({ cls: 'fog', icon: 'fog', title: 'Nebel', text: `${x.who} darin steht, ist unsichtbar (Gegner greifen nicht an und laufen nicht hin).${x.left}` }),
-    onEnter(g, u) { HB.tileEffectTypes.fog.hide(g, u); },
-    onTurnStart(g, u) { HB.tileEffectTypes.fog.hide(g, u); },
-    hide(g, u) { if (!(u.invis > 0)) { HB.addStatus(g, u, 'invis', 1); g.log(`${g.unitName(u)} verschwindet im Nebel.`); } },
+    info: (t, x) => ({ cls: 'fog', icon: 'fog', title: 'Nebel', text: `${t.owner ? 'Spieler darin sind' : 'Gegner darin sind'} unsichtbar (${t.owner ? 'Gegner greifen sie nicht an und laufen nicht hin' : 'du kannst sie nicht anvisieren'}).${x.left}` }),
+    onEnter(g, u, fx) { HB.tileEffectTypes.fog.hide(g, u, fx); },
+    onTurnStart(g, u, fx) { HB.tileEffectTypes.fog.hide(g, u, fx); },
+    // Nur die eigene Seite verschwindet: Nebel eines Spielers (owner) versteckt Spieler, Nebel ohne owner (von Gegnern) versteckt Gegner
+    hide(g, u, fx) { if (fx && !!fx.owner !== !!u.isPlayer) return; if (!(u.invis > 0)) { HB.addStatus(g, u, 'invis', 1); g.log(`${g.unitName(u)} verschwindet im Nebel.`); } },
   };
   // Bodenfläche mit beliebigen Wirkungen (HB.UNIT_EFFECTS: Segen, Heilung, Gift, Schonfrist …) – EIN Baustein für alle solchen Felder.
   //   effects = Wirkungen, renew: 'turn' = beim Betreten und zu jedem Zugbeginn darin, 'once' = einmal je Figur und Fläche
@@ -2226,10 +2215,10 @@ window.HB = window.HB || {};
     damage: { label: 'Schaden', icon: 'sword', preview: (g, sim, e) => { if (sim.enemy) sim.hp -= HB.attackDamage(g, g.player, e.amount) * (e.hits || 1); }, params: [['amount', 'Schaden', 6], ['hits', 'Treffer', 1]],
       badge: (e) => ((e.hits || 1) > 1 ? `${e.amount}×${e.hits}` : e.amount), text: (e) => HB.dmgText(e.amount, e.hits) },
     poison: { label: 'Gift', icon: 'poison', params: [['amount', 'Gift', 4]], text: (e) => `${e.amount} Gift` },
-    // aim 'choose': Richtung selbst wählen (wie Billard) – über den Gegner ziehen, dann eine der Richtungen weg von dir (Game.evaluateGrab)
-    push: { label: 'Push', icon: 'push', preview: forcePreview(true), grab: (e) => (e.aim === 'choose' ? 'push' : null),
-      params: [['amount', 'Felder', 1], ['aim', 'Richtung', 'straight', [['straight', 'gerade von dir weg'], ['choose', 'selbst wählen (Winkel wie Billard)']]]],
-      text: (e) => `Push ${e.amount}${e.aim === 'choose' ? ' (Richtung wählen)' : ''}` },
+    // Richtung immer selbst wählen (Wunsch des Nutzers): auf/über den Gegner ziehen, dann eine der Richtungen weg von dir anklicken (Game.evaluateGrab)
+    push: { label: 'Push', icon: 'push', preview: forcePreview(true), grab: () => 'push',
+      params: [['amount', 'Felder', 1]],
+      text: (e) => `Push ${e.amount}` },
     pushWave: { label: 'Rückstoßwelle (alle im Umkreis wegstoßen)', icon: 'wave', keywords: ['pushWave', 'push'], area: (g, e, t) => radiusTiles(g, t, e.radius ?? 2),
       preview(g, sim, e) {
         const moved = [];
@@ -2241,16 +2230,16 @@ window.HB = window.HB || {};
       }, params: [['amount', 'Felder', 2], ['radius', 'Radius', 2]],
       text: (e) => `Rückstoßwelle ${e.amount}, Radius ${e.radius ?? 2}` },
     // Bedingung: Wenn (Ziel/du hat Zustand X ≥ N | verbrauche N Stapel X | Ziel stirbt durch die Karte), dann Wirkungen. Wirkung: APPLY.cond
-    cond: { label: 'Bedingung (wenn …, dann …)', icon: 'condition', noNest: true, badge: () => '?', keywords: ['cond'],
-      params: [['test', 'Wenn', 'has', [['has', '… hat Zustand (mindestens)'], ['consume', 'verbrauche Stapel'], ['kill', 'Ziel stirbt durch diese Karte'], ['behind', 'du stehst hinter dem Ziel']]],
-        ['of', 'Bei', 'target', [['target', 'dem Ziel'], ['self', 'dir']], { when: (e) => e.test !== 'kill' && e.test !== 'behind' }],
-        ['status', 'Zustand', 'poison', HB.COND_STATUSES, { when: (e) => e.test !== 'kill' && e.test !== 'behind' }],
-        ['amount', 'Stapel', 1, null, { when: (e) => e.test !== 'kill' && e.test !== 'behind' }],
+    cond: { label: 'Bedingung (wenn …, dann …)', icon: 'condition', noNest: true, badge: () => '?', keywords: [], // kein Erklärtext „Bedingung“ neben der Karte (Wunsch des Nutzers)
+      params: [['test', 'Wenn', 'has', [['has', '… hat Zustand (mindestens)'], ['consume', 'verbrauche Stapel'], ['kill', 'Ziel stirbt durch diese Karte'], ['behind', 'du stehst hinter dem Ziel'], ['behindKill', 'Ziel stirbt von hinten']]],
+        ['of', 'Bei', 'target', [['target', 'dem Ziel'], ['self', 'dir']], { when: (e) => !['kill', 'behind', 'behindKill'].includes(e.test) }],
+        ['status', 'Zustand', 'poison', HB.COND_STATUSES, { when: (e) => !['kill', 'behind', 'behindKill'].includes(e.test) }],
+        ['amount', 'Stapel', 1, null, { when: (e) => !['kill', 'behind', 'behindKill'].includes(e.test) }],
         ['to', 'Wirkung auf', 'target', [['target', 'das Ziel'], ['self', 'dich']]],
         ['effects', 'dann', [{ type: 'damage', amount: 5 }], null, { nested: true }]],
       text: (e) => {
         const st = e.status === 'any' ? 'Zustände' : ((HB.COND_STATUSES.find((x) => x[0] === e.status) || [0, e.status])[1]);
-        const head = e.test === 'kill' ? 'Tötet die Karte das Ziel' : e.test === 'behind' ? 'Stehst du hinter dem Ziel'
+        const head = e.test === 'kill' ? 'Tötet die Karte das Ziel' : e.test === 'behind' ? 'Stehst du hinter dem Ziel' : e.test === 'behindKill' ? 'Tötest du das Ziel von hinten'
           : e.test === 'consume' ? `Verbrauche ${e.amount ?? 1} ${st} ${e.of === 'self' ? 'von dir' : 'des Ziels'}`
             : `Wenn ${e.of === 'self' ? 'du' : 'das Ziel'} ${(e.amount ?? 1) > 1 ? (e.amount + ' ') : ''}${st} ${e.of === 'self' ? 'hast' : 'hat'}`;
         return `${head}: ${fxList(e.effects)}${e.to === 'self' ? ' (auf dich)' : ''}`;
@@ -2277,7 +2266,7 @@ window.HB = window.HB || {};
         } finally { moved.forEach(([u, p]) => { u.pos = p; }); }
       }, params: [['amount', 'Felder', 1], ['radius', 'Radius', 2]],
       text: (e) => `Sog ${e.amount}, Radius ${e.radius}` },
-    corpseExplosion: { label: 'Kadaverexplosion', icon: 'corpse', area: (g, e, t) => radiusTiles(g, t, e.radius ?? 1), badge: (e) => e.percent + '%', keywords: ['corpseExplosion', 'corpse'], params: [['percent', '% der Max-Leben', 75], ['radius', 'Radius', 1]],
+    corpseExplosion: { label: 'Leiche sprengen (nur mit Modul Leichen)', icon: 'corpse', area: (g, e, t) => radiusTiles(g, t, e.radius ?? 1), badge: (e) => e.percent + '%', keywords: ['corpseExplosion', 'corpse'], params: [['percent', '% der Max-Leben', 75], ['radius', 'Radius', 1]],
       text: (e) => `Kadaverexplosion ${e.percent}%` + (e.radius ? `, Radius ${e.radius}` : '') },
     grace: { label: 'Schonfrist', icon: 'grace', orSelf: true, params: [['amount', 'Runden', 2]],
       text: (e) => `Schonfrist ${e.amount}` },
@@ -2738,21 +2727,10 @@ window.HB = window.HB || {};
     setupDeck(p) {
       const c = this.cfg;
       p.drawPile = [];
-      // Klasse mit eigenem Startdeck: Anzahl und 1. Hand je Karte aus der Klasse (HB.deckCounts, defaults.js)
+      // Klasse mit eigenem Startdeck: Anzahl je Karte aus der Klasse (HB.deckCounts, defaults.js)
       const cnt = (d) => HB.deckCounts(c, p, d);
       c.deck.forEach((d, di) => { for (let i = 0; i < cnt(d).count; i++) p.drawPile.push({ uid: uid(), deckIndex: di, def: HB.migrateCard(clone(d)) }); });
       shuffle(p.drawPile);
-      // Feste Starthand: diese Karten oben auf den Stapel legen, damit sie zuerst gezogen werden
-      if (c.startHandEnabled) {
-        const top = [];
-        c.deck.forEach((d, di) => {
-          for (let i = 0; i < Math.min(cnt(d).startHand, cnt(d).count); i++) {
-            const k = p.drawPile.findIndex((x) => x.deckIndex === di);
-            if (k >= 0) top.push(...p.drawPile.splice(k, 1));
-          }
-        });
-        p.drawPile.push(...shuffle(top));
-      }
     }
 
     // ---------- Hilfen ----------
@@ -2883,7 +2861,7 @@ window.HB = window.HB || {};
       for (const p of this.players) {
         p.ended = false;
         if (p.hp <= 0) { p.ended = true; continue; }
-        this.as(p, () => { this.tileTurnStart(p); this.runStatuses(p, 'onTurnStart'); });
+        this.as(p, () => { this.runStatuses(p, 'onTurnStartEarly'); this.tileTurnStart(p); this.runStatuses(p, 'onTurnStart'); });
         if (this.checkEnd()) return this.changed();
         if (p.hp <= 0) { p.ended = true; continue; } // z. B. am Gift gestorben
         this.as(p, () => { p.energy = p.maxEnergy; this.draw(this.cfg.player.draw + HB.relicStat(this, p, 'draw')); HB.relicHook(this, p, 'onTurnStart'); });
@@ -2969,6 +2947,7 @@ window.HB = window.HB || {};
         };
         aim();
         // Zugbeginn dieses Gegners: Zustände (Gift tickt erst jetzt; stirbt ein Träger, steckt er an)
+        this.runStatuses(e, 'onTurnStartEarly'); // vor den Bodenfeldern (Unsichtbar läuft ab, Nebel gibt es neu)
         this.tileTurnStart(e);
         if (this.runStatuses(e, 'onTurnStart')) { this.changed(); await this.wait(350 / speed); }
         if (this.checkEnd()) { this.activeEnemy = null; this.busy = false; this.changed(); return true; }
@@ -2976,9 +2955,13 @@ window.HB = window.HB || {};
         // Betäubt (oder ein anderer Zustand, der den Zug aussetzen lässt): keine Aktionen, kein Zugende-Effekt
         if (HB.skipTurn(this, e)) { this.changed(); await this.wait(350 / speed); continue; }
         const steps = this.intentFor(e).steps;
+        // Schritt mit „exclusive“ (Ausholen): nur dieser Schritt, alle anderen der Intention entfallen
+        const only = steps.findIndex((st) => (HB.STEP_TYPES[st.type] || {}).exclusive);
+        const wasStrike = !!(e.intent && e.intent.windupStrike);
         e.triedAttack = false; e.hitAny = false;
         if (!aim()) { this.fx(e.pos, 'kein Ziel', 'miss'); this.log(`${e.name} findet kein Ziel.`); }
         else for (const [i, step] of steps.entries()) {
+          if (only >= 0 && i !== only) continue;
           if (!e.alive) break;
           if (!aim()) break;
           const hitBefore = e.hitAny; e.hitAny = false;
@@ -3008,6 +2991,7 @@ window.HB = window.HB || {};
           }
           if (this.checkEnd()) { this.activeEnemy = null; this.busy = false; this.changed(); return true; }
         }
+        if (wasStrike && e.windup && !(only >= 0)) delete e.windup; // ausgeholter Schlag ist erledigt
         this.curFoe = null;
         // Zugende dieses Gegners: Zustände (Verlangsamung, Seuche …)
         if (e.alive && this.runStatuses(e, 'onTurnEnd')) { this.changed(); await this.wait(900 / speed); }
@@ -3138,9 +3122,10 @@ window.HB = window.HB || {};
         u.alive = false; this.kills++; if (u.boss) this.bossKilled = true;
         if (this.phase === 'player' && this.player && this.player.hp > 0) HB.relicHook(this, this.player, 'onKill', { enemy: u }); // Relikte des handelnden Spielers
         this.emit('death', { unit: u.uid, pos: { ...u.pos } });
-        this.corpses.push({ pos: { ...u.pos }, maxHp: u.maxHp, name: u.name });
-        for (const k of HB.STATUS_ORDER) { const S = HB.STATUSES[k]; if (S && S.onDeath) S.onDeath(this, u); } // z. B. Seuchensaat
-        this.log(`${u.name} stirbt und hinterlässt eine Leiche.`);
+        const corpse = HB.moduleOn(this.cfg, 'corpses'); // Modul „Leichen“ (standardmäßig aus)
+        if (corpse) this.corpses.push({ pos: { ...u.pos }, maxHp: u.maxHp, name: u.name });
+        this.log(corpse ? `${u.name} stirbt und hinterlässt eine Leiche.` : `${u.name} stirbt.`);
+        for (const k of HB.STATUS_ORDER) { const S = HB.STATUSES[k]; if (S && S.onDeath) S.onDeath(this, u); } // z. B. Seuchensaat, Kadaver
       }
     }
 
@@ -3507,9 +3492,13 @@ window.HB = window.HB || {};
     }
     enemyIcon(e) { const t = this.typeOf(e); return (t && t.icon) || 'enemy'; }
     typeOf(e) { return (this.cfg.enemyTypes || []).find((t) => t.id === e.type) || null; }
+    // Ausgeschaltete Intentionen (it.off, Editor: Haken „an“) werden übersprungen – Nummern bleiben, damit nichts verrutscht
+    intentOn(t, i) { return !!(t && t.intents && t.intents[i] && !t.intents[i].off); }
+    seqNext(t, from) { const n = t.intents.length; for (let k = 1; k <= n; k++) { const i = (((from ?? -1) + k) % n + n) % n; if (this.intentOn(t, i)) return i; } return null; }
+    randomOn(t) { const on = t.intents.map((_, i) => i).filter((i) => this.intentOn(t, i)); return on.length ? on[Math.floor(Math.random() * on.length)] : null; }
     rollEnemyIntent(e) {
       const t = this.typeOf(e);
-      if (!(t && t.intents && t.intents.length)) { e.intent = null; return; }
+      if (!(t && t.intents && t.intents.some((it) => !it.off))) { e.intent = null; return; }
       this.typeIntents = this.typeIntents || {};
       this.typeIntentIdx = this.typeIntentIdx || {};
       if (!this.typeIntents[t.id]) {
@@ -3517,19 +3506,26 @@ window.HB = window.HB || {};
         if (t.pattern === 'sequence') {
           this.typePatternIdx = this.typePatternIdx || {};
           const planned = this.nextPlan && this.nextPlan[t.id];
-          const idx = (planned != null && t.intents[planned]) ? planned : ((this.typePatternIdx[t.id] ?? -1) + 1) % t.intents.length;
+          const idx = (planned != null && this.intentOn(t, planned)) ? planned : this.seqNext(t, this.typePatternIdx[t.id]);
           this.typePatternIdx[t.id] = idx;
           this.typeIntents[t.id] = t.intents[idx];
           this.typeIntentIdx[t.id] = idx;
         } else {
           const planned = this.nextPlan && this.nextPlan[t.id];
-          const idx = (planned != null && t.intents[planned]) ? planned : Math.floor(Math.random() * t.intents.length);
+          const idx = (planned != null && this.intentOn(t, planned)) ? planned : this.randomOn(t);
           this.typeIntents[t.id] = t.intents[idx];
           this.typeIntentIdx[t.id] = idx;
         }
       }
       e.intent = JSON.parse(JSON.stringify(this.typeIntents[t.id]));
       e.intentIdx = this.typeIntentIdx[t.id];
+      this.applyWindup(e);
+    }
+    // Hat der Gegner im letzten Zug ausgeholt (e.windup, Schritt „Ausholen“), ist seine Intention jetzt der heftige Schlag
+    applyWindup(e) {
+      const w = e.windup; if (!w) return;
+      e.intent = { name: 'Ausgeholter Schlag', windupStrike: true, steps: [...(w.move > 0 ? [{ type: 'move', amount: w.move }] : []),
+        { type: 'attack', amount: w.amount, hits: w.hits || 1, range: w.range || 1, minRange: w.minRange || 1 }] };
     }
     // Nach Änderungen im Editor (Live): jeder Gegner bekommt seine gewählte Intention NEU aus der aktuellen Liste seines Typs.
     // Gelöschte Schritte sind sofort weg; gibt es die gewählte Nummer nicht mehr, wird neu gewürfelt.
@@ -3538,11 +3534,11 @@ window.HB = window.HB || {};
       this.typeIntentIdx = this.typeIntentIdx || {};
       for (const e of this.allAlive) {
         const t = this.typeOf(e);
-        if (!t || !t.intents || !t.intents.length) { e.intent = null; continue; }
+        if (!t || !t.intents || !t.intents.some((it) => !it.off)) { e.intent = null; continue; }
         const keep = this.typeIntentIdx[t.id];
-        if (keep != null && t.intents[keep]) {
+        if (keep != null && this.intentOn(t, keep)) {
           this.typeIntents[t.id] = t.intents[keep];
-          e.intent = JSON.parse(JSON.stringify(t.intents[keep])); e.intentIdx = keep;
+          e.intent = JSON.parse(JSON.stringify(t.intents[keep])); e.intentIdx = keep; this.applyWindup(e);
         } else { delete this.typeIntentIdx[t.id]; this.rollEnemyIntent(e); }
       }
       this.aimStrikes(true);
@@ -3554,10 +3550,8 @@ window.HB = window.HB || {};
       this.nextPlan = {};
       for (const e of this.allAlive) {
         const t = this.typeOf(e);
-        if (!t || !t.intents || !t.intents.length || this.nextPlan[t.id] != null) continue;
-        this.nextPlan[t.id] = t.pattern === 'sequence'
-          ? (((this.typePatternIdx || {})[t.id] ?? -1) + 1) % t.intents.length
-          : Math.floor(Math.random() * t.intents.length);
+        if (!t || !t.intents || !t.intents.some((it) => !it.off) || this.nextPlan[t.id] != null) continue;
+        this.nextPlan[t.id] = t.pattern === 'sequence' ? this.seqNext(t, (this.typePatternIdx || {})[t.id]) : this.randomOn(t);
       }
     }
     plannedNextIntent(e) {
@@ -3589,8 +3583,8 @@ window.HB = window.HB || {};
     nextIntentFor(e) {
       const t = this.typeOf(e);
       if (!t || t.pattern !== 'sequence' || !t.intents || !t.intents.length) return null;
-      const idx = (this.typePatternIdx || {})[t.id] ?? -1;
-      return t.intents[(idx + 1) % t.intents.length];
+      const i = this.seqNext(t, (this.typePatternIdx || {})[t.id]);
+      return i == null ? null : t.intents[i];
     }
     hasOwnIntents() { return this.allAlive.some((e) => e.intent); }
     // ---------- Gegner ----------
@@ -5294,8 +5288,11 @@ window.HB = window.HB || {};
           if (alt) target = alt === this.player ? { self: true, hex: { ...alt.pos } } : { hex: { ...alt.pos }, ally: alt };
         }
       }
+      const wasInvis = this.player.invis > 0;
       await this.resolveCard(d, target);
-      if (HB.cardFlag(d, 'attack')) HB.spendInvis(this, this.player); // Angriff: −1 Unsichtbar (erst danach – „wenn du unsichtbar bist“ zählt noch)
+      // Angriff: −1 Unsichtbar (erst danach – „wenn du unsichtbar bist“ zählt noch); nur, wer schon VOR der Karte unsichtbar war
+      // (Unsichtbar, das die Karte selbst gibt – z. B. Hinterhalt tötet von hinten –, bleibt)
+      if (HB.cardFlag(d, 'attack') && wasInvis) HB.spendInvis(this, this.player);
       this.busy = false;
       this.checkEnd();
       this.changed();
@@ -5382,6 +5379,7 @@ window.HB = window.HB || {};
   //   side                → Plakette links oder rechts an der Figur
   //   onTurnStart(g, u)   → zu Beginn des eigenen Zugs (Reihenfolge = STATUS_ORDER); true = kurz warten (Animation)
   //   onTurnEnd(g, u)     → am Ende des eigenen Zugs; true = kurz warten
+  //   onTurnStartEarly(g, u) → Zugbeginn VOR den Bodenfeldern (z. B. Unsichtbar läuft ab, bevor Nebel neu gibt)
   //   add(g, u, p)        → Zustand hinzufügen – die EINZIGE Stelle, die ihn setzt (Karten, Fallen, Bodenfelder, Gegner, Seuche …)
   //   bad(u)              → wie schlimm (für „Verbündeten reinigen“); 0 = nicht schlecht. clear(u) entfernt ihn, gone(u) = Text dazu
   //   kind                → 'blessing' (Segen, gut für den Träger) | 'curse' (Zustand, schlecht)
@@ -5560,10 +5558,11 @@ window.HB = window.HB || {};
       info: (u) => `Zugbeginn: hinterlässt ein Blutfeld, noch ${u.bleed}×.`,
       extra: { onTurnStart(g, u) { if (!(u.bleed > 0)) return false; g.addTileEffect('bloodField', u.pos, { amount: 1 }); u.bleed--; g.log(`${g.unitName(u)} blutet.`); return true; } } }),
     // Unsichtbar: Gegner nehmen den Träger nicht als Ziel (Game.targetOf), Spieler können unsichtbare Gegner nicht anvisieren.
-    // Zugende −1, jeder eigene Angriff −1 (HB.spendInvis). Nebel gibt zu Zugbeginn +1 (Bodenfeld fog)
+    // Zugbeginn −1 (vor den Bodenfeldern, onTurnStartEarly – so hält es über den Zug der Gegenseite), jeder eigene Angriff −1 (HB.spendInvis).
+    // Nebel gibt danach wieder 1 (Bodenfeld fog)
     invis: counter('invis', { kind: 'blessing', label: 'Unsichtbar', icon: 'eyeOff', color: '#c9c9ff',
-      info: (u) => `Kein Ziel für ${u.isPlayer ? 'Gegner' : 'Spieler'}. −1 am Zugende und bei jedem Angriff (noch ${u.invis}).`,
-      extra: { onTurnEnd: drop1('invis', 'Unsichtbar') } }),
+      info: (u) => `Kein Ziel für ${u.isPlayer ? 'Gegner' : 'Spieler'}. −1 zu Beginn des eigenen Zugs und bei jedem Angriff (noch ${u.invis}).`,
+      extra: { onTurnStartEarly: drop1('invis', 'Unsichtbar') } }),
     lure: sourced('lure', { label: 'Angelockt', icon: 'lure', color: '#ffb36b',
       info: (u, g) => `Zugbeginn: ${u.lure.steps} Feld${u.lure.steps === 1 ? '' : 'er'} auf ${byName(g, u.lure.by)} zu (noch ${u.lure.n}×).`,
       extra: { onTurnStart: nudgeTurn('lure', false) } }),
@@ -5609,6 +5608,24 @@ window.HB = window.HB || {};
         for (const v of victims) { HB.copyStatuses(g, u, v); v.seed = { ...sd }; g.hooks.fxLine && g.hooks.fxLine(u.pos, v.pos, 'plague'); }
         g.emit('seed_burst', { unit: u.uid, pos: { ...u.pos }, targets: victims.map((v) => g.unitId(v)) });
         if (victims.length) { g.log(`Seuchensaat: ${u.name} verteilt seine Zustände auf ${victims.map((v) => g.unitName(v)).join(', ')}.`); g.notice(`Seuchensaat springt auf ${victims.length}`, 'plague'); }
+      },
+    },
+    // Kadaver (Kadaverexplosion): hält, bis der Träger stirbt (oder gereinigt wird). Stirbt er, explodiert er:
+    // Schaden = percent % seiner Max-Leben an ALLE (Gegner und Spieler) im Radius – Kettenreaktionen möglich
+    corpseBomb: {
+      kind: 'curse', label: 'Kadaver', icon: 'corpse', css: 'st-corpseBomb', color: '#d9b38c', side: 'left', field: 'corpseBomb',
+      value: (u) => (u.corpseBomb ? '' : null),
+      info: (u) => `Stirbt der Träger, explodiert er: ${u.corpseBomb.percent ?? 100}% seiner Max-Leben als Schaden an alle im Radius ${HB.util.rangeText(u.corpseBomb.radius ?? 2)} – Gegner und Spieler.`,
+      add(g, u, p = {}) { u.corpseBomb = { radius: p.radius ?? 2, percent: p.percent ?? 100 }; g.fx(u.pos, 'Kadaver', 'stun'); },
+      bad: (u) => (u.corpseBomb ? 1 : 0), gone: () => 'Kadaver', clear(u) { u.corpseBomb = null; },
+      onDeath(g, u) {
+        const cb = u.corpseBomb; if (!cb) return;
+        u.corpseBomb = null; // nur einmal
+        const r = HB.util.reach(cb.radius ?? 2), dmg = Math.round((u.maxHp || 0) * (cb.percent ?? 100) / 100);
+        const victims = [...g.alive.filter((o) => o !== u), ...g.floorPlayers.filter((p) => p.hp > 0)].filter((o) => H.distance(o.pos, u.pos) <= r);
+        g.emit('corpse_explode', { pos: { ...u.pos }, radius: r, damage: dmg });
+        g.log(`${u.name} explodiert: ${dmg} Schaden an ${victims.map((v) => g.unitName(v)).join(', ') || 'niemandem'}.`);
+        for (const v of victims) g.damage(v, dmg);
       },
     },
     // Aura: wandert mit dem Träger. Zu Beginn seines Zugs wirken die Wirkungen auf alle im Radius (Seite: who), Zugende −1 Zug
@@ -5671,7 +5688,7 @@ window.HB = window.HB || {};
     g.fx(b.pos, 'Saat', 'plague');
   };
   HB.STATUS_ORDER = ['block', 'strength', 'plague', 'poison', 'grace', 'slow', 'stun', 'disarm', 'buffPoison',
-    'wound', 'confuse', 'thorns', 'dodge', 'fly', 'haste', 'bleed', 'invis', 'lure', 'fear', 'taunt', 'seed', 'aura'];
+    'wound', 'confuse', 'thorns', 'dodge', 'fly', 'haste', 'bleed', 'invis', 'lure', 'fear', 'taunt', 'seed', 'corpseBomb', 'aura'];
   // Auswahl „Zustand“ für Bedingungen (Karteneffekt cond)
   HB.COND_STATUSES.splice(0, HB.COND_STATUSES.length, ['any', 'beliebige Zustände (zufällig)'], ...HB.STATUS_ORDER.map((k) => [k, HB.STATUSES[k].label]));
   // Reinigen entfernt alle schlechten Zustände (Art 'curse' mit bad/clear) – neue Zustände automatisch
@@ -5748,6 +5765,9 @@ window.HB = window.HB || {};
     seed: { status: 'seed', label: 'Seuchensaat', icon: 'seed', params: [['radius', 'Radius', 2, null, { inf: true }], ['who', 'Verteilt auf', 'foes', [['foes', 'nur Gegner'], ['all', 'auch Spieler']]]],
       text: (e) => `Seuchensaat (Radius ${HB.util.rangeText(e.radius ?? 2)}${e.who === 'all' ? ', auch Spieler' : ''})`,
       apply(g, u, e) { HB.addStatus(g, u, 'seed', { radius: e.radius, who: e.who }); return 'Seuchensaat'; } },
+    corpseBomb: { status: 'corpseBomb', label: 'Kadaver (explodiert beim Tod)', icon: 'corpse', params: [['percent', '% Max-Leben', 100], ['radius', 'Radius', 2, null, { inf: true }]],
+      text: (e) => `Kadaver: stirbt es, ${e.percent ?? 100}% seiner Max-Leben als Schaden an alle im Radius ${HB.util.rangeText(e.radius ?? 2)}`,
+      apply(g, u, e) { HB.addStatus(g, u, 'corpseBomb', { radius: e.radius, percent: e.percent }); return 'Kadaver'; } },
     aura: { status: 'aura', label: 'Aura', icon: 'aura',
       params: [['radius', 'Radius', 2, null, { inf: true }], ['who', 'Trifft', 'friends', [['friends', 'eigene Seite (auch du)'], ['foes', 'Feinde'], ['all', 'alle']]], ['turns', 'Züge', 3],
         ['mode', 'Wirkt', 'while', [['while', 'solange man drin steht (stapelt nicht)'], ['tick', 'jede Runde einmal (z. B. Gift)']]],
@@ -5795,7 +5815,7 @@ window.HB = window.HB || {};
     },
     plague(g, fx, c) { if (c.live(c.e)) { g.newOutbreak(c.e, fx); c.parts.push('Seuche'); } },
     async push(g, fx, c) {
-      // Richtung selbst gewählt (aim 'choose', Game.evaluateGrab): gerade Linie in diese Richtung
+      // Richtung selbst gewählt (Game.evaluateGrab): gerade Linie in diese Richtung; ohne Wahl (z. B. Vorschau) gerade von dir weg
       if (c.target.pushDir != null && c.live(c.e) && !c.e.isPlayer) await g.forceMoveDir(c.e, c.target.pushDir, fx.amount, c.speed);
       else if (c.live(c.e) && !c.e.isPlayer) await g.forceMove(c.e, g.player.pos, fx.amount, true, c.speed);
       else if (!c.e && c.target.object && g.objDef(c.target.object).pushable && g.objects.includes(c.target.object)) await g.pushObject(c.target.object, g.player.pos, fx.amount, true, c.speed);
@@ -5833,7 +5853,7 @@ window.HB = window.HB || {};
     fogZone(g, fx, c) {
       const tiles = g.areaTiles(fx, c.target.hex || (c.e && c.e.pos) || g.player.pos);
       tiles.forEach((h) => g.addTileEffect('fog', h, { duration: fx.duration, owner: ownerOf(g, c) }));
-      [...g.floorPlayers, ...g.alive].filter((o) => g.effectsAt(o.pos).some((f) => f.type === 'fog')).forEach((o) => HB.tileEffectTypes.fog.hide(g, o));
+      [...g.floorPlayers, ...g.alive].forEach((o) => { const f = g.effectsAt(o.pos).find((x) => x.type === 'fog'); if (f) HB.tileEffectTypes.fog.hide(g, o, f); });
       c.parts.push(`Nebel auf ${tiles.length} Feld${tiles.length === 1 ? '' : 'ern'} (${fx.duration} Runden)`);
     },
     // Bodenfläche mit Wirkungen (Bodenfeld effectField); wer schon darin steht, bekommt sie sofort (wie beim Betreten)
@@ -5946,6 +5966,7 @@ window.HB = window.HB || {};
       let ok = false;
       if (fx.test === 'kill') ok = !!c.e && !c.e.isPlayer && !c.e.alive;
       else if (fx.test === 'behind') ok = !!c.e && HB.isBehind(src, c.e); // vorn/hinten: Blickrichtung des Ziels (u.facing)
+      else if (fx.test === 'behindKill') ok = !!c.e && !c.e.isPlayer && !c.e.alive && HB.isBehind(src, c.e); // von hinten getötet
       else if (who && g.isLive(who)) {
         const n = Math.max(1, fx.amount ?? 1);
         // 'any' = beliebige schlechte Zustände (zufällig verbraucht: hat das Ziel nur Gift, nur Gift)
@@ -6363,7 +6384,7 @@ window.HB = window.HB || {};
     chain: cardStep('chain', 'Kette (springt auf weitere Spieler)'),
     curse: {
       label: 'Störkarte geben', icon: () => 'enemy',
-      params: [['card', 'Störkarte', 'random', HB.CURSE_CHOICES_RANDOM], ['pool', 'Aus (keine = alle)', [], HB.CURSE_CHOICES, { multi: true, when: (s) => s.card === 'random' }],
+      params: [['card', 'Störkarte', 'random', HB.CURSE_CHOICES_RANDOM], ['pool', 'Zufällig nur aus (nichts angehakt = alle)', [], HB.CURSE_CHOICES, { multi: true, when: (s) => s.card === 'random' && HB.CURSE_CHOICES.length > 1 }],
         ['amount', 'Anzahl', 1], ['to', 'Wohin', 'discard', HB.CURSE_DEST], ['range', 'Reichweite', 3]],
       targetsPlayer: true, threat: 'effect',
       describe: (s) => `${s.amount || 1}× ${s.card === 'random' ? 'Störkarte' : ((HB.CURSE_CHOICES.find((c) => c[0] === s.card) || [0, 'Störkarte'])[1])} → ${(HB.CURSE_DEST.find((x) => x[0] === s.to) || HB.CURSE_DEST[0])[1]} (R${HB.util.rangeText(s.range)})`,
@@ -6404,6 +6425,17 @@ window.HB = window.HB || {};
       label: 'Ausruhen', icon: () => 'rest', params: [],
       describe: () => 'Ruht sich aus',
       async run(g, e, s, speed) { g.fx(e.pos, 'ruht', 'miss'); g.log(`${e.name} ruht sich aus.`); g.changed(); await g.wait(250 / speed); },
+    },
+    // Ausholen: in diesem Zug tut der Gegner NICHTS anderes (auch kein Laufen – exclusive, game.js), im nächsten Zug kommt der
+    // heftige Schlag (eigene Intention aus e.windup, Game.applyWindup); optional läuft er vorher noch Felder
+    windup: {
+      label: 'Ausholen (nächster Zug: heftiger Schlag)', icon: () => 'charge', exclusive: true,
+      params: [['amount', 'Schaden im nächsten Zug', 15], ['hits', 'Treffer', 1], ['range', 'Reichweite', 1], ['minRange', 'Mindestreichweite', 1], ['move', 'Vorher laufen (Felder, 0 = nicht)', 0]],
+      describe: (s) => `Holt aus – nächster Zug ${HB.dmgText(s.amount, s.hits)}${HB.util.reach(s.range) > 1 ? ` (R${HB.util.rangeText(s.range)})` : ''}${s.move > 0 ? `, vorher ${s.move} Feld${s.move === 1 ? '' : 'er'} laufen` : ''}`,
+      async run(g, e, s, speed) {
+        e.windup = { amount: s.amount, hits: s.hits || 1, range: s.range || 1, minRange: s.minRange || 1, move: s.move | 0 };
+        g.fx(e.pos, 'holt aus!', 'charge'); g.log(`${e.name} holt aus – nächster Zug kommt ein heftiger Schlag.`); g.changed(); await g.wait(300 / speed);
+      },
     },
     charge: {
       label: 'Lädt auf', icon: () => 'charge', params: [],
@@ -6921,9 +6953,12 @@ window.HB = window.HB || {};
       const hovered = view.inspectUid === e.uid;
       // gerade erschienen: sichtbar „am Auftauchen“, aber schon angreifbar
       const stunned = !view.setup && e.stun > 0;
-      g.setAttribute('class', 'unit enemy' + (active ? ' active' : '') + (hovered ? ' hovered' : '') + (view.markUid === e.uid ? ' marked' : '') + (stunned ? ' stunned' : '') + (e.boss ? ' boss' : ''));
+      // Unsichtbar (invis): wirklich nicht zu sehen – keine Figur, keine Leiste, keine Absicht, nicht anklickbar
+      const unseen = !view.setup && e.invis > 0;
+      g.setAttribute('class', 'unit enemy' + (active ? ' active' : '') + (hovered ? ' hovered' : '') + (view.markUid === e.uid ? ' marked' : '') + (stunned ? ' stunned' : '') + (e.boss ? ' boss' : '') + (unseen ? ' unseen' : ''));
       const intent = view.intentFor ? view.intentFor(e) : view.intent;
       if (pix) g.setAttribute('data-sprite', HB.pixi.spriteFor(e)); face(g, e);
+      if (unseen) { split(g, e.uid, '', '', e.pos); continue; }
       split(g, e.uid, `<circle class="ring" r="${SIZE * 0.74}"/>` + body(view.enemyIcon ? view.enemyIcon(e) : 'enemy'), ''
         + `<g class="badge"><circle cx="${-SIZE * 0.42}" cy="${-SIZE * 0.44}" r="7"/><text x="${-SIZE * 0.42}" y="${-SIZE * 0.44 + 3.5}">${e.order}</text></g>`
         + `<g class="hpw${e.hp >= e.maxHp ? ' full' : ''}">` + hpBar(0, SIZE * 0.68, SIZE * 1.3, e.hp, e.maxHp, 'hp-enemy') + '</g>'
@@ -7292,7 +7327,7 @@ window.HB = window.HB || {};
       const boss = cls.contains('boss'), op = focus && cls.contains('enemy') && !cls.contains('hovered') ? 0.45 : 1;
       const big = (boss ? 1.25 : 1) * (r.isHero ? 1.2 : 1); // Spieler etwas größer (Wunsch des Nutzers)
       r.spr.scale.set(scale * big * r.face * r.native, scale * big); // r.native: Blickrichtung des Bilderbogens
-      r.box.alpha = op * (cls.contains('dead') ? 0.35 : 1) * (cls.contains('stunned') ? 0.7 + Math.sin(now / 160) * 0.15 : 1);
+      r.box.alpha = (cls.contains('unseen') ? 0 : 1) * op * (cls.contains('dead') ? 0.35 : 1) * (cls.contains('stunned') ? 0.7 + Math.sin(now / 160) * 0.15 : 1);
       if (r.isHero) {
         const num = parseInt(((g.getAttribute('class') || '').match(/\bp(\d)\b/) || [])[1] || '1', 10);
         r.spr.tint = cls.contains('dead') ? 0x777777 : 0xffffff;
@@ -7431,11 +7466,20 @@ window.HB = window.HB || {};
   }
 
   // Aufsteigende Zahlen und Wörter (Schaden, Gift, Heilung …), aufgerufen von HB.render.fx
+  // Schadenszahlen am selben Ort kurz hintereinander (z. B. Grundschaden + Bedingung einer Karte) werden zu EINER Zahl zusammengezählt
+  const recentNums = [];
   api.floatText = function (x, y, str, fill, size) {
     if (!api.on) return;
+    const num = /^-(\d+)$/.exec(String(str)), now = performance.now();
+    if (num) {
+      for (let i = recentNums.length - 1; i >= 0; i--) if (now - recentNums[i].at > 450 || recentNums[i].t.destroyed) recentNums.splice(i, 1);
+      const old = recentNums.find((r) => Math.abs(r.x - x) < 2 && Math.abs(r.y - y) < 2 && r.fill === fill);
+      if (old) { old.sum += +num[1]; old.at = now; old.t.text = '-' + old.sum; return; }
+    }
     let color = 0xff6b6b; try { color = new P.Color(fill && fill !== 'none' ? fill : '#ff6b6b').toNumber(); } catch (e) { /* Standardfarbe */ }
     const t = new P.Text({ text: String(str), style: { fontFamily: 'system-ui, sans-serif', fontWeight: '800', fontSize: size || 18, fill: color, stroke: { color: 0x000000, width: 3 } }, resolution: 2 });
     t.anchor.set(0.5, 1); t.position.set(x, y); fxLayer.addChild(t);
+    if (num) recentNums.push({ x, y, fill, t, sum: +num[1], at: now });
     tween(1100, (k) => { t.y = y - 30 * (1 - (1 - k) * (1 - k)); t.alpha = k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45; }).then(() => t.destroy());
   };
 
@@ -7542,7 +7586,7 @@ window.HB = window.HB || {};
       ...(c.trapTypes || []).map((tt) => [tt.id, tt.icon || 'trapPoison', tt.name || 'Falle']),
       ...Object.entries(HB.OBJECT_TYPES).map(([k, o]) => ['obj:' + k, o.icon, o.label]),
       ['poisonField', 'poisonField', 'Giftfeld (Vorbereitung)'], ['start', 'player', 'Spielerstart'], ...(inCombat ? [] : [['zone', 'flag', 'Spawn-Zone anmalen'], ['hole', 'erase', 'Felder entfernen/einsetzen']]), ['erase', 'erase', 'Löschen'],
-      ...(inCombat ? [['kill', 'skull', 'Töten (Test)'], ['corpse', 'corpse', 'Leiche (Test)']] : [])];
+      ...(inCombat ? [['kill', 'skull', 'Töten (Test)'], ...(HB.moduleOn(c, 'corpses') ? [['corpse', 'corpse', 'Leiche (Test)']] : [])] : [])];
     const box = el('div', {},
       locked ? el('p', { class: 'note' }, 'Live-Bearbeitung ist aus. Oben einschalten oder „Zum Aufbau“ drücken.') : null,
       el('div', { class: 'tools' }, tools.map(([id, ic, t]) => el('button', {
@@ -7949,8 +7993,8 @@ window.HB = window.HB || {};
         btn(`${I.icon('deck')} 1 Karte ziehen`, () => { if (ok()) { g.as(HB.app.me(), () => g.draw(1)); g.changed(); } }, 'sec')),
       el('p', { class: 'hint' }, 'Relikt direkt geben (dem gesteuerten Spieler):'),
       el('div', { class: 'testcards' }, Object.entries(HB.RELICS).map(([id, d]) => btn(`+ ${d.label}`, () => { if (ok()) { const P = HB.app.me(); g.as(P, () => g.giveRelic(P, id)); } }, 'sec mini'))),
-      el('p', { class: 'hint' }, 'Werkzeuge oben: „Töten“ = Klick auf Gegner tötet sofort (mit Leiche). „Leiche“ = Klick legt/entfernt eine Leiche.'),
-      num('Max-Leben neuer Test-Leichen', () => c.testCorpseHp || c.enemyDefaults.hp, (v) => { c.testCorpseHp = Math.max(1, v); g.cfg.testCorpseHp = c.testCorpseHp; }, { icon: 'corpse', min: 1 }));
+      el('p', { class: 'hint' }, HB.moduleOn(c, 'corpses') ? 'Werkzeuge oben: „Töten“ = Klick auf Gegner tötet sofort (mit Leiche). „Leiche“ = Klick legt/entfernt eine Leiche.' : 'Werkzeug oben: „Töten“ = Klick auf Gegner tötet sofort.'),
+      HB.moduleOn(c, 'corpses') ? num('Max-Leben neuer Test-Leichen', () => c.testCorpseHp || c.enemyDefaults.hp, (v) => { c.testCorpseHp = Math.max(1, v); g.cfg.testCorpseHp = c.testCorpseHp; }, { icon: 'corpse', min: 1 }) : el('span'));
   }
 
   // Spielerwerte im laufenden Kampf
@@ -7972,7 +8016,6 @@ window.HB = window.HB || {};
       check('Seitenleiste im Spiel zeigen (Reihenfolge, Legende, Kampflog) – gilt nur in diesem Browser', () => HB.app.side, (v) => HB.app.setSide(v)),
       // Module (js/modules.js): jedes System lässt sich abschalten, ohne dass der Kampf hängt (Rausschneide-Test)
       ...HB.MODULES.map((m) => check(m.label, () => m.get(c), (v) => m.set(c, v), 'Modul „' + m.id + '“', true)),
-      check('Feste Starthand (Feld „1. Hand“ bei den Karten)', () => c.startHandEnabled, (v) => c.startHandEnabled = v),
       check('Bewegen kostet die Energie der Karte', () => c.moveCostsEnergy, (v) => c.moveCostsEnergy = v),
       check('Angekündigte Schläge (Schlag ohne Laufen/Pull/Push davor trifft ein markiertes Feld – ausweichen möglich)', () => c.telegraph !== false, (v) => c.telegraph = v),
       check('Fernkampf-Schläge folgen dir (zielen auf dein Feld, solange du in Reichweite und Sicht bist)', () => c.rangedTrack !== false, (v) => c.rangedTrack = v),
@@ -8168,18 +8211,18 @@ window.HB = window.HB || {};
     }
     return box;
   }
-  // Eigenes Startdeck einer Klasse: Anzahl und „1. Hand“ je Karte (k.deck[cid]); aus = Startdeck wie bei den Karten eingestellt
+  // Eigenes Startdeck einer Klasse: Anzahl je Karte (k.deck[cid]); aus = Startdeck wie bei den Karten eingestellt
   function classDeckBox(k, cards) {
     const box = el('div', {}, check('Eigenes Startdeck', () => k.ownDeck, (v) => {
       k.ownDeck = v;
-      if (v && !k.deck) { HB.ensureCardIds(cards); k.deck = {}; cards.forEach((d) => { if (d.count) k.deck[d.cid] = { count: d.count, startHand: d.startHand || 0 }; }); } // Start: Kopie des allgemeinen Decks
+      if (v && !k.deck) { HB.ensureCardIds(cards); k.deck = {}; cards.forEach((d) => { if (d.count) k.deck[d.cid] = { count: d.count }; }); } // Start: Kopie des allgemeinen Decks
     }, 'Diese Klasse startet mit eigenen Karten statt mit dem allgemeinen Startdeck', true));
     if (!k.ownDeck) return box;
     HB.ensureCardIds(cards); k.deck = k.deck || {};
-    const tbl = el('table', { class: 'classtbl' }, el('tr', {}, el('th', {}, 'Karte'), el('th', {}, 'Anzahl'), el('th', { title: 'So viele davon liegen sicher in der ersten Hand (Werte → Feste Starthand)' }, '1. Hand')));
+    const tbl = el('table', { class: 'classtbl' }, el('tr', {}, el('th', {}, 'Karte'), el('th', {}, 'Anzahl im Startdeck')));
     const numCell = (d, key) => el('td', {}, el('input', { type: 'number', min: 0, max: 30, value: ((k.deck[d.cid] || {})[key]) || 0, class: 'qnum',
-      oninput: (ev) => { const v = Math.max(0, parseInt(ev.target.value, 10) || 0), e = k.deck[d.cid] = k.deck[d.cid] || { count: 0, startHand: 0 }; e[key] = v; if (!e.count && !e.startHand) delete k.deck[d.cid]; changed(); } }));
-    cards.filter((d) => HB.cardForClass(d, k.id)).forEach((d) => tbl.append(el('tr', {}, el('td', {}, d.name || '?'), numCell(d, 'count'), numCell(d, 'startHand'))));
+      oninput: (ev) => { const v = Math.max(0, parseInt(ev.target.value, 10) || 0), e = k.deck[d.cid] = k.deck[d.cid] || { count: 0 }; e[key] = v; if (!e.count) delete k.deck[d.cid]; changed(); } }));
+    cards.filter((d) => HB.cardForClass(d, k.id)).forEach((d) => tbl.append(el('tr', {}, el('td', {}, d.name || '?'), numCell(d, 'count'))));
     const total = Object.values(k.deck).reduce((a, e) => a + (e.count || 0), 0);
     box.append(el('details', {}, el('summary', {}, `Startdeck: ${total} Karten`), tbl));
     return box;
@@ -8247,8 +8290,9 @@ window.HB = window.HB || {};
     const box = el('div', {});
     const types = Object.entries(HB.STEP_TYPES).map(([k, v]) => [k, v.label]);
     list.forEach((it, i) => {
-      const card = el('div', { class: 'icard' },
+      const card = el('div', { class: 'icard' + (it.off ? ' ioff' : '') },
         el('div', { class: 'ihead' + (opts.currentIndex === i ? ' current' : '') },
+          check('an', () => !it.off, (v) => { if (v) delete it.off; else it.off = true; }, 'Aus = die Intention bleibt gespeichert, der Gegner nutzt sie aber nicht (ausgegraut)', true),
           el('b', {}, `#${i + 1}  `),
           el('input', { type: 'text', class: 'iname', placeholder: 'Name (optional)', value: it.name || '', maxlength: 24,
             oninput: (ev) => { it.name = ev.target.value.trim() || undefined; changed(); } }),
@@ -8557,7 +8601,7 @@ window.HB = window.HB || {};
   function quickNum(d, key, title) {
     return el('input', { type: 'number', class: 'qnum', min: 0, max: 99, value: d[key] || 0, title,
       onclick: (ev) => ev.stopPropagation(),
-      oninput: (ev) => { const v = parseInt(ev.target.value, 10); if (!isNaN(v) && v >= 0) { d[key] = v; if (key === 'startHand' && v > (d.count || 0)) d.count = v; changed(); } },
+      oninput: (ev) => { const v = parseInt(ev.target.value, 10); if (!isNaN(v) && v >= 0) { d[key] = v; changed(); } },
       onchange: () => render() });
   }
   function quickCheck(d, key, title) {
@@ -8574,7 +8618,7 @@ window.HB = window.HB || {};
     const box = el('div', {},
       curses ? el('p', { class: 'hint' }, 'Störkarten kommen über die Gegner-Aktion „Störkarte geben“ in dein Deck (oder als „Deck“-Anzahl schon zu Beginn). Sie lassen sich nie als Bewegung nutzen und erscheinen nie im Markt oder Draft.'
         + (inCombat ? ' „+ Hand“ legt eine Kopie sofort auf die Hand (Test).' : ''))
-      : el('p', { class: 'hint' }, `Startdeck: ${total} Karten. Unter jeder Karte: „Deck“ = wie oft sie im Startdeck ist (0 = nicht drin, Karte blass). „1. Hand“ = wie viele dieser Deck-Karten sicher in deiner ersten Hand liegen (keine Extra-Karten). „Markt“/„Draft“ = kann dort angeboten werden; ohne beide Haken kommt die Karte nur übers Startdeck oder über den Effekt „Karte auf die Hand“ einer anderen Karte ins Spiel.`
+      : el('p', { class: 'hint' }, `Startdeck: ${total} Karten. Unter jeder Karte: „Deck“ = wie oft sie im Startdeck ist (0 = nicht drin, Karte blass). „Markt“/„Draft“ = kann dort angeboten werden; ohne beide Haken kommt die Karte nur übers Startdeck oder über den Effekt „Karte auf die Hand“ einer anderen Karte ins Spiel.`
         + ` Klick auf die Karte klappt Kosten, Ziel und Effekte zum Bearbeiten auf.` + (inCombat ? ' „+ Hand“ legt eine Kopie sofort auf die Hand des gesteuerten Spielers (Test).' : '')));
     if (!curses) box.append(newDefaultsBox(c));
     const grid = el('div', { class: 'cardgrid' });
@@ -8617,7 +8661,6 @@ window.HB = window.HB || {};
         oninput: (ev) => { d.name = ev.target.value; face.querySelector('.cname').textContent = d.name || ' '; changed(); } });
       tile.append(face, nameIn, el('div', { class: 'tilebar' },
         lab('Deck', quickNum(d, 'count', 'Anzahl im Startdeck')),
-        lab('1. Hand', quickNum(d, 'startHand', 'So viele der Deck-Karten liegen sicher in deiner ersten Hand (keine Extra-Karten)')),
         lab('Markt', quickCheck(d, 'inPool', 'Kann im Markt angeboten werden')),
         lab('Draft', quickCheck(d, 'inDraft', 'Kann im Kartendraft nach einer Welle angeboten werden')),
         inCombat ? btn('+ Hand', () => {
@@ -8635,11 +8678,9 @@ window.HB = window.HB || {};
             btn('▲ Zuklappen', () => { openCards.delete(i); render(); }, 'mini sec')),
           el('div', { class: 'grid' },
             text('Name', () => d.name, (v) => d.name = v),
-            num('Anzahl im Deck', () => d.count, (v) => d.count = v, { icon: 'deck' }),
             num('Energiekosten', () => d.cost, (v) => d.cost = v, { icon: 'energy' }),
-            select('Ziel', [['enemy', 'Gegner'], ['self', 'Selbst'], ['any', 'Gegner oder ich (beim Ausspielen wählen)'], ['tile', 'Feld (Bodeneffekt)'], ['corpse', 'Leiche']], () => d.target, (v) => d.target = v, true),
+            select('Ziel', [['enemy', 'Gegner'], ['self', 'Selbst'], ['any', 'Gegner oder ich (beim Ausspielen wählen)'], ['tile', 'Feld (Bodeneffekt)'], ...(HB.moduleOn(c, 'corpses') || d.target === 'corpse' ? [['corpse', 'Leiche']] : [])], () => d.target, (v) => d.target = v, true),
             d.target !== 'self' ? rangeInput('Reichweite', () => d.range, (v) => d.range = v, { icon: 'range' }) : el('span'),
-            num('davon sicher in 1. Hand', () => d.startHand || 0, (v) => d.startHand = Math.max(0, v), { icon: 'deck', title: 'So viele der Deck-Karten liegen sicher in deiner ersten Hand (keine Extra-Karten)' }),
             check('im Markt', () => d.inPool, (v) => d.inPool = v, 'Kann im Markt angeboten werden'),
             check('im Kartendraft', () => d.inDraft, (v) => d.inDraft = v, 'Kann im Kartendraft nach einer Welle angeboten werden'),
             select('Kategorie', Object.entries(HB.CARD_CATEGORIES).map(([k, v]) => [k, v.label]), () => HB.cardCategoryKey(d), (v) => { d.category = v; delete d.isAttack; if (v === 'curse') { d.inPool = false; d.inDraft = false; } }, true),
@@ -8867,6 +8908,19 @@ window.HB = window.HB || {};
     // Die alte „Max. Phasen“ entfällt; die alte Standard-Ansteckweite 1 wird zu 2.
     { before: 23, name: 'Seuche neu', run(c) {
       c.deck.forEach((d) => (d.effects || []).forEach((fx) => { if (fx.type === 'plague') { delete fx.duration; if ((fx.jumpRange || 1) === 1) fx.jumpRange = 2; } }));
+    } },
+    // Wunsch des Nutzers (18.10.): Hinterhalt gibt 1 Unsichtbar, wenn er von hinten tötet; Kadaverexplosion neu (Leichen sind raus):
+    // 10 Schaden + Zustand Kadaver (stirbt das Ziel, 100 % seiner Max-Leben an alle im Radius 2). Nur genau diese Karten.
+    { before: 24, name: 'Hinterhalt + Kadaverexplosion neu', run(c) {
+      c.deck.forEach((d) => {
+        if (d.cid === 'std_hinterhalt' && !(d.effects || []).some((fx) => fx.type === 'cond' && fx.test === 'behindKill')) {
+          d.effects.push({ type: 'cond', test: 'behindKill', to: 'self', effects: [{ type: 'invis', amount: 1 }] });
+        }
+        if (d.name === 'Kadaverexplosion' && (d.effects || []).some((fx) => fx.type === 'corpseExplosion')) {
+          d.target = 'enemy'; d.range = d.range || 2; d.category = 'attack';
+          d.effects = [{ type: 'damage', amount: 10 }, { type: 'corpseBomb', percent: 100, radius: 2 }];
+        }
+      });
     } },
   ];
 
@@ -10182,12 +10236,15 @@ window.HB = window.HB || {};
     const el = document.createElement('div');
     const hc = handChoice(), noMove = HB.cardFlag(d, 'noMove');
     el.className = 'card t-' + d.target + (playable ? '' : ' noenergy') + (card.moveArmed ? ' armed' : '') + (hc ? ' pick' : '') + (noMove ? ' nomove' : '') + ' ' + HB.cardClasses(d);
+    // Bodenkarten (Ziel Feld): Bewegen-Symbol oben rechts – von dort ziehen = laufen statt Effekt
+    const moveBtn = ground && !noMove;
     el.innerHTML = `<div class="cost">${I.icon('energy')}<span></span></div><div class="cname"></div>`
+      + (moveBtn ? `<div class="movebtn${moveOk ? '' : ' noenergy'}">${I.icon('move')}<b>${g.playerMoveRange(card)}</b></div>` : '')
       + `<div class="cfx">${(d.effects || []).map(effectBadge).map(([ic, n, t]) => `<span class="fx-${ic}" title="${HB.esc(t)}">${I.icon(ic)}<b>${HB.esc(n)}</b></span>`).join('')}`
       + (HB.cardRanged(d) ? `<span class="fx-range" title="Reichweite">${I.icon('range')}<b>${HB.util.rangeText(d.range)}</b></span>` : '') + '</div>'
       + `<div class="ctext"></div>`
-      // Bewegungs-Ansicht: erscheint, wenn die Maus über dem Energie-Kreis ist (dann zieht man die Karte als Bewegung)
-      + (noMove ? '' : `<div class="moveface${moveOk ? '' : ' noenergy'}">${I.icon('move')}<b>Bewegen ${g.playerMoveRange(card)}</b>`
+      // Bewegungs-Ansicht: erscheint, wenn die Maus über dem Bewegen-Symbol ist (dann zieht man die Karte als Bewegung)
+      + (!moveBtn ? '' : `<div class="moveface${moveOk ? '' : ' noenergy'}">${I.icon('move')}<b>Bewegen ${g.playerMoveRange(card)}</b>`
         + `<span>${moveCost ? `kostet ${moveCost} Energie` : 'kostenlos'} · nur Laufen, kein Effekt</span></div>`)
       + `<div class="cattag">${HB.cardCategory(d).label}</div>`
       + (hc ? `<div class="discard-tag">${I.icon(HB.CHOICES[hc.type].icon)} ${HB.CHOICES[hc.type].verb}</div>` : '');
@@ -10197,16 +10254,18 @@ window.HB = window.HB || {};
     el.title = `${d.name} (${d.cost || 0} Energie): ${HB.cardText(d)}`;
     el.addEventListener('pointerenter', (ev) => { if (ev.pointerType === 'mouse' && !drag) { showKeywords(el, d); previewMove(card, false); } });
     el.addEventListener('pointerleave', () => { hideKeywords(); endPreview(); });
-    // Energie-Kreis: Maus drüber = Karte zeigt sich als Bewegung; von dort ziehen = immer Bewegung
-    const cost = el.querySelector('.cost');
-    cost.title = noMove ? `${HB.cardCategory(d).label}: nicht als Bewegung nutzbar` : 'Von hier ziehen = nur Bewegung';
-    cost.dataset.mv = g.playerMoveRange(card); // Zahl für das Bewegungs-Symbol neben dem Kreis
-    cost.addEventListener('pointerenter', () => { if (!drag && !noMove) { el.classList.add('as-movecard'); previewMove(card, true); } });
-    cost.addEventListener('pointerleave', () => { if (!drag) { el.classList.remove('as-movecard'); endPreview(); previewMove(card, false); } });
+    // Bewegen-Symbol (nur Bodenkarten): Maus drüber = Karte zeigt sich als Bewegung; von dort ziehen = nur laufen.
+    // Andere Karten laufen, wenn man sie auf ein freies Feld zieht.
+    const mb = el.querySelector('.movebtn');
+    if (mb) {
+      mb.title = `Von hier ziehen = ${g.playerMoveRange(card)} Felder laufen statt ${d.name}`;
+      mb.addEventListener('pointerenter', () => { if (!drag) { el.classList.add('as-movecard'); previewMove(card, true); } });
+      mb.addEventListener('pointerleave', () => { if (!drag) { el.classList.remove('as-movecard'); endPreview(); previewMove(card, false); } });
+    }
     el.addEventListener('pointerdown', (ev) => {
       hideKeywords();
       if (handChoice()) { ev.preventDefault(); g.apply({ type: 'choose', player: me().id, card: card.uid }); return; }
-      startDrag(ev, card, el, !noMove && !!ev.target.closest('.cost'));
+      startDrag(ev, card, el, !!mb && !!ev.target.closest('.movebtn'));
     });
     return el;
   }
@@ -10853,7 +10912,7 @@ window.HB = window.HB || {};
     if (!g || g.busy || g.phase !== 'player' || me().ended || me().hp <= 0 || (ev.button !== 0 && ev.button !== 2)) return;
     ev.preventDefault();
     if (ev.button === 2) { ev.preventDefault(); quickCast(card); return; } // Rechtsklick: Karte sofort auf das Ziel spielen
-    const forceMove = fromEnergy; // vom Energie-Kreis gezogen = immer laufen
+    const forceMove = fromEnergy; // vom Bewegen-Symbol gezogen = immer laufen
     const r = el.getBoundingClientRect();
     document.body.classList.add('dragging'); // Hand/Leiste weichen aus, damit alle Felder erreichbar sind
     const ghost = el.cloneNode(true); ghost.classList.add('ghost');
@@ -10912,17 +10971,14 @@ window.HB = window.HB || {};
   }
   // Was passiert beim Loslassen auf Feld h?
   //  - rechte Maustaste auf Karte: Schnellzug (quickCast)
-  //  - Bodenkarten im Bewegungsbereich: laufen, außer man hat lange genug über dem Ziel verweilt (dann Effekt)
-  //  - Bodenkarten außerhalb des Bewegungsbereichs: Effekt
+  //  - vom Bewegen-Symbol gezogen: laufen
+  //  - Bodenkarten: immer Effekt (laufen nur über das Bewegen-Symbol)
   //  - alle anderen Karten: wie bisher (Gegner/du = spielen, leeres Feld = laufen)
   function decideMode(h) {
     const g = app.game;
     if (drag.forceMove) return 'move';
-    if (!g.groundCard(drag.card)) return undefined;
-    const inMove = drag.ctx.moveTiles.some((t) => H.eq(t.h, h));
-    if (!inMove) return 'play';
-    if (!g.evaluateDrop(drag.card, h, 'play').ok) return 'move';
-    return drag.armed && drag.dwellKey === H.key(h) ? 'play' : 'move';
+    if (g.groundCard(drag.card)) return 'play';
+    return undefined;
   }
   function updateDrag(ev) { asMe(() => updateDragInner(ev)); }
   function updateDragInner(ev) {
@@ -10943,7 +10999,7 @@ window.HB = window.HB || {};
       else if (he && drag.grab == null && g.inRangeAndSight(g.player.pos, he.pos, drag.card.def.range).ok) drag.grab = he.uid;
     }
     // Verweilen starten, wenn eine Bodenkarte über einem Feld steht, auf dem sie laufen ODER wirken könnte
-    const canDwell = !drag.forceMove && g.groundCard(drag.card) && drag.ctx.moveTiles.some((t) => H.eq(t.h, h)) && g.evaluateDrop(drag.card, h, 'play').ok;
+    const canDwell = false; // Verweilen gibt es nicht mehr (Bodenkarten laufen über das Bewegen-Symbol)
     if (k !== drag.dwellKey) {
       clearTimeout(drag.timer); drag.dwellKey = k; drag.armed = false;
       drag.ghost.classList.remove('charging', 'armed');
@@ -10970,8 +11026,7 @@ window.HB = window.HB || {};
     } else if (res.ok && res.action === 'pick') {
       text = res.text;
     } else if (res.ok) {
-      const tooFar = g.groundCard(drag.card) && !drag.forceMove && !drag.ctx.moveTiles.some((t) => H.eq(t.h, h)) && !g.isPlayerAt(h);
-      text = 'EFFEKT: ' + res.text + (tooFar ? ' (zu weit zum Laufen)' : '');
+      text = 'EFFEKT: ' + res.text;
     }
     // Weg ziehen: über das eigene Feld in die Karte fahren, dann über die gewünschten Felder zum Ziel
     let forceCls = null;
