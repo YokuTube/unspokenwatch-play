@@ -1747,6 +1747,9 @@ body[data-editorfull="1"] #editor .tabbody { max-width: none; }
 #modal .runechip.sel, #modal .runechip:hover { border-color: #1a479e; }
 #modal .runeline { font-size: .85em; color: #e6dbc7; text-align: left; }
 
+/* Suchfeld vor langen Auswahllisten im Editor */
+.selsearch { width: 7em; margin-right: 4px; }
+
 </style>
 </head>
 <body data-mode="setup" data-public="1">
@@ -1873,6 +1876,7 @@ window.HB = window.HB || {};
     missing(l = 'en') { return Object.keys(tables.de).filter((k) => tables[l][k] === undefined); },
   };
   HB.addStrings = (l, obj) => { tables[l] = Object.assign(tables[l] || {}, obj); };
+  HB.removeStrings = (l, keys) => { keys.forEach((k) => { if (tables[l]) delete tables[l][k]; }); }; // Versuch entfernen (js/versuch.js)
   HB.t = (key, params, count) => {
     let v = tables[lang][key];
     if (v === undefined) v = tables.de[key];
@@ -2146,6 +2150,7 @@ window.HB = window.HB || {};
     "tile.strike.fire": " – auch andere Gegner",
     "tile.strike.nofire": " (andere Gegner nicht)",
     "tile.strike.text": "Wer beim Schlag hier steht, wird getroffen{fire}. Geh weg, dann geht er ins Leere.",
+    "tile.strike.random": "Hier gehen {n} zufällige Einschläge nieder. Je weniger Felder, desto größer die Gefahr – am sichersten bist du außerhalb des roten Bereichs.",
     "tile.trap.text": "Löst einmal aus, bei dir und bei Gegnern. Gegner weichen ihr aus. Bodenfelder auf der Falle verändern sie.",
     "tile.who.any": "Wer",
     "tile.who.enemies": "Gegner, die",
@@ -2196,6 +2201,13 @@ window.HB = window.HB || {};
     "hud.wave.pending.one": "Welle {no} erscheint, wenn du den Zug beendest",
     "hud.free.exit": "Frei laufen – dann einen Ausgang am Rand wählen",
     "hud.free.tile": "Frei laufen: Feld anklicken (bis Markt zu / Heiler benutzt)",
+    "versuch.locked": "Mechanik im Archiv: {keys}",
+    "versuch.lockedTip": "Die Karte bleibt unverändert, kommt aber nicht ins Deck, in Draft oder Markt.",
+    "versuch.title": "Versuche",
+    "versuch.none": "Keine Versuche",
+    "versuch.since": "seit {d}",
+    "versuch.used": "Karten: {cards}",
+    "versuch.lockedList": "Gesperrte Karten (Mechanik im Archiv): {cards}",
   });
   HB.addStrings('en', {
     "banish.back": "Back to the market",
@@ -2442,6 +2454,7 @@ window.HB = window.HB || {};
     "tile.strike.fire": " – other enemies too",
     "tile.strike.nofire": " (other enemies are safe)",
     "tile.strike.text": "Anyone standing here when the strike lands is hit{fire}. Move away and it hits nothing.",
+    "tile.strike.random": "{n} random impacts land in this area. The safest place is outside the red zone.",
     "tile.trap.text": "Triggers once, for you and for enemies. Enemies avoid it. Ground tiles on the trap change it.",
     "tile.who.any": "Anyone who",
     "tile.who.enemies": "Enemies that",
@@ -2492,6 +2505,13 @@ window.HB = window.HB || {};
     "hud.wave.pending.one": "Wave {no} appears when you end your turn",
     "hud.free.exit": "Move freely – then pick an exit at the edge",
     "hud.free.tile": "Move freely: click a tile (until market closes / healer used)",
+    "versuch.locked": "Mechanic archived: {keys}",
+    "versuch.lockedTip": "The card stays unchanged but is not used in the deck, draft or market.",
+    "versuch.title": "Experiments",
+    "versuch.none": "No experiments",
+    "versuch.since": "since {d}",
+    "versuch.used": "Cards: {cards}",
+    "versuch.lockedList": "Locked cards (mechanic archived): {cards}",
   });
 })(window.HB);
 
@@ -3749,6 +3769,10 @@ window.HB = window.HB || {};
     "step.attack.strike": "{name} schlägt zu: {dmg} an {target}.",
     "step.attack.strikeFizzle": "{name}: Schlag verpufft ({why}).",
     "step.barrage.label": "Einschläge auf dich (Fläche)",
+    "step.salvo.label": "Salve (Fläche mit Vorschau)",
+    "step.salvo.describe.all": "Salve: {n}{hits} Schaden auf alle Felder, Radius {r}",
+    "step.salvo.describe.random": "Salve: {c} Einschläge zu je {n}{hits} Schaden, zufällig im Radius {r}",
+    "step.salvo.log": "{name} schießt eine Salve: {n} Einschläge, {h} Treffer ({dmg}).",
     "step.bless.label": "Segen geben (Kraft, Block, Schonfrist …)",
     "step.block.describe": "Block {n}",
     "step.block.log": "{name} blockt {n}.",
@@ -4294,6 +4318,10 @@ window.HB = window.HB || {};
     "step.attack.strike": "{name} strikes: {dmg} to {target}.",
     "step.attack.strikeFizzle": "{name}: strike fizzles ({why}).",
     "step.barrage.label": "Impacts on you (area)",
+    "step.salvo.label": "Volley (area with preview)",
+    "step.salvo.describe.all": "Volley: {n}{hits} damage on every tile, radius {r}",
+    "step.salvo.describe.random": "Volley: {c} impacts of {n}{hits} damage each, random within radius {r}",
+    "step.salvo.log": "{name} fires a volley: {n} impacts, {h} hits ({dmg}).",
     "step.bless.label": "Give a blessing (Strength, Block, Grace …)",
     "step.block.describe": "Block {n}",
     "step.block.log": "{name} blocks {n}.",
@@ -5245,6 +5273,10 @@ window.HB = window.HB || {};
 (function (HB) {
   HB.addStrings('de', {
     "status.reach.label": "Reichweite",
+    "eff.reach.text": "+{n} Reichweite",
+    "eff.rush.text": "+{n} Hast",
+    "fx.reach": "Reichweite (Segen)",
+    "fx.rush": "Hast (Segen)",
     "status.reach.info": "Alle Angriffe +{n} Reichweite (Einzelschläge, Länge und Radius von Flächenangriffen), bis Kampfende.",
     "status.reach.fx": "+{n} Reichweite",
     "card.poison.radius": "{n} Gift an alle Gegner im Radius {r}",
@@ -5256,6 +5288,10 @@ window.HB = window.HB || {};
   });
   HB.addStrings('en', {
     "status.reach.label": "Reach",
+    "eff.reach.text": "+{n} reach",
+    "eff.rush.text": "+{n} haste",
+    "fx.reach": "Reach (blessing)",
+    "fx.rush": "Haste (blessing)",
     "status.reach.info": "All attacks gain +{n} range (single strikes, length and radius of area attacks) until the end of combat.",
     "status.reach.fx": "+{n} Reach",
     "card.poison.radius": "{n} poison to all enemies within radius {r}",
@@ -5707,8 +5743,12 @@ window.HB = window.HB || {};
   HB.moduleHooks = (id, hooks) => Object.assign(HB.module(id), hooks);
   HB.moduleSaveFields = () => HB.MODULES.flatMap((m) => m.saveFields || []);
   HB.moduleCommand = (g, type) => { for (const m of HB.MODULES) if (m.commands && m.commands[type] && HB.moduleOn(g.cfg, m.id)) return m.commands[type]; return null; };
-  HB.moduleTurnStart = (g, p) => { for (const m of HB.MODULES) if (m.onTurnStart && HB.moduleOn(g.cfg, m.id)) m.onTurnStart(g, p); };
-  HB.moduleEvent = (g, ev) => { for (const m of HB.MODULES) if (m.onEvent && HB.moduleOn(g.cfg, m.id)) m.onEvent(g, ev); };
+  // Allgemeine Hörer (von Versuchen: V.on, js/versuch.js) – laufen zusätzlich zu den Modulen, immer
+  HB.HOOKS = HB.HOOKS || { event: [], turnStart: [] };
+  // Hörer aus Versuchen (V.on): ein Fehler darin darf den Kampf nie abbrechen – nur melden
+  const hookCall = (h, g, x) => { try { h.fn(g, x); } catch (e) { console.error('V.on', h.id || '', e); } };
+  HB.moduleTurnStart = (g, p) => { for (const m of HB.MODULES) if (m.onTurnStart && HB.moduleOn(g.cfg, m.id)) m.onTurnStart(g, p); for (const h of HB.HOOKS.turnStart.slice()) hookCall(h, g, p); };
+  HB.moduleEvent = (g, ev) => { for (const m of HB.MODULES) if (m.onEvent && HB.moduleOn(g.cfg, m.id)) m.onEvent(g, ev); for (const h of HB.HOOKS.event.slice()) hookCall(h, g, ev); };
   HB.moduleSlots = (g, n, kind) => { for (const m of HB.MODULES) if (m.slots && HB.moduleOn(g.cfg, m.id)) return m.slots(g, n, kind); return null; };
   HB.moduleOffer = (g, pool, n, kind, slots) => { for (const m of HB.MODULES) if (m.offer && HB.moduleOn(g.cfg, m.id)) { const r = m.offer(g, pool, n, kind, slots); if (r !== undefined) return r; } return undefined; };
   HB.moduleOffered = (g, list, kind) => { for (const m of HB.MODULES) if (m.offered && HB.moduleOn(g.cfg, m.id)) m.offered(g, list, kind); };
@@ -6102,6 +6142,8 @@ window.HB = window.HB || {};
     fieldZone: { title: 'Bodenfläche', icon: 'blessField', text: () => HB.t('kwi.fieldZone.text') },
     summon: { title: 'Objekt', icon: 'wall', text: () => HB.t('kwi.summon.text') },
   };
+
+  HB.KEYWORDS = K; // Register: Versuche (js/versuch.js) tragen hier von außen Begriffe ein
 
   // Ein Begriff einzeln (Erklär-Kasten beim Überfahren eines Worts im Kartentext)
   HB.keywordInfo = (k) => (K[k] ? { key: k, title: HB.t('kwi.' + k + '.title'), icon: K[k].icon, text: K[k].text } : null);
@@ -7941,6 +7983,10 @@ window.HB = window.HB || {};
         mapId: f.mapId, name: f.name, start: f.start, starts: f.starts, board: H.boardFrom(f.board || { cols: f.cols, rows: f.rows }), obstacles: f.obstacles || [], objects: f.objects || [], tileEffects: f.tileEffects || [],
         traps: f.traps || [], corpses: f.corpses || [], enemies: (f.enemies || []).map((x) => { const u = unit(x); u.name = u.name.replace(/^(.+) [A-Z]$/, (m, base) => ((g.cfg.enemyTypes || []).some((t) => t.name === base) ? base : m)); return u; }) })); // alte Namen „Kämpfer A“ → „Kämpfer“
       g.players.forEach((p) => { p.floor = p.floor | 0; });
+      // Bausteine, die es in dieser Fassung nicht gibt (z. B. archivierter Versuch): Runen und Bodenfelder mit unbekanntem Namen still verwerfen.
+      // Zustände sind Felder an der Figur (u.poison …): übrig gebliebene Felder unbekannter Zustände schaden nicht, weil alles über HB.STATUS_ORDER läuft.
+      for (const p of g.players) p.relics = (p.relics || []).filter((id) => HB.RELICS[id]);
+      for (const f of g.floors) f.tileEffects = f.tileEffects.filter((t) => HB.tileEffectTypes[t.type]);
       [...g.floors.flatMap((f) => f.enemies), ...g.players.flatMap((p) => [...p.hand, ...p.drawPile, ...p.discard, ...p.exhausted])].forEach((x) => bumpUid(x.uid));
       if (data.resumeEnemyPhase) { g.phase = 'player'; g.log(HB.t('game.updated')); g.rollIntent(); g.startPlayerTurn(); }
       return g;
@@ -8182,7 +8228,7 @@ window.HB = window.HB || {};
       p.drawPile = [];
       // Klasse mit eigenem Startdeck: Anzahl je Karte aus der Klasse (HB.deckCounts, defaults.js)
       const cnt = (d) => HB.deckCounts(c, p, d);
-      c.deck.forEach((d, di) => { for (let i = 0; i < cnt(d).count; i++) p.drawPile.push({ uid: uid(), deckIndex: di, def: HB.migrateCard(clone(d)) }); });
+      c.deck.forEach((d, di) => { if (HB.cardLocked(d)) return; /* Karte mit unbekanntem Baustein (Versuch im Archiv): gesperrt */ for (let i = 0; i < cnt(d).count; i++) p.drawPile.push({ uid: uid(), deckIndex: di, def: HB.migrateCard(clone(d)) }); });
       shuffle(p.drawPile);
     }
 
@@ -8780,7 +8826,7 @@ window.HB = window.HB || {};
       const s = this.intentFor(e).steps[i];
       if (!s) return [];
       const d = stepDef(s);
-      if (d.strike === 'area') { const a = e.aims && e.aims[i]; return d.areaTiles(this, e, s, a && a.dirs ? a : d.aimArea(this, e, s, e.pos, (this.targetOf(e) || e).pos)); }
+      if (d.strike === 'area') { const a = e.aims && e.aims[i]; return d.areaTiles(this, e, s, a && (a.dirs || a.center) ? a : d.aimArea(this, e, s, e.pos, (this.targetOf(e) || e).pos)); }
       const h = this.aimAt(e, i);
       return h ? [h] : [];
     }
@@ -8792,7 +8838,7 @@ window.HB = window.HB || {};
         const steps = this.intentFor(e).steps;
         for (const i of Object.keys(e.aims)) {
           if (!this.lockedAttack(steps, +i) || this.followsPlayer(e, +i)) continue; // Fernkampf: keine Markierung (zu unruhig)
-          this.strikeTiles(e, +i).forEach((h, k) => out.push({ e, h, amount: steps[i].amount, line: stepDef(steps[i]).strike === 'area', shape: steps[i].shape, first: k === 0 }));
+          this.strikeTiles(e, +i).forEach((h, k) => out.push({ e, h, amount: steps[i].amount, line: stepDef(steps[i]).strike === 'area', shape: stepDef(steps[i]).markShape || steps[i].shape, first: k === 0, random: (stepDef(steps[i]).randomCount || (() => 0))(steps[i]) }));
         }
       }
       return out;
@@ -8999,7 +9045,7 @@ window.HB = window.HB || {};
           if (st.strike === 'area') {
             // Fläche: trifft dich, wenn du auf einem ihrer Felder stehst (festgelegt, oder nach dem Laufen auf dich ausgerichtet)
             const tiles = this.lockedAttack(steps, i) ? this.strikeTiles(e, i) : st.areaTiles(this, e, s, st.aimArea(this, e, s, pos.get(e), playerPos), pos.get(e));
-            if (tiles.some((h) => H.eq(h, playerPos))) { hit(); dmg += HB.attackDamage(this, e, s.amount) * (s.hits || 1); }
+            if (tiles.some((h) => H.eq(h, playerPos))) { hit(); dmg += Math.round(HB.attackDamage(this, e, s.amount) * (s.hits || 1) * (st.expectedHits ? st.expectedHits(s, tiles.length) : 1)); } // Zufallssalve: Erwartungswert
             continue;
           }
           if (st.walk) {
@@ -9562,7 +9608,7 @@ window.HB = window.HB || {};
     // (Karten ohne Klasse gibt es für alle). HB.playerClass / HB.cardForClass in defaults.js
     poolOffer(n, kind) {
       const cls = kind === 'draft' || this.cfg.classMarket ? HB.playerClass(this.cfg, this.player) : null;
-      const pool = this.cfg.deck.filter((d) => !HB.cardCategory(d).noPool && (kind === 'draft' ? d.inDraft : d.inPool) && HB.cardForClass(d, cls));
+      const pool = this.cfg.deck.filter((d) => !HB.cardLocked(d) && !HB.cardCategory(d).noPool && (kind === 'draft' ? d.inDraft : d.inPool) && HB.cardForClass(d, cls));
       const slots = pool.length ? HB.moduleSlots(this, n, kind) : null; // Seltenheit je Platz (Modul rarity), sonst keine
       const picked = HB.moduleOffer(this, pool, n, kind, slots) || shuffle([...pool]).slice(0, n); // Modul (Neigung, Seltenheit) wählt, sonst Zufall
       if (picked.length) HB.moduleOffered(this, picked, kind);
@@ -13580,12 +13626,6 @@ window.HB = window.HB || {};
   };
   HB.STATUS_ORDER = ['block', 'strength', 'rush', 'reach', 'plague', 'poison', 'grace', 'slow', 'stun', 'disarm', 'buffPoison',
     'wound', 'confuse', 'thorns', 'dodge', 'fly', 'haste', 'bleed', 'invis', 'lure', 'fear', 'taunt', 'seed', 'corpseBomb', 'aura'];
-  // Auswahl „Zustand“ für Bedingungen (Karteneffekt cond)
-  HB.COND_STATUSES.splice(0, HB.COND_STATUSES.length, ['any', 'beliebige Zustände (zufällig)'], ...HB.STATUS_ORDER.map((k) => [k, HB.STATUSES[k].label]));
-  // Reihenfolge beim Reinigen (Text „… entfernt“): erst die wichtigsten, dann alle weiteren schlechten Zustände
-  // Reinigen entfernt alle schlechten Zustände (Art 'curse' mit bad/clear) – neue Zustände automatisch
-  const CLEANSE_FIRST = ['poison', 'plague', 'slow', 'stun', 'disarm'];
-  HB.CLEANSE_ORDER = [...CLEANSE_FIRST, ...HB.STATUS_ORDER.filter((k) => !CLEANSE_FIRST.includes(k) && HB.STATUSES[k].kind === 'curse' && HB.STATUSES[k].bad)];
   // Fliegt die Figur gerade? (Segen Fliegen oder Gegnertyp „fliegt immer“)
   HB.isFlying = (g, u) => !!u && (u.fly > 0 || (!u.isPlayer && !!(g && g.typeOf && (g.typeOf(u) || {}).flying)));
   // Zusätzliche Bewegung (Eile) minus Verlangsamung – für alle Bewegungen von Spielern und Gegnern
@@ -13636,6 +13676,11 @@ window.HB = window.HB || {};
       apply(g, u) { const n = u.poison || 0; if (!n) return HB.t('eff.poisonTick.none'); HB.STATUSES.poison.tick(g, u); return HB.t('eff.poisonTick.apply', { n }); } },
     strength: { status: 'strength', label: HB.t('status.strength.label'), icon: 'strength', params: [['amount', 'Kraft', 1]], text: (e) => HB.t('eff.strength.text', { n: e.amount }),
       apply(g, u, e) { HB.addStatus(g, u, 'strength', e.amount); return HB.t('eff.strength.text', { n: e.amount }); } },
+    // Hast / Reichweite (Segen, dauerhaft bis Kampfende): auch als Karteneffekt und Gegner-Aktion „Segen“ wählbar (Auswahllisten entstehen aus diesem Register)
+    rush: { status: 'rush', label: HB.t('status.rush.label'), icon: 'haste', params: [['amount', 'Stapel', 1]], text: (e) => HB.t('eff.rush.text', { n: e.amount }),
+      apply(g, u, e) { HB.addStatus(g, u, 'rush', e.amount); return HB.t('eff.rush.text', { n: e.amount }); } },
+    reach: { status: 'reach', label: HB.t('status.reach.label'), icon: 'range', params: [['amount', 'Stapel', 1]], text: (e) => HB.t('eff.reach.text', { n: e.amount }),
+      apply(g, u, e) { HB.addStatus(g, u, 'reach', e.amount); return HB.t('eff.reach.text', { n: e.amount }); } },
     disarm: { status: 'disarm', label: HB.t('eff.disarm.label'), icon: 'disarm', params: [['amount', 'Stapel', 1]], text: (e) => HB.t('eff.disarm.text', { n: e.amount }),
       apply(g, u, e) { HB.addStatus(g, u, 'disarm', e.amount); return HB.t('eff.disarm.apply', { n: e.amount }); } },
     wound: { status: 'wound', label: HB.t('fx.wound'), icon: 'wound', params: [['amount', 'Stapel', 1]], text: (e) => HB.t('eff.wound.text', { n: e.amount }), apply: stack('wound') },
@@ -13668,21 +13713,38 @@ window.HB = window.HB || {};
       apply(g, u, e, src) { HB.addStatus(g, u, 'aura', { ...e, by: src ? g.unitId(src) : null }); return HB.t('status.aura.label'); } },
   };
   // Auswahlliste der Wirkungen (Gegner-Aktion „Wirkung“). noEnemyStep = braucht Werte, die der Gegner-Schritt nicht einstellen kann (Radius, Wirkungsliste …)
-  HB.UNIT_EFFECT_CHOICES = HB.UNIT_EFFECT_CHOICES || [];
-  HB.UNIT_EFFECT_CHOICES.splice(0, HB.UNIT_EFFECT_CHOICES.length, ...Object.entries(HB.UNIT_EFFECTS).filter(([, v]) => !v.noEnemyStep).map(([k, v]) => [k, v.label]));
   // Segen = Wirkungen, deren Zustand (status) in HB.STATUSES die Art 'blessing' hat (Block, Schonfrist, Kraft …)
   HB.isBlessing = (type) => { const u = HB.UNIT_EFFECTS[type]; return !!(u && u.status && HB.STATUSES[u.status] && HB.STATUSES[u.status].kind === 'blessing'); };
-  HB.BLESSING_CHOICES = HB.UNIT_EFFECT_CHOICES.filter(([k]) => HB.isBlessing(k));
-  // Karteneffekte für Wirkungen ohne eigenen Eintrag in HB.CARD_EFFECTS (neue Zustände/Segen): automatisch erzeugt.
-  // Segen wirken ohne Gegner-Ziel auf dich (orSelf); radius → zusätzlicher Parameter „Radius“ (0 = nur das Ziel)
-  for (const [k, ue] of Object.entries(HB.UNIT_EFFECTS)) {
-    if (HB.CARD_EFFECTS[k]) continue;
-    HB.CARD_EFFECTS[k] = { label: ue.label, icon: ue.icon, orSelf: HB.isBlessing(k), auto: true,
-      params: [...ue.params, ...(ue.radius ? [['radius', 'Radius (0 = nur Ziel)', 0]] : [])],
-      text: (e) => ue.text(e) + (ue.radius && e.radius > 0 ? HB.t('eff.radius', { n: e.radius }) : ''),
-      ...(ue.radius ? { area: (g, e, t) => (e.radius > 0 ? g.board.tiles.filter((h) => H.distance(h, t) <= e.radius) : []) } : {}) };
-  }
-  if (HB.localizeEffects) HB.localizeEffects(); // die eben angehängten Einträge bekommen ihre Anzeigenamen (fx.<typ>)
+  // ALLE aus den Registern abgeleiteten Listen neu berechnen (einmal beim Laden; Versuche – js/versuch.js – rufen es nach jedem Eintrag/Entfernen).
+  // Listen werden an Ort und Stelle ersetzt (splice), damit Verweise darauf gültig bleiben.
+  //  - COND_STATUSES: Auswahl „Zustand“ für Bedingungen (Karteneffekt cond)
+  //  - CLEANSE_ORDER: Reihenfolge beim Reinigen: erst die wichtigsten, dann alle weiteren schlechten Zustände (Art 'curse' mit bad/clear)
+  //  - UNIT_EFFECT_CHOICES: Auswahlliste der Wirkungen (Gegner-Aktion „Wirkung“); noEnemyStep = braucht Werte, die der Gegner-Schritt nicht einstellen kann
+  //  - BLESSING_CHOICES: nur Segen
+  //  - Karteneffekte für Wirkungen ohne eigenen Eintrag in HB.CARD_EFFECTS (neue Zustände/Segen): automatisch erzeugt (auto: true).
+  //    Segen wirken ohne Gegner-Ziel auf dich (orSelf); radius → zusätzlicher Parameter „Radius“ (0 = nur das Ziel)
+  const CLEANSE_FIRST = ['poison', 'plague', 'slow', 'stun', 'disarm'];
+  const setList = (list, items) => { list.splice(0, list.length, ...items); return list; };
+  HB.COND_STATUSES = HB.COND_STATUSES || [];
+  HB.CLEANSE_ORDER = HB.CLEANSE_ORDER || [];
+  HB.UNIT_EFFECT_CHOICES = HB.UNIT_EFFECT_CHOICES || [];
+  HB.BLESSING_CHOICES = HB.BLESSING_CHOICES || [];
+  HB.rebuildLists = () => {
+    setList(HB.COND_STATUSES, [['any', 'beliebige Zustände (zufällig)'], ...HB.STATUS_ORDER.map((k) => [k, HB.STATUSES[k].label])]);
+    setList(HB.CLEANSE_ORDER, [...CLEANSE_FIRST.filter((k) => HB.STATUSES[k]), ...HB.STATUS_ORDER.filter((k) => !CLEANSE_FIRST.includes(k) && HB.STATUSES[k].kind === 'curse' && HB.STATUSES[k].bad)]);
+    setList(HB.UNIT_EFFECT_CHOICES, Object.entries(HB.UNIT_EFFECTS).filter(([, v]) => !v.noEnemyStep).map(([k, v]) => [k, v.label]));
+    setList(HB.BLESSING_CHOICES, HB.UNIT_EFFECT_CHOICES.filter(([k]) => HB.isBlessing(k)));
+    for (const [k, ue] of Object.entries(HB.UNIT_EFFECTS)) {
+      if (HB.CARD_EFFECTS[k]) continue;
+      HB.CARD_EFFECTS[k] = { label: ue.label, icon: ue.icon, orSelf: HB.isBlessing(k), auto: true,
+        params: [...ue.params, ...(ue.radius ? [['radius', 'Radius (0 = nur Ziel)', 0]] : [])],
+        text: (e) => ue.text(e) + (ue.radius && e.radius > 0 ? HB.t('eff.radius', { n: e.radius }) : ''),
+        ...(ue.radius ? { area: (g, e, t) => (e.radius > 0 ? g.board.tiles.filter((h) => H.distance(h, t) <= e.radius) : []) } : {}) };
+    }
+    if (HB.PLACES) HB.PLACE_KEYS = Object.keys(HB.PLACES); // Orte (auch von Versuchen eingetragene)
+    if (HB.localizeEffects) HB.localizeEffects(); // die eben angehängten Einträge bekommen ihre Anzeigenamen (fx.<typ>)
+  };
+  HB.rebuildLists();
   // src = wer die Wirkung austeilt (für Kraft/Entwaffnet beim Schaden); Fallen haben keine Quelle
   HB.applyUnitEffect = (g, u, e, src) => { const d = HB.UNIT_EFFECTS[e.type]; return d ? d.apply(g, u, e, src) : ''; };
 
@@ -13947,7 +14009,7 @@ window.HB = window.HB || {};
     // Kopien einer Karte aus der Einstellung auf die Hand (volle Hand: auf den Ablagestapel). Bleiben bis Kampfende im Deck.
     addCard(g, fx, c) {
       const d = (g.cfg.deck || []).find((x) => x.cid === fx.card);
-      if (!d) { c.parts.push(HB.t('apply.addCard.none')); return; }
+      if (!d || HB.cardLocked(d)) { c.parts.push(HB.t('apply.addCard.none')); return; }
       const n = fx.amount || 1, limit = g.handLimit();
       let toDiscard = 0;
       for (let i = 0; i < n; i++) {
@@ -14063,7 +14125,7 @@ window.HB = window.HB || {};
       apply(g, card) { g.giveCard(card.def, 'discard'); g.log(HB.t('choice.copy.log', { card: HB.tn(card.def.name) })); g.notice(HB.t('choice.copy.notice', { card: HB.tn(card.def.name) }), 'discard'); } },
     transform: { from: 'deck', verb: HB.t('choice.transform.verb'), icon: 'deck', prompt: () => HB.t('choice.transform.prompt'),
       apply(g, card) {
-        const pool = (g.cfg.deck || []).filter((d) => d.inDraft && !HB.cardCategory(d).noPool && d.name !== card.def.name);
+        const pool = (g.cfg.deck || []).filter((d) => d.inDraft && !HB.cardLocked(d) && !HB.cardCategory(d).noPool && d.name !== card.def.name);
         takeOut(g, card);
         const d = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
         if (d) g.giveCard(d, 'discard');
@@ -14250,6 +14312,40 @@ window.HB = window.HB || {};
         g.changed(); await g.wait(400 / speed);
       },
     },
+    // Salve (Pfeilsalve): Fläche mit Mitte auf dir (beim Ansagen festgelegt, in der Vorschau rot markiert) oder um den Gegner selbst.
+    // mode 'all' = jeder in der Fläche bekommt den Schaden, egal wo er steht; 'random' = count Einschläge auf zufälligen Feldern der Fläche
+    // (dasselbe Feld mehrfach möglich). Vorschau/Schlagfelder wie Linie (strike 'area', game-enemies.js).
+    salvo: {
+      label: HB.t('step.salvo.label'), icon: () => 'sweepAtk',
+      params: [['amount', 'Schaden', 4], ['hits', 'Treffer', 1], ['radius', 'Radius', 2], ['mode', 'Treffer auf', 'random', [['random', 'zufällige Felder im Bereich'], ['all', 'alle Felder im Bereich']]],
+        ['count', 'Einschläge', 5, null, { when: (s) => s.mode !== 'all' }], ['center', 'Mitte', 'player', [['player', 'auf dich (beim Ansagen festgelegt)'], ['self', 'um sich selbst']]]],
+      targetsPlayer: true, threat: 'damage', strike: 'area', markShape: 'disc',
+      randomCount: (s) => (s.mode === 'all' ? 0 : s.count || 1),
+      expectedHits: (s, n) => (s.mode === 'all' ? 1 : Math.min(1, (s.count || 1) / Math.max(1, n))),
+      aimArea: (g, e, s, from, targetPos) => ({ center: { ...(s.center === 'self' ? from : targetPos) } }),
+      areaTiles: (g, e, s, aim) => g.board.tiles.filter((h) => H.distance(h, aim.center) <= (s.radius ?? 2) && !g.obstacleAt(h)),
+      describe: (s) => HB.t(s.mode === 'all' ? 'step.salvo.describe.all' : 'step.salvo.describe.random', { n: s.amount, hits: (s.hits || 1) > 1 ? ` ${s.hits}×` : '', c: s.count || 1, r: s.radius ?? 2 }),
+      async run(g, e, s, speed, wantRange, i) {
+        const d = HB.STEP_TYPES.salvo, steps = g.intentFor(e).steps;
+        const stored = g.lockedAttack(steps, i) && e.aims && e.aims[i] && e.aims[i].center ? e.aims[i] : d.aimArea(g, e, s, e.pos, g.foe.pos);
+        const tiles = d.areaTiles(g, e, s, stored);
+        HB.spendInvis(g, e);
+        e.triedAttack = true; e.lastMin = 1;
+        const dmg = HB.attackDamage(g, e, s.amount), missed = HB.attackMisses(e);
+        const picks = s.mode === 'all' ? tiles : Array.from({ length: s.count || 1 }, () => tiles[Math.floor(Math.random() * tiles.length)]);
+        if (missed) { g.log(HB.t('step.line.disarmed', { name: HB.tn(e.name) })); HB.spendMiss(g, e); }
+        let n = 0;
+        for (const h of missed ? [] : picks) {
+          g.emit('barrage_hit', { pos: { ...h } }); g.fx(h, '✸', 'hit'); g.hooks.fxLine && g.hooks.fxLine(e.pos, h, 'hit');
+          const victims = [...g.floorPlayers, ...(g.enemyFire() ? g.alive : []), ...g.objects.filter((o) => g.objDef(o).hp)].filter((u) => u !== e && H.eq(u.pos, h));
+          for (const v of victims) { if (v.isPlayer) e.hitAny = true; n++; g.strike(v, dmg, s.hits, e); }
+          if (s.mode !== 'all') { g.changed(); await g.wait(90 / speed); }
+        }
+        if (!missed) g.log(HB.t('step.salvo.log', { name: HB.tn(e.name), n: picks.length, h: n, dmg: HB.dmgText(dmg, s.hits) }));
+        if (e.aims) delete e.aims[i];
+        g.changed(); await g.wait(400 / speed);
+      },
+    },
     // Falle legen: auf ein freies Feld neben sich, das in deine Richtung zeigt (das dir am nächsten liegende freie Nachbarfeld).
     // Welche Falle: Schablone aus dem Editor-Tab „Fallen“ (cfg.trapTypes).
     trap: {
@@ -14303,7 +14399,7 @@ window.HB = window.HB || {};
         const r = g.inRangeAndSight(e.pos, g.player.pos, s.range);
         if (!r.ok) { g.fx(e.pos, whyFx(r.why), 'miss'); g.log(HB.t('step.curse.fail', { name: HB.tn(e.name), why: HB.whyText(r.why) })); g.changed(); await g.wait(250 / speed); return; }
         e.hitAny = true;
-        const curses = (g.cfg.deck || []).filter((d) => d.category === 'curse');
+        const curses = (g.cfg.deck || []).filter((d) => d.category === 'curse' && !HB.cardLocked(d));
         const pool = s.card === 'random' ? ([].concat(s.pool || []).length ? curses.filter((d) => [].concat(s.pool).includes(d.cid)) : curses) : curses.filter((d) => d.cid === s.card);
         if (!pool.length) { g.log(HB.t('step.curse.none', { name: HB.tn(e.name) })); return; }
         const names = [];
@@ -15599,12 +15695,23 @@ window.HB = window.HB || {};
     i.checked = !!get();
     return el('label', { class: 'field check', title: title || '' }, i, el('span', { class: 'flbl' }, label));
   }
+  // Auswahllisten ab 7 Einträgen sind alphabetisch sortiert (Nutzerwunsch); kleine Listen behalten ihre Reihenfolge. Zahlen-Werte bleiben, wie sie sind.
+  const sortedOptions = (options) => (options.length > 6 && !options.every(([v]) => /^-?\d+$/.test(String(v))) ? [...options].sort((a, b) => String(a[1]).localeCompare(String(b[1]), HB.lang === 'en' ? 'en' : 'de', { sensitivity: 'base' })) : options);
   function select(label, options, get, set, rerender) {
+    options = sortedOptions(options);
     const s = el('select', { onchange: (e) => { set(e.target.value); changed(rerender); } },
       options.map(([v, t]) => { const o = el('option', { value: v }, t); if (v === get()) o.selected = true; return o; }));
-    return el('label', { class: 'field' }, el('span', { class: 'flbl' }, label), s);
+    // Lange Listen (mehr als 12 Einträge): Suchfeld davor – tippen blendet nicht passende Einträge aus, Enter wählt den ersten Treffer
+    let search = null;
+    if (options.length > 12) {
+      const apply = (q) => { const k = q.trim().toLowerCase(); [...s.options].forEach((o) => { o.hidden = !!k && !o.textContent.toLowerCase().includes(k) && !o.selected; }); };
+      search = el('input', { type: 'search', class: 'selsearch', placeholder: 'Suchen …', title: 'Liste filtern (Enter wählt den ersten Treffer)',
+        oninput: (ev) => apply(ev.target.value),
+        onkeydown: (ev) => { if (ev.key !== 'Enter') return; ev.preventDefault(); const o = [...s.options].find((x) => !x.hidden && !x.selected && x.textContent.toLowerCase().includes(ev.target.value.trim().toLowerCase())); if (o) { s.value = o.value; set(o.value); changed(rerender); } } });
+    }
+    return el('label', { class: 'field' }, el('span', { class: 'flbl' }, label), search, s);
   }
-  const btn = (label, fn, cls = '') => el('button', { class: cls, onclick: fn, html: label });
+  const btn =(label, fn, cls = '') => el('button', { class: cls, onclick: fn, html: label });
 
   // ---------- Tabs ----------
   function setupTab(c) {
@@ -16898,6 +17005,8 @@ window.HB = window.HB || {};
       const lab = (t, input) => el('label', { class: 'tb' }, t, input);
       const nameIn = el('input', { type: 'text', class: 'tname', value: d.name, maxlength: 40, title: 'Karte umbenennen', placeholder: 'Name',
         oninput: (ev) => { d.name = ev.target.value; face.querySelector('.cname').textContent = d.name || ' '; changed(); } });
+      const miss = HB.cardMissing(d); // unbekannter Baustein (Versuch im Archiv): Karte ist im Spiel gesperrt
+      if (miss.length) tile.append(el('div', { class: 'locked-note', title: HB.t('versuch.lockedTip') }, HB.t('versuch.locked', { keys: miss.join(', ') })));
       tile.append(face, nameIn, el('div', { class: 'tilebar' },
         lab('Deck', quickNum(d, 'count', 'Anzahl im Startdeck')),
         lab('Markt', quickCheck(d, 'inPool', 'Kann im Markt angeboten werden')),
@@ -16972,7 +17081,24 @@ window.HB = window.HB || {};
           catch (e) { HB.app.toast('JSON fehlerhaft: ' + e.message); }
         }),
         resetBtn()),
-      backupsBox());
+      versucheBox(c), backupsBox());
+  }
+  // Übersicht der Versuche (neue Mechaniken, die erst ausprobiert werden) + gesperrte Karten der Einstellung
+  function versucheBox(c) {
+    const box = el('div', { class: 'versuche' }, el('h4', {}, HB.t('versuch.title')));
+    const ids = Object.keys(HB.VERSUCHE || {});
+    if (!ids.length) box.append(el('p', { class: 'hint' }, HB.t('versuch.none')));
+    ids.forEach((id) => {
+      const v = HB.VERSUCHE[id], used = HB.versuchCards(c, id);
+      box.append(el('div', { class: 'srow' },
+        el('b', {}, v.name || id), el('span', {}, v.was || ''),
+        el('span', { class: 'muted' }, HB.t('versuch.since', { d: v.seit || '?' })),
+        el('span', { class: 'muted' }, HB.t('versuch.used', { cards: used.length ? used.join(', ') : '–' }))));
+    });
+    const locked = (c.deck || []).filter((d) => HB.cardLocked(d));
+    if (locked.length) box.append(el('p', { class: 'hint', title: HB.t('versuch.lockedTip') },
+      HB.t('versuch.lockedList', { cards: locked.map((d) => `${d.name} (${HB.cardMissing(d).join(', ')})`).join('; ') })));
+    return box;
   }
   // Automatische Sicherungen: vor jedem Update der Einstellungen und alle 10 Minuten beim Bearbeiten
   function backupsBox() {
@@ -17518,7 +17644,7 @@ window.HB = window.HB || {};
     const place = g.floor === 0 && g.placeAt(h), pl = place && HB.PLACES[place]; // Orte nur in der Oberwelt
     if (pl) out.push({ cls: pl.infoCls, icon: pl.icon, title: pl.label, text: pl.info(g) });
     for (const m of g.strikeMarks()) if (H.eq(m.h, h)) out.push({ cls: 'aim', icon: 'sword', title: HB.t('tile.strike', { name: HB.tn(m.e.name), n: m.amount }),
-      text: HB.t('tile.strike.text', { fire: g.enemyFire() ? HB.t('tile.strike.fire') : HB.t('tile.strike.nofire') }) });
+      text: m.random ? HB.t('tile.strike.random', { n: m.random }) : HB.t('tile.strike.text', { fire: g.enemyFire() ? HB.t('tile.strike.fire') : HB.t('tile.strike.nofire') }) });
     if (g.pendingWave && g.pendingWave.spots.some((s) => H.eq(s.pos, h))) out.push({ cls: 'spawn', icon: 'enemy', title: HB.t('tile.spawn'),
       text: HB.t('tile.spawn.text') });
     return out;
@@ -18261,7 +18387,8 @@ window.HB = window.HB || {};
   const ls = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   // Einstellungen wie UW settings_snapshot: Sprache, Ton, abgeschaltete Module
   const settings = () => ({ lang: HB.i18n ? HB.i18n.lang : '', muted: ls('hexdb.muted') === '1', volume: parseFloat(ls('hexdb.volume') ?? '0.7'),
-    modules_off: HB.app && HB.app.config ? HB.MODULES.filter((m) => !HB.moduleOn(HB.app.config, m.id)).map((m) => m.id) : [] });
+    modules_off: HB.app && HB.app.config ? HB.MODULES.filter((m) => !HB.moduleOn(HB.app.config, m.id)).map((m) => m.id) : [],
+    versuche: Object.keys(HB.VERSUCHE || {}) });
   function begin() {
     if (started || !active()) return;
     started = true; sid = rnd(6); t0 = Date.now(); seq = 0;
@@ -18511,6 +18638,222 @@ window.HB = window.HB || {};
 })(window.HB);
 
 </script>
+  <script>
+// VERSUCHE: neue Mechaniken, die erst ausprobiert werden, bevor sie fest ins Spiel kommen (Konzept: docs/superpowers/specs/2026-10-18-versuchs-mechaniken-design.md).
+// Ein Versuch liegt komplett in EINER Datei js/versuche/<id>.js und trägt sich selbst in die Register ein – der übrige Code kennt ihn nicht:
+//   const V = HB.versuch({ id, name, was, karten: ['Kartenname'], seit: 'JJJJ-MM-TT', braucht: ['andere-id'] });
+//   V.status(key, def, { order })   → (order: Stelle oder Name des Zustands, vor den er kommt; sonst hinten) HB.STATUSES (+ HB.STATUS_ORDER)       V.cardEffect(key, def, apply) → HB.CARD_EFFECTS + Wirkung (APPLY)
+//   V.unitEffect(key, def)          → HB.UNIT_EFFECTS                       V.step(key, def)              → HB.STEP_TYPES (Gegner-Aktion)
+//   V.relic(key, def)               → HB.RELICS                             V.keyword(key, def)           → Erklärbegriff (HB.KEYWORDS)
+//   V.strings({ de: {…}, en: {…} }) → Übersetzungstabellen (ZUERST aufrufen: Beschriftungen mit HB.t werden beim Eintragen gelesen)
+//   V.put(register, key, def)       → allgemein, für alles andere: 'tileEffectTypes' (Bodenfeld), 'TILE_COMBOS', 'PLACES' (Ort am Feld; HB.PLACE_KEYS wird neu abgeleitet),
+//                                     'OBJECT_TYPES' (Objekt am Feld), 'CHOICES' (Kartenwahl) und 'RULES' (Regelzahl; def = [Beschriftung, Standard, Erklärung]) – dazu alle Register der Kurzformen oben
+//   V.on('event', (game, ev) => …)  → hört auf jedes Ereignis (game.emit), wie onEvent eines Moduls (immer an, kein Schalter)
+//   V.on('turnStart', (game, spieler) => …) → Zugbeginn eines Spielers, wie onTurnStart eines Moduls
+// Ort (PLACES) aus einem Versuch hat kein Speicherfeld (SAVE_FIELDS) und keinen Schalter (kein „module“): erscheint nicht von selbst – dafür ein Modul bauen.
+// Geht NICHT als Versuch: Module mit Schalter/Speicherfeldern/Befehlen/Fenstern (HB.MODULES – dafür ein eigenes Modul bauen), Fallen-Arten (HB.TRAP_TYPES entsteht aus cfg.trapTypes
+// der Einstellung), Änderungen an bestehender Kernlogik (Versuche fügen nur hinzu).
+// Jede Eintragung merkt sich [Register, Schlüssel] in HB.VERSUCHE[id].keys und leitet die abgeleiteten Listen neu ab (HB.rebuildLists).
+// Karten mit einem Baustein, den es nicht gibt (Versuch archiviert), sind GESPERRT (HB.cardLocked): nicht im Deck, Draft, Markt – die Einstellung bleibt unverändert.
+window.HB = window.HB || {};
+(function (HB) {
+  HB.VERSUCHE = HB.VERSUCHE || {};
+
+  // Register, in die ein Versuch einträgt: Name → Objekt
+  const REG = {
+    STATUSES: () => HB.STATUSES, CARD_EFFECTS: () => HB.CARD_EFFECTS, APPLY: () => HB.CARD_EFFECT_APPLY, UNIT_EFFECTS: () => HB.UNIT_EFFECTS,
+    STEP_TYPES: () => HB.STEP_TYPES, RELICS: () => HB.RELICS, KEYWORDS: () => HB.KEYWORDS,
+    tileEffectTypes: () => HB.tileEffectTypes, OBJECT_TYPES: () => HB.OBJECT_TYPES, TILE_COMBOS: () => HB.TILE_COMBOS, PLACES: () => HB.PLACES, CHOICES: () => HB.CHOICES,
+  };
+  // Register als Liste von Tupeln [Schlüssel, …] (Regeln): def = Rest des Tupels ohne Schlüssel
+  const LISTS = { RULES: () => HB.RULES };
+  let hookCount = 0;
+
+  HB.versuch = (meta) => {
+    if (!meta || !meta.id) throw new Error('HB.versuch: id fehlt');
+    const entry = HB.VERSUCHE[meta.id] = { ...meta, karten: meta.karten || [], braucht: meta.braucht || [], keys: [] };
+    const put = (reg, key, def) => {
+      if (LISTS[reg]) { const l = LISTS[reg](); const i = l.findIndex((x) => x[0] === key); const row = [key, ...def]; if (i >= 0) l[i] = row; else l.push(row); }
+      else if (REG[reg]) REG[reg]()[key] = def;
+      else throw new Error('V.put: unbekanntes Register ' + reg);
+      entry.keys.push([reg, key]);
+    };
+    const done = () => { HB.rebuildLists(); };
+    return {
+      id: meta.id,
+      status(key, def, o = {}) {
+        put('STATUSES', key, def);
+        if (!HB.STATUS_ORDER.includes(key)) {
+          // order: Zahl = an dieser Stelle einfügen, Zustandsname = davor einfügen; sonst hinten
+          const at = typeof o.order === 'string' ? HB.STATUS_ORDER.indexOf(o.order) : typeof o.order === 'number' ? o.order : -1;
+          if (at >= 0) HB.STATUS_ORDER.splice(at, 0, key); else HB.STATUS_ORDER.push(key);
+          entry.keys.push(['STATUS_ORDER', key]);
+        }
+        done(); return def;
+      },
+      put(reg, key, def) { put(reg, key, def); done(); return def; },
+      on(ereignis, fn) {
+        const list = HB.HOOKS[ereignis];
+        if (!list) throw new Error('V.on: unbekanntes Ereignis ' + ereignis + ' (event | turnStart)');
+        const n = ++hookCount; list.push({ n, fn, id: entry.id }); entry.keys.push(['HOOKS', ereignis + ':' + n]);
+      },
+      cardEffect(key, def, apply) { put('CARD_EFFECTS', key, def); if (apply) put('APPLY', key, apply); done(); return def; },
+      unitEffect(key, def) { put('UNIT_EFFECTS', key, def); done(); return def; },
+      step(key, def) { put('STEP_TYPES', key, def); done(); return def; },
+      relic(key, def) { put('RELICS', key, def); done(); return def; },
+      keyword(key, def) { put('KEYWORDS', key, def); done(); return def; },
+      strings(tables) {
+        for (const [l, obj] of Object.entries(tables)) { HB.addStrings(l, obj); Object.keys(obj).forEach((k) => entry.keys.push(['STRINGS:' + l, k])); }
+        if (HB.localizeEffects) HB.localizeEffects();
+      },
+    };
+  };
+
+  // Versuch vollständig entfernen (für Tests; im Spiel wird ein Versuch archiviert, indem seine Datei nicht mehr geladen wird)
+  HB.versuchWeg = (id) => {
+    const v = HB.VERSUCHE[id]; if (!v) return;
+    for (const [reg, key] of v.keys) {
+      if (reg === 'STATUS_ORDER') { const i = HB.STATUS_ORDER.indexOf(key); if (i >= 0) HB.STATUS_ORDER.splice(i, 1); }
+      else if (reg === 'HOOKS') { const [ev, n] = key.split(':'); const l = HB.HOOKS[ev]; const i = l.findIndex((h) => String(h.n) === n); if (i >= 0) l.splice(i, 1); }
+      else if (LISTS[reg]) { const l = LISTS[reg](); const i = l.findIndex((x) => x[0] === key); if (i >= 0) l.splice(i, 1); }
+      else if (reg.startsWith('STRINGS:')) HB.removeStrings(reg.slice(8), [key]);
+      else delete REG[reg]()[key];
+      if (reg === 'UNIT_EFFECTS' && HB.CARD_EFFECTS[key] && HB.CARD_EFFECTS[key].auto) delete HB.CARD_EFFECTS[key]; // automatisch erzeugter Karteneffekt dazu
+    }
+    delete HB.VERSUCHE[id];
+    HB.rebuildLists();
+  };
+
+  // ---------- Sperre: Karten mit unbekanntem Baustein ----------
+  // Auswahlparameter, deren Wert ein Schlüssel einer dieser Listen sein muss (Zustand, Wirkung, Segen)
+  const choiceLists = () => [HB.COND_STATUSES, HB.UNIT_EFFECT_CHOICES, HB.BLESSING_CHOICES];
+  // Welche Bausteine der Karte gibt es nicht? (unbekannte Effekt-Typen, auch verschachtelt; unbekannte Zustände/Wirkungen in Auswahl-Parametern). Leer = spielbar.
+  HB.cardMissing = (def) => {
+    const out = [];
+    const walk = (list) => {
+      for (const fx of list || []) {
+        if (!fx) continue;
+        const reg = HB.CARD_EFFECTS[fx.type];
+        if (!reg) { if (!out.includes(fx.type)) out.push(fx.type); }
+        else for (const [k, , , opts, x] of reg.params || []) {
+          if (!Array.isArray(opts) || !choiceLists().includes(opts)) continue;
+          if (x && x.when && !x.when(fx)) continue; // Parameter gilt bei dieser Einstellung gar nicht
+          const v = fx[k];
+          if (v !== undefined && v !== null && !opts.some((o) => o[0] === v) && !out.includes(v)) out.push(v);
+        }
+        for (const val of Object.values(fx)) if (Array.isArray(val) && val.length && val.every((x) => x && typeof x === 'object' && 'type' in x)) walk(val);
+      }
+    };
+    walk(def && def.effects);
+    return out;
+  };
+  HB.cardLocked = (def) => HB.cardMissing(def).length > 0;
+
+  // Namen der Karten der Einstellung, die einen Baustein dieses Versuchs benutzen (Effekt-Typ oder Textparameter = Schlüssel, auch verschachtelt)
+  HB.versuchCards = (cfg, id) => {
+    const v = HB.VERSUCHE[id]; if (!v) return [];
+    const keys = new Set(v.keys.filter(([r]) => !r.startsWith('STRINGS:') && r !== 'HOOKS' && r !== 'STATUS_ORDER').map(([, k]) => k));
+    const uses = (list) => (list || []).some((fx) => fx && (keys.has(fx.type)
+      || Object.values(fx).some((val) => (typeof val === 'string' && keys.has(val)) || (Array.isArray(val) && val.length && val.every((x) => x && typeof x === 'object') && uses(val)))));
+    return ((cfg && cfg.deck) || []).filter((d) => uses(d.effects)).map((d) => d.name);
+  };
+})(window.HB);
+
+</script>
+  <!-- VERSUCHE:START -->
+  <script>
+// VERSUCH Seuchenei: ein zerstörbares Ei (30 Leben), das alle Zustände von Gegnern UND Spielern im Umkreis in sich aufsaugt
+// (beim Zaubern und zu Beginn jedes Spielerzugs). Stirbt es, explodiert es: Schaden = Summe aller gesaugten Stacks an alle im Umkreis.
+// Alles hier; Kern-Anschluss nur das allgemeine Register 'OBJECT_TYPES' in js/versuch.js. Doku: docs/mechaniken.md „Versuche“.
+window.HB = window.HB || {};
+(function (HB) {
+  const H = HB.hex;
+  const V = HB.versuch({ id: 'seuchenei', name: 'Seuchenei', was: 'Ei saugt Zustände im Umkreis auf; beim Tod Explosion mit der Summe der Stacks', karten: ['Seuchenei'], seit: '2026-10-18', braucht: [] });
+  V.strings({
+    de: {
+      'obj.seuchenei.label': 'Seuchenei',
+      'obj.seuchenei.info': 'Zerstörbar ({hp} Leben). Saugt zu Beginn jeder Runde alle Zustände von Figuren im Umkreis {r} auf (gesammelt: {n}). Gift schadet dem Ei. Beim Zerstören explodiert es: {n} Schaden an alle im Umkreis {r}.',
+      'obj.seuchenei.absorb': 'Das Seuchenei saugt {n} Stapel auf (gesamt {sum}): {list}.',
+      'obj.seuchenei.fx': '+{n}',
+      'obj.seuchenei.explode': 'Das Seuchenei platzt: {dmg} Schaden an {list}.',
+      'obj.seuchenei.fizzle': 'Das Seuchenei platzt, aber es hatte nichts gesammelt.',
+      'obj.seuchenei.nobody': 'niemanden',
+      'card.seuchenei': 'Seuchenei ({hp} Leben, Umkreis {r}): saugt alle Zustände im Umkreis auf, platzt beim Zerstören mit deren Summe als Schaden',
+    },
+    en: {
+      'obj.seuchenei.label': 'Plague egg',
+      'obj.seuchenei.info': 'Destructible ({hp} HP). At the start of every round it sucks up all statuses of figures within {r} (collected: {n}). Poison hurts the egg. When destroyed it bursts: {n} damage to everyone within {r}.',
+      'obj.seuchenei.absorb': 'The plague egg absorbs {n} stacks (total {sum}): {list}.',
+      'obj.seuchenei.fx': '+{n}',
+      'obj.seuchenei.explode': 'The plague egg bursts: {dmg} damage to {list}.',
+      'obj.seuchenei.fizzle': 'The plague egg bursts, but it had collected nothing.',
+      'obj.seuchenei.nobody': 'nobody',
+      'card.seuchenei': 'Plague egg ({hp} HP, radius {r}): sucks up all statuses within range, bursts when destroyed for their sum as damage',
+    },
+  });
+
+  const radiusOf = (o, t) => o.radius ?? t.radius ?? 2;
+  // Stapel einer Plakette: Zahl = Stapel, sonst (leer/Text) = 1, kein Wert = 0
+  const stacksOf = (v) => (v == null || v === false ? 0 : typeof v === 'number' ? v : (parseInt(v, 10) || 1));
+  // Zustand restlos von der Figur nehmen: eigener clear(), sonst das Feld des Zustands (field/Schlüssel) leeren
+  const clearStatus = (u, key, st) => {
+    if (st.clear) { st.clear(u); return; }
+    const f = st.field || key, v = u[f];
+    u[f] = Array.isArray(v) ? [] : typeof v === 'number' ? 0 : null;
+  };
+  const near = (g, pos, r) => [...g.alive, ...g.floorPlayers.filter((p) => p.hp > 0)].filter((u) => u.pos && H.distance(u.pos, pos) <= r);
+
+  // Saugt alle Zustände im Umkreis ein. Gift der Aufnahme schadet dem Ei (kann es töten → Explosion mit der neuen Summe).
+  function absorb(g, o) {
+    const t = HB.OBJECT_TYPES.seuchenei;
+    let got = 0, poison = 0; const names = [];
+    for (const u of near(g, o.pos, radiusOf(o, t))) {
+      for (const key of HB.STATUS_ORDER) {
+        const st = HB.STATUSES[key]; if (!st || !st.value) continue;
+        const n = stacksOf(st.value(u)); if (n <= 0) continue;
+        clearStatus(u, key, st); got += n; if (key === 'poison') poison += n;
+        names.push(`${g.unitName(u)}: ${st.label} ${n}`);
+      }
+    }
+    if (!got) return;
+    o.absorbed = (o.absorbed || 0) + got;
+    g.fx(o.pos, HB.t('obj.seuchenei.fx', { n: got }), 'poison');
+    g.log(HB.t('obj.seuchenei.absorb', { n: got, sum: o.absorbed, list: names.join(', ') }));
+    if (poison > 0 && g.objects.includes(o)) g.hitObject(o, poison, null);
+    g.changed();
+  }
+
+  V.put('OBJECT_TYPES', 'seuchenei', {
+    label: HB.t('obj.seuchenei.label'), icon: 'nest', hp: 30, blocksMove: true, blocksSight: false, radius: 2,
+    info: (o, t) => HB.t('obj.seuchenei.info', { hp: o.hp, r: radiusOf(o, t), n: o.absorbed || 0 }),
+    onDestroy(g, o, t) {
+      const sum = o.absorbed | 0, r = radiusOf(o, t);
+      if (sum <= 0) { g.log(HB.t('obj.seuchenei.fizzle')); return; }
+      const victims = near(g, o.pos, r);
+      g.emit('corpse_explode', { pos: { ...o.pos }, radius: r, damage: sum }); // Aussehen/Ton der Leichenexplosion
+      g.log(HB.t('obj.seuchenei.explode', { dmg: sum, list: victims.map((v) => g.unitName(v)).join(', ') || HB.t('obj.seuchenei.nobody') }));
+      for (const v of victims) if (g.isLive(v)) g.damage(v, sum);
+    },
+  });
+
+  V.cardEffect('seuchenei', {
+    label: 'Seuchenei', icon: 'nest', onTile: true, keywords: ['summon'], iconOf: () => 'nest', badge: (e) => e.hp,
+    area: (g, e, tile) => [tile],
+    params: [['hp', 'Leben', 30], ['radius', 'Umkreis (Einsaugen + Explosion)', 2]],
+    text: (e) => HB.t('card.seuchenei', { hp: e.hp ?? 30, r: e.radius ?? 2 }),
+  }, async (g, fx, c) => {
+    const before = new Set(g.objects);
+    // Ei wie „Objekt erschaffen“ auf das Zielfeld legen (freies Feld, gehört dem Wirkenden)
+    HB.CARD_EFFECT_APPLY.summon(g, { ...fx, object: 'seuchenei', shape: 'single', hp: fx.hp || 30, thorns: 0, duration: 0 }, c);
+    for (const o of g.objects.filter((x) => !before.has(x))) { if (fx.radius) o.radius = fx.radius; absorb(g, o); }
+  });
+
+  // Zu Beginn der Runde (jeder Spieler-Zugbeginn) saugt jedes Ei erneut
+  V.on('turnStart', (g) => { for (const o of g.objects.filter((x) => x.type === 'seuchenei')) if (g.objects.includes(o)) absorb(g, o); });
+})(window.HB);
+
+</script>
+  <!-- VERSUCHE:END -->
   <script>
 // Gesicherte Einstellung des Nutzers – AUTOMATISCH erzeugt aus docs/sicherung/einstellungen.json
 // (tools/build_artifact.py, nicht von Hand ändern). Wird nur benutzt, wenn weder lokal noch online
