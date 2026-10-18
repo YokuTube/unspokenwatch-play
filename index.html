@@ -5598,7 +5598,7 @@ window.HB = window.HB || {};
     const types = [...(cfg.enemyTypes || []), ...(cfg.deletedTypes || []).map((x) => x.type)];
     return {
       enemyTypes: d.enemyTypes.filter((x) => !seen.includes('enemy:' + x.id) && !types.some((y) => y.id === x.id)),
-      cards: d.cards.filter((x) => !seen.includes(x.cid) && !deck.some((y) => y.cid === x.cid || y.name === x.name)).map((x) => ({ ...x, inPool: true, inDraft: true, startHand: 0 })),
+      cards: d.cards.filter((x) => !seen.includes(x.cid) && !deck.some((y) => y.cid === x.cid || y.name === x.name)).map((x) => ({ ...x, inPool: true, inDraft: true })),
       traps: d.traps.filter((x) => !seen.includes('trap:' + x.id) && !traps.some((y) => y.id === x.id)),
     };
   };
@@ -5621,8 +5621,8 @@ window.HB = window.HB || {};
   // Startdeck: Klasse mit „eigenem Startdeck“ (k.ownDeck) nimmt die Anzahl je Karte aus k.deck[cid], sonst gilt die Anzahl der Karte
   HB.deckCounts = (cfg, p, d) => {
     const id = HB.playerClass(cfg, p), k = id && (cfg.classes || []).find((x) => x.id === id);
-    if (k && k.ownDeck) { const e = (k.deck || {})[d.cid] || {}; return { count: e.count || 0, startHand: e.startHand || 0 }; }
-    return { count: d.count || 0, startHand: d.startHand || 0 };
+    if (k && k.ownDeck) { const e = (k.deck || {})[d.cid] || {}; return { count: e.count || 0 }; }
+    return { count: d.count || 0 };
   };
   // Hat die Klasse eigene Karten? Eigenes Startdeck: mindestens eine Karte darin; sonst: mindestens eine Karte, die nur für sie gilt.
   // Klassen ohne eigene Karten sind bei der Klassenwahl nicht wählbar
@@ -5751,7 +5751,7 @@ window.HB = window.HB || {};
   // Störkarten (Kategorie curse): kommen nur über die Gegner-Aktion „Störkarte geben“ ins Deck
   HB.curseCards = () => [
     { name: 'Zweifel', cid: 'curse_zweifel', category: 'curse', count: 0, cost: 1, target: 'self', range: 0, exhaust: true,
-      inPool: false, inDraft: false, startHand: 0, effects: [{ type: 'exhaustCard', amount: 1 }] },
+      inPool: false, inDraft: false, effects: [{ type: 'exhaustCard', amount: 1 }] },
   ];
 
   HB.defaultConfig = () => withPool({
@@ -5815,8 +5815,6 @@ window.HB = window.HB || {};
       ...HB.newCardsV6(),
       ...HB.newCardsV24(),
     ],
-    // Feste Starthand (Karten mit startHand > 0 liegen zuerst auf der Hand)
-    startHandEnabled: true,
     // Wellen: Welle 1 ist der erste Eintrag (Gruppen „Anzahl × Typ“), alle Wellen gleich. Nach jeder Welle eine Runde Pause.
     waves: { enabled: true, minDist: 4, list: [
       { groups: [{ type: 'kaempfer', count: 3 }] },
@@ -7990,15 +7988,6 @@ window.HB = window.HB || {};
       const cnt = (d) => HB.deckCounts(c, p, d);
       c.deck.forEach((d, di) => { for (let i = 0; i < cnt(d).count; i++) p.drawPile.push({ uid: uid(), deckIndex: di, def: HB.migrateCard(clone(d)) }); });
       shuffle(p.drawPile);
-      // Feste Starthand (Karten mit startHand > 0, je Klasse einstellbar): so viele Exemplare liegen oben auf dem Stapel und werden in der ersten Hand gezogen
-      if (c.startHandEnabled !== false) {
-        const top = [];
-        c.deck.forEach((d, di) => {
-          let n = Math.min(cnt(d).startHand || 0, cnt(d).count || 0);
-          for (let i = p.drawPile.length - 1; i >= 0 && n > 0; i--) if (p.drawPile[i].deckIndex === di) { top.push(p.drawPile.splice(i, 1)[0]); n--; }
-        });
-        p.drawPile.push(...top);
-      }
     }
 
     // ---------- Hilfen ----------
@@ -15815,10 +15804,10 @@ window.HB = window.HB || {};
     }, 'Diese Klasse startet mit eigenen Karten statt mit dem allgemeinen Startdeck', true));
     if (!k.ownDeck) return box;
     HB.ensureCardIds(cards); k.deck = k.deck || {};
-    const tbl = el('table', { class: 'classtbl' }, el('tr', {}, el('th', {}, 'Karte'), el('th', {}, 'Anzahl im Startdeck'), el('th', { title: 'So viele Exemplare liegen schon in der ersten Hand (höchstens so viele, wie im Startdeck sind)' }, 'Davon in der Starthand')));
+    const tbl = el('table', { class: 'classtbl' }, el('tr', {}, el('th', {}, 'Karte'), el('th', {}, 'Anzahl im Startdeck')));
     const numCell = (d, key) => el('td', {}, el('input', { type: 'number', min: 0, max: 30, value: ((k.deck[d.cid] || {})[key]) || 0, class: 'qnum',
       oninput: (ev) => { const v = Math.max(0, parseInt(ev.target.value, 10) || 0), e = k.deck[d.cid] = k.deck[d.cid] || { count: 0 }; e[key] = v; if (!e.count) delete k.deck[d.cid]; changed(); } }));
-    cards.filter((d) => HB.cardForClass(d, k.id)).forEach((d) => tbl.append(el('tr', {}, cardCell(d), numCell(d, 'count'), numCell(d, 'startHand'))));
+    cards.filter((d) => HB.cardForClass(d, k.id)).forEach((d) => tbl.append(el('tr', {}, cardCell(d), numCell(d, 'count'))));
     const total = Object.values(k.deck).reduce((a, e) => a + (e.count || 0), 0);
     box.append(el('details', {}, el('summary', {}, `Startdeck: ${total} Karten`), tbl));
     return box;
@@ -16341,7 +16330,6 @@ window.HB = window.HB || {};
         oninput: (ev) => { d.name = ev.target.value; face.querySelector('.cname').textContent = d.name || ' '; changed(); } });
       tile.append(face, nameIn, el('div', { class: 'tilebar' },
         lab('Deck', quickNum(d, 'count', 'Anzahl im Startdeck')),
-        lab('Hand', quickNum(d, 'startHand', 'So viele Exemplare liegen schon in der ersten Hand (bei Klassen mit eigenem Startdeck: im Tab Klassen)')),
         lab('Markt', quickCheck(d, 'inPool', 'Kann im Markt angeboten werden')),
         lab('Draft', quickCheck(d, 'inDraft', 'Kann im Kartendraft nach einer Welle angeboten werden')),
         inCombat ? btn('+ Hand', () => {
