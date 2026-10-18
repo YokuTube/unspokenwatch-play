@@ -866,6 +866,7 @@ body.dragging #hud { opacity: 1; }
 .kw-strength { border-left-color: #ffb36b; } .kw-disarm { border-left-color: #b9a6ff; }
 .fx-strength, .st-strength svg { color: #ffb36b; } .fx-disarm, .st-disarm svg { color: #b9a6ff; }
 .st-strength text { fill: #ffb36b; } .st-disarm text { fill: #b9a6ff; }
+.fx-rush, .st-rush svg { color: #ffb347; } .st-rush text { fill: #ffb347; }
 .kw .kindtag { margin-left: auto; font-size: 10.5px; font-weight: 700; padding: 0 6px; border-radius: 8px; }
 .kw .kindtag.blessing { background: rgba(95, 209, 122, .18); color: #7fe39a; } .kw .kindtag.curse { background: rgba(255, 90, 90, .16); color: #ff9a9a; }
 /* Störkarten (Kategorie curse) */
@@ -2065,6 +2066,7 @@ window.HB = window.HB || {};
     { id: 'relics', label: 'Relikte (Start-Relikte, Schatztruhen)', get: (c) => c.relicsEnabled !== false, set: (c, v) => { c.relicsEnabled = v; } },
     { id: 'corpses', label: 'Leichen (tote Gegner bleiben liegen, Betreten kostet mehr; für alte Kadaverexplosion)', get: (c) => !!c.corpsesEnabled, set: (c, v) => { c.corpsesEnabled = v; } },
     { id: 'telemetry', label: 'Telemetrie (Spieldaten wie im alten Unspoken Watch; nur Webfassung, nur mit Zustimmung; js/telemetry.js)', get: (c) => c.telemetryEnabled !== false, set: (c, v) => { c.telemetryEnabled = v; } },
+    { id: 'stall', label: 'Flaute (3 Runden ohne Schaden an Gegnern: alle Gegner dauerhaft +1 Kraft und +1 Hast; Zahlen im Tab Regeln)', get: (c) => c.stallEnabled !== false, set: (c, v) => { c.stallEnabled = v; } },
     { id: 'collision', label: 'Aufprallschaden beim Wegstoßen', get: (c) => !!(c.collision && c.collision.enabled), set: (c, v) => { c.collision.enabled = v; } },
   ];
   // Öffentliche Webfassung (tools/build_artifact.py setzt HB.PUBLIC = true in dist/web/index.html): ohne Editor, Aufbau, Test-Werkzeuge, DEV-Fenster
@@ -6446,6 +6448,37 @@ window.HB = window.HB || {};
 
 </script>
   <script>
+// Modul Flaute (Hintergrund-Mechanik): Erleidet drei Runden lang KEIN Gegner Schaden, bekommen alle Gegner im Feld dauerhaft
+// +1 Kraft und +1 Hast (bis Kampfende). Der Zähler beginnt danach von vorn. Zahlen: Regeln stallRounds / stallStrength / stallRush.
+// Hängt sich nur über Anschlüsse ein (modules.js): onEvent merkt sich Gegner-Schaden, onTurnStart wertet einmal je Runde aus.
+window.HB = window.HB || {};
+(function (HB) {
+  const rule = (g, k, d) => ((g.cfg.rules || {})[k] ?? d);
+  HB.moduleHooks('stall', {
+    saveFields: ['calmTurns', 'calmHit', 'calmEval'],
+    onEvent(g, ev) {
+      // Schaden an einem Gegner (Spieler-Kennungen sind Text, Gegner-Kennungen Zahlen) – auch Gift zählt
+      if (ev.type === 'damage' && typeof ev.unit === 'number') g.calmHit = true;
+    },
+    onTurnStart(g) {
+      if (g.calmEval === g.turn) return; // einmal je Runde, nicht je Spieler
+      g.calmEval = g.turn;
+      const foes = g.alive;
+      if (g.turn <= 1 || !foes.length) { g.calmHit = false; return; } // Runde 1 und Pausen ohne Gegner zählen nicht
+      g.calmTurns = g.calmHit ? 0 : (g.calmTurns || 0) + 1;
+      g.calmHit = false;
+      if (g.calmTurns < rule(g, 'stallRounds', 3)) return;
+      g.calmTurns = 0;
+      const s = rule(g, 'stallStrength', 1), r = rule(g, 'stallRush', 1);
+      for (const e of foes) { if (s > 0) HB.addStatus(g, e, 'strength', s); if (r > 0) HB.addStatus(g, e, 'rush', r); }
+      g.log(`Flaute: ${rule(g, 'stallRounds', 3)} Runden ohne Schaden an Gegnern – alle Gegner bekommen +${s} Kraft und +${r} Hast.`);
+      g.notice('Die Gegner werden stärker und schneller', 'stun');
+    },
+  });
+})(window.HB);
+
+</script>
+  <script>
 // Erzeugt von tools/import_crypt.py aus docs/uw-daten/crypt_events.csv (UW) – nicht von Hand aendern.
 window.HB = window.HB || {};
 HB.CRYPT_EVENTS = [
@@ -8857,11 +8890,12 @@ window.HB = window.HB || {};
         await this.wait(110 / (this.cfg.speed || 1));
       }
     }
-    // plain = reines Laufen mit der Karte (Bewegen-Knopf, leeres Feld): Kosten + 1, auch bei „Bewegen 1, dann Schlag“-Karten.
-    // Ohne plain: Weite der Bewegung IN der Karte (Bewegen-Effekt), z. B. beim Laufen und Zuschlagen
+    // Jede Karte kann laufen: Kosten + 1 Felder; steht auf der Karte mehr Bewegung (Sprint 3, Bewegen 5), gilt das Größere.
+    // plain = reines Laufen (Bewegen-Knopf, leeres Feld). Ohne plain: nur die Bewegung IN der Karte, z. B. beim Laufen und Zuschlagen
     playerMoveRange(card, plain) {
-      const fx = plain ? null : this.moveFx(card.def);
-      return Math.max(0, (fx ? (fx.amount || 0) : (card.def.cost || 0) + 1) + HB.moveBonus(this, this.player)); // Eile/Verlangsamt
+      const fx = this.moveFx(card.def), base = (card.def.cost || 0) + 1;
+      const n = plain ? Math.max(base, fx ? (fx.amount || 0) : 0) : (fx ? (fx.amount || 0) : base);
+      return Math.max(0, n + HB.moveBonus(this, this.player)); // Eile/Hast/Verlangsamt
     }
     // Karte „Bewegen + Angriff“ auf einen Gegner: so weit hinlaufen wie nötig (höchstens Bewegung), dann zuschlagen.
     // Steht er von hier schon in Reichweite, wird nicht gelaufen. Kommt man nicht nah genug, läuft man so nah wie möglich heran
@@ -9615,6 +9649,13 @@ window.HB = window.HB || {};
       add(g, u, n) { u.strength = (u.strength || 0) + n; g.fx(u.pos, `+${n} Kraft`, 'grace'); },
       damageMod: (u) => u.strength || 0,
     },
+    // Hast (Segen): jede Bewegung +1 Feld je Stapel, bis Kampfende (anders als Eile: kein Abbau)
+    rush: {
+      kind: 'blessing', label: 'Hast', icon: 'haste', css: 'st-rush', color: '#ffb347', side: 'right',
+      value: (u) => (u.rush > 0 ? u.rush : null),
+      info: (u) => `Jede Bewegung +${u.rush} Feld${u.rush === 1 ? '' : 'er'}, bis Kampfende.`,
+      add(g, u, n) { if (!(n > 0)) return; u.rush = (u.rush || 0) + n; g.fx(u.pos, `+${n} Hast`, 'grace'); },
+    },
     // Entwaffnet (Zustand): der nächste Angriff des Trägers verfehlt; jeder verfehlte Angriff verbraucht einen Stapel.
     // Ein Angriff = eine gespielte Karte (alle ihre Schadens-Effekte) bzw. ein Angriffsschritt eines Gegners.
     disarm: {
@@ -9812,7 +9853,7 @@ window.HB = window.HB || {};
     }
     g.fx(b.pos, 'Saat', 'plague');
   };
-  HB.STATUS_ORDER = ['block', 'strength', 'plague', 'poison', 'grace', 'slow', 'stun', 'disarm', 'buffPoison',
+  HB.STATUS_ORDER = ['block', 'strength', 'rush', 'plague', 'poison', 'grace', 'slow', 'stun', 'disarm', 'buffPoison',
     'wound', 'confuse', 'thorns', 'dodge', 'fly', 'haste', 'bleed', 'invis', 'lure', 'fear', 'taunt', 'seed', 'corpseBomb', 'aura'];
   // Auswahl „Zustand“ für Bedingungen (Karteneffekt cond)
   HB.COND_STATUSES.splice(0, HB.COND_STATUSES.length, ['any', 'beliebige Zustände (zufällig)'], ...HB.STATUS_ORDER.map((k) => [k, HB.STATUSES[k].label]));
@@ -9823,7 +9864,7 @@ window.HB = window.HB || {};
   // Fliegt die Figur gerade? (Segen Fliegen oder Gegnertyp „fliegt immer“)
   HB.isFlying = (g, u) => !!u && (u.fly > 0 || (!u.isPlayer && !!(g && g.typeOf && (g.typeOf(u) || {}).flying)));
   // Zusätzliche Bewegung (Eile) minus Verlangsamung – für alle Bewegungen von Spielern und Gegnern
-  HB.moveBonus = (g, u) => (u && u.haste > 0 ? rule(g, 'hasteBonus', 1) : 0) - (u && u.slow ? u.slow.amount : 0);
+  HB.moveBonus = (g, u) => (u && u.haste > 0 ? rule(g, 'hasteBonus', 1) : 0) + (u && u.rush > 0 ? u.rush : 0) - (u && u.slow ? u.slow.amount : 0);
   // Unsichtbar: ein Angriff verbraucht einen Stapel
   HB.spendInvis = (g, u) => { if (u && u.invis > 0) { u.invis--; g.log(`${g.unitName(u)}: Angriff – ${u.invis ? 'noch ' + u.invis + '× unsichtbar' : 'wieder sichtbar'}.`); } };
   // Verwirrt: verbraucht 1 Stapel; mit Chance (Regel confusePct) ein anderes Ziel: Verbündeter in Reichweite + Sicht oder man selbst.
@@ -10663,6 +10704,9 @@ window.HB = window.HB || {};
     ['woundPct', 'Verwundet: Extra-Schaden je Treffer (%)', 50, 'Ein verwundetes Ziel nimmt beim nächsten Treffer (je Stapel einer) so viel Prozent mehr Schaden'],
     ['confusePct', 'Verwirrt: Chance, ein falsches Ziel zu treffen (%)', 50, 'So wahrscheinlich trifft ein verwirrter Angriff einen Verbündeten in Reichweite oder den Angreifer selbst'],
     ['hasteBonus', 'Eile: zusätzliche Bewegung', 1, 'So viele Felder mehr hat jede Bewegung, solange Eile wirkt'],
+    ['stallRounds', 'Flaute: Runden ohne Schaden an Gegnern', 3, 'Nach so vielen Runden, in denen kein Gegner Schaden erlitten hat, werden alle Gegner stärker (Modul Flaute)'],
+    ['stallStrength', 'Flaute: Kraft für alle Gegner', 1, 'So viel Kraft bekommen alle Gegner dauerhaft, wenn die Flaute zuschlägt'],
+    ['stallRush', 'Flaute: Hast für alle Gegner', 1, 'So viel Hast (zusätzliche Bewegung, dauerhaft) bekommen alle Gegner, wenn die Flaute zuschlägt'],
     ['graceDecay', 'Schonfrist-Abbau pro Zug', 1, 'Um so viel sinkt die Schonfrist am Zuganfang'],
     ['corpseMoveCost', 'Leiche: Bewegungskosten', 2, 'So viel Bewegung kostet ein Feld mit Leiche (normal 1)'],
     ['spawnPauseTurns', 'Pause vor neuer Welle (Züge)', 1, 'So viele eigene Züge hast du nach einer geschafften Welle (frei laufen, Markt, Heiler), bevor die nächste erscheint'],
