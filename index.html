@@ -2090,7 +2090,7 @@ window.HB = window.HB || {};
     "privacy.rights.t": "Auskunft, Berichtigung, Löschung, Einschränkung, Widerspruch und Beschwerde bei einer Datenschutz-Aufsichtsbehörde. Für Auskunft oder Löschung nenne deine Spieler-Kennung aus den Optionen (Discord).",
     "privacy.title": "Datenschutz",
     "privacy.what.h": "Was",
-    "privacy.what.t": "Nur wenn du zustimmst, schickt das Spiel Daten an mich: wie du spielst (welche Karten du wählst und spielst, welche Angebote du bekommst, wie Kämpfe ausgehen, wo du aufhörst) und Technik (Betriebssystem-Art, Bildschirm- und Fenstergröße, Sprache). Alles hängt an einer zufälligen Spieler-Kennung. Es gibt keinen Namen und kein Konto.",
+    "privacy.what.t": "Nur wenn du zustimmst, schickt das Spiel Daten an mich: wie du spielst (welche Karten du wählst und spielst, welche Angebote du bekommst, wie Kämpfe ausgehen, wo du aufhörst) und Technik (Betriebssystem-Art, Bildschirm- und Fenstergröße, Sprache, Spiel-Einstellungen, Fehlermeldungen des Spiels). Alles hängt an einer zufälligen Spieler-Kennung. Es gibt keinen Namen und kein Konto. Im Online-Koop schickt der Gastgeber den Kampfverlauf aller Plätze ohne die Kennungen der Mitspieler; jeder Mitspieler schickt nur mit eigener Zustimmung, wann er beitritt und geht.",
     "privacy.where.h": "Wohin",
     "privacy.where.t": "Die Daten nimmt ein Programm im Google-Konto des Entwicklers entgegen (Google Apps Script) und legt sie in einem privaten Google-Drive-Ordner ab. Google sieht beim Empfang technisch deine IP-Adresse; das Spiel speichert sie nicht. Google kann Daten auch außerhalb der EU verarbeiten (USA).",
     "privacy.who.h": "Wer",
@@ -2386,7 +2386,7 @@ window.HB = window.HB || {};
     "privacy.rights.t": "Access, rectification, erasure, restriction, objection and a complaint to a data protection authority. For access or erasure, give your player ID from the options (Discord).",
     "privacy.title": "Privacy",
     "privacy.what.h": "What",
-    "privacy.what.t": "Only if you agree does the game send data to me: how you play (which cards you pick and play, which offers you get, how fights end, where you stop) and technical details (kind of operating system, screen and window size, language). Everything is tied to a random player ID. There is no name and no account.",
+    "privacy.what.t": "Only if you agree does the game send data to me: how you play (which cards you pick and play, which offers you get, how fights end, where you stop) and technical details (kind of operating system, screen and window size, language, game settings, error messages of the game). Everything is tied to a random player ID. There is no name and no account. In online co-op, the host sends the fight data of all seats without the other players' IDs; each other player only sends when they joined and left, and only with their own consent.",
     "privacy.where.h": "Where to",
     "privacy.where.t": "A program in the developer's Google account (Google Apps Script) receives the data and stores it in a private Google Drive folder. Technically Google sees your IP address on receipt; the game does not store it. Google may also process data outside the EU (USA).",
     "privacy.who.h": "Who",
@@ -8175,6 +8175,7 @@ window.HB = window.HB || {};
       this.busy = true;
       // Handkarten am Zugende: „Behalten“ bleibt auf der Hand, „Flüchtig“ wird erschöpft, der Rest kommt auf die Ablage
       this.as(p, () => {
+        this.emit('turn_end', { unit: p.id, hand: this.hand.map((c) => c.def.name), energy: p.energy, maxEnergy: p.maxEnergy }); // vor dem Abräumen: was blieb auf der Hand
         const keep = [], gone = [];
         for (const c of this.hand) (HB.cardFlag(c.def, 'retain') ? keep : HB.cardFlag(c.def, 'ethereal') ? gone : this.discard).push(c);
         if (gone.length) { this.exhausted.push(...gone); gone.forEach((c) => this.emit('card_exhausted', { card: c.def.name })); this.log(HB.t('game.ethereal', { cards: gone.map((c) => HB.tn(c.def.name)).join(', ') })); }
@@ -14030,6 +14031,8 @@ window.HB = window.HB || {};
   class Host {
     constructor(game) {
       this.game = game; this.links = []; this.seq = 0; this.lastEv = game.eventSeq || 0;
+      // Kennung dieses Online-Kampfs (zufällig, je Kampf neu): verbindet in der Telemetrie den Kampf des Gastgebers mit dem Rahmen der Mitspieler
+      this.match = game.netMatch = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(16).padStart(2, '0')).join('');
       // eigene Befehle des Gastgebers: danach den neuen Stand an alle
       this.applyRaw = game.apply.bind(game);
       game.apply = async (cmd) => { const r = await this.applyRaw(cmd); await this.broadcast({}); return r; };
@@ -14046,7 +14049,7 @@ window.HB = window.HB || {};
       const link = { transport, playerId };
       this.links.push(link);
       transport.onMessage((msg) => this.receive(link, msg));
-      transport.send({ t: 'hello', you: playerId, cfg: this.game.cfg });
+      transport.send({ t: 'hello', you: playerId, cfg: this.game.cfg, match: this.match });
       return this.sendState(link);
     }
     stop() { this.stopped = true; } // abgelöst (neuer Kampf im selben Raum)
@@ -14075,11 +14078,12 @@ window.HB = window.HB || {};
     }
     receive(msg) {
       if (msg.t === 'lobby') { this.me = msg.you || this.me; if (this.hooks.lobby) this.hooks.lobby(msg); return; }
-      if (msg.t === 'hello') { this.cfg = msg.cfg; this.me = msg.you; HB.syncCatalogs(this.cfg); return; } // Fallen-/Karten-Listen des Gastgebers
+      if (msg.t === 'hello') { this.cfg = msg.cfg; this.me = msg.you; this.match = msg.match || ''; HB.syncCatalogs(this.cfg); return; } // Fallen-/Karten-Listen des Gastgebers
       if (msg.t === 'state' && msg.seq > this.seq && this.cfg) {
         this.seq = msg.seq;
         this.game = HB.Game.restore({ ...msg.snap, resumeEnemyPhase: false, cfg: this.cfg }, this.hooks); // Zwischenstand im Gegnerzug: Kopie spielt NICHT selbst weiter (rechnet nur der Gastgeber)
         this.game.apply = (cmd) => this.apply(cmd); // Befehle gehen an den Gastgeber
+        this.game.netCopy = true; this.game.netMatch = this.match; this.game.netSeat = this.me; // Anzeige-Kopie (Telemetrie zählt hier keinen Kampf)
         if (msg.active != null) this.game.activeEnemy = this.game.enemies.find((e) => e.uid === msg.active) || null; // wer gerade zieht
         (msg.events || []).forEach((ev) => this.hooks.event && this.hooks.event(ev));
         if (this.hooks.state) this.hooks.state(this);
@@ -17275,6 +17279,7 @@ window.HB = window.HB || {};
           state: (cl) => {
             const first = app.netSeat == null;
             app.game = cl.game; app.netSeat = cl.me; app.mode = 'combat'; app.tool = 'inspect';
+            if (HB.telemetry) HB.telemetry.observe(cl.game); // Mitspieler: nur der eigene Rahmen (Beitritt, Ausgang), den Kampf zählt der Gastgeber
             if (app.net) app.net.status = HB.t('online.infight', { name: cl.game.unitName(cl.game.players.find((p) => p.id === cl.me) || cl.game.player) });
             app.renderAll(); if (first && ov.isConnected) close();
           } };
@@ -17768,14 +17773,14 @@ window.HB = window.HB || {};
 // Weg wie UW: dieselbe Google-Brücke wie das Feedback (feedback.js, öffentlich im Spiel), Nutzlast {kind:'data', player (8 Zeichen), name,
 // gz = gzip(JSON) als Base64}. Die Brücke legt die Datei in einen privaten Drive-Ordner; zum Lesen/Löschen braucht man ein Lese-Wort,
 // das nie im Spiel steht. Datei: {schema, kind:'session', game:'hex', session, seq, player (zufällige Kennung), version, channel:'web',
-// content, start, lang, tech, events:[{e, t, …}]}. Ereignisse (Namen wie UW wo es passt): session_start, fight_start, fight (Ausgang,
-// Züge, Leben, gespielte Karten, Gegner besiegt, Schaden, Todesursache), offer (Kartenangebot), deck_change (Karte dazu/weg mit Quelle),
-// relic_gained, crypt_choice, session_end. Ratenbegrenzung: höchstens 1 Sendung je 60 s, höchstens 1500 Ereignisse gepuffert; die Brücke
+// content, start, lang, tech, events:[{e, t, …}]}. Ereignisse (Namen wie UW wo es passt): session_start, settings, fight_start, fight (Ausgang,
+// Züge, Leben, Karten, Gegner je Typ, Schaden, Todesursache, je Platz: seats), offer + pick (Angebot → Wahl), deck_change, relic_gained,
+// crypt_choice, wave_cleared, player_joined/left, coop_guest/coop_guest_end (Mitspieler online), error, session_end. Ratenbegrenzung: höchstens 1 Sendung je 60 s, höchstens 1500 Ereignisse gepuffert; die Brücke
 // bremst zusätzlich je Spieler/Stunde. Nicht Gesendetes bleibt im Ausgang (localStorage) bis zum nächsten Anlass.
 window.HB = window.HB || {};
 (function (HB) {
   const RELAY = 'https://script.google.com/macros/s/AKfycbyRIBmx-fGYtVH3HxwWeUDL6wuJASdLpfJTEc3Lp_Hdo6dC70PcgsoQPKvpgxKzZgFj/exec'; // wie feedback.js
-  const SCHEMA = 3, EVENTS_MAX = 1500, SEND_MIN_MS = 60000, RETRY_MS = 600000, OUTBOX_MAX = 40, OUTBOX_BYTES = 400000;
+  const SCHEMA = 4, EVENTS_MAX = 1500, SEND_MIN_MS = 60000, RETRY_MS = 600000, OUTBOX_MAX = 40, OUTBOX_BYTES = 400000;
   const $ = (s) => document.querySelector(s);
   const store = {
     get(k, d) { try { const v = localStorage.getItem('hexdb.tm.' + k); return v == null ? d : v; } catch (e) { return d; } },
@@ -17809,22 +17814,66 @@ window.HB = window.HB || {};
   const content = () => { try { return fnv(JSON.stringify(HB.app.config)); } catch (e) { return ''; } }; // Inhaltsstand: Zahlen ändern sich zwischen Fassungen
   function osName() { const u = navigator.userAgent || ''; return /Android/.test(u) ? 'Android' : /iPhone|iPad/.test(u) ? 'iOS' : /Windows/.test(u) ? 'Windows' : /Mac/.test(u) ? 'macOS' : /Linux/.test(u) ? 'Linux' : 'andere'; }
   const tech = () => ({ os: osName(), screen: screen.width + 'x' + screen.height, window: innerWidth + 'x' + innerHeight, touch: !!(navigator.maxTouchPoints > 0), lang: navigator.language || '' });
+  const ls = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  // Einstellungen wie UW settings_snapshot: Sprache, Ton, abgeschaltete Module
+  const settings = () => ({ lang: HB.i18n ? HB.i18n.lang : '', muted: ls('hexdb.muted') === '1', volume: parseFloat(ls('hexdb.volume') ?? '0.7'),
+    modules_off: HB.app && HB.app.config ? HB.MODULES.filter((m) => !HB.moduleOn(HB.app.config, m.id)).map((m) => m.id) : [] });
   function begin() {
     if (started || !active()) return;
     started = true; sid = rnd(6); t0 = Date.now(); seq = 0;
     rec('session_start', { tech: tech(), content: content() });
+    rec('settings', settings());
     flushOutbox();
   }
 
   // ---- Kampf beobachten (main.js ruft observe bei jeder Änderung) ----
-  function endFight(outcome, g) {
+  // Koop: Nur wer das echte Spiel rechnet (allein oder Gastgeber), zählt den Kampf – mit Werten JE PLATZ (seats). Mitspieler online
+  // haben nur Anzeige-Kopien (g.netCopy) und schicken ihren eigenen Rahmen (coop_guest/coop_guest_end: Beitritt, Ausgang; Technik steht im
+  // Sitzungskopf). Beides hängt an derselben Kampf-Kennung (match, net.js). So zählt nichts doppelt, und jeder sendet nur mit eigener Zustimmung.
+  const TURNS_MAX = 40;
+  let guest = null, pend = {}, lastEv = '';
+  const nameOf = (u) => clip(u && (u.name || u.type));
+  function seat(g, id) {
+    if (!cur.seats[id]) {
+      const p = g.players.find((x) => x.id === id) || {};
+      cur.seats[id] = { cls: clip(p.cls || ''), hp_start: p.hp, cards: {}, dealt: 0, taken: 0, blocked: 0, kills: 0, gold: {}, turns: [] };
+    }
+    return cur.seats[id];
+  }
+  const foe = (n) => (cur.foes[n] = cur.foes[n] || { kills: 0, hit: 0, hurt: 0 }); // hit = Schaden an Spielern, hurt = Schaden erlitten
+  const card = (s, n) => (s.cards[n] = s.cards[n] || { played: 0, left: 0 }); // left = am Zugende noch auf der Hand
+  const playedOf = (s) => Object.values(s.cards).reduce((n, c) => n + c.played, 0);
+  // Angebot (Draft, Markt, Truhe) → Wahl: gewählte Karte oder '' (übersprungen), mit Bedenkzeit
+  function endPick(id, chosen) {
+    const o = pend[id]; if (!o) return;
+    delete pend[id];
+    rec('pick', { kind: o.kind, offered: o.offered, chosen: chosen || '', seconds: Math.round((Date.now() - o.t) / 1000), seat: id, turn: o.turn });
+  }
+  function endFight(outcome) {
     if (!cur || cur.ended) return;
     cur.ended = true;
-    const p = cur.game.player || {};
-    rec('fight', { outcome, turns: cur.game.turn, waves: cur.game.waveNo, boss: cur.boss || undefined, players: cur.players, classes: cur.classes,
-      hp_start: cur.hp0, hp_end: p.hp, max_hp: p.maxHp, seconds: Math.round((Date.now() - cur.t0) / 1000), floor: cur.game.floor || 0,
-      cards: cur.cards, kills: cur.kills, dealt: cur.dealt, taken: cur.taken,
+    const g = cur.game, p = g.players[0] || g.player || {};
+    for (const id of Object.keys(pend)) endPick(id, '');
+    const seats = g.players.map((x) => ({ seat: x.id, ...seat(g, x.id), hp_end: x.hp, max_hp: x.maxHp }));
+    const cards = {}; for (const s of seats) for (const [n, c] of Object.entries(s.cards)) cards[n] = (cards[n] || 0) + c.played; // Summe aller Plätze
+    rec('fight', { outcome, turns: g.turn, waves: g.waveNo, boss: cur.boss || undefined, players: g.players.length, classes: cur.classes,
+      match: g.netMatch || undefined, hp_start: cur.hp0, hp_end: p.hp, max_hp: p.maxHp, seconds: Math.round((Date.now() - cur.t0) / 1000), floor: g.floor || 0,
+      cards, kills: cur.kills, dealt: cur.dealt, taken: cur.taken, foes: cur.foes, seats,
       death: outcome === 'lost' ? { by: cur.lastAttacker || '', kind: cur.lastKind || '' } : undefined, resumed: cur.resumed || undefined });
+  }
+  function observeGuest(g) { // Mitspieler online: eigener Rahmen, kein Kampf
+    const since = () => Math.round((Date.now() - guest.t0) / 1000);
+    const me = g.players.find((x) => x.id === g.netSeat) || {};
+    if (guest && guest.match !== g.netMatch && !guest.ended) rec('coop_guest_end', { match: guest.match, outcome: 'left', seconds: since() });
+    if (!guest || guest.match !== g.netMatch) {
+      guest = { match: g.netMatch, t0: Date.now(), ended: false };
+      rec('coop_guest', { match: g.netMatch, seat: g.netSeat, cls: clip(me.cls || ''), players: g.players.length, turn: g.turn });
+    }
+    if (!guest.ended && (g.phase === 'won' || g.phase === 'lost')) {
+      guest.ended = true;
+      rec('coop_guest_end', { match: guest.match, outcome: g.phase, seconds: since(), turns: g.turn, hp: me.hp });
+      flush('fight');
+    }
   }
   T.observe = (g) => {
     try {
@@ -17833,41 +17882,104 @@ window.HB = window.HB || {};
       if (g && !HB.moduleOn(g.cfg, 'telemetry')) return;
       if (cur && cur.game !== g) { endFight('abandoned'); cur = null; flush('fight'); }
       if (!g) return;
+      if (g.netCopy) { observeGuest(g); return; }
       if (!cur && (g.phase === 'won' || g.phase === 'lost')) return; // schon beendeter Kampf (z. B. der alte, während der neue gebaut wird)
       if (!cur) {
-        const p = g.player;
-        cur = { game: g, t0: Date.now(), hp0: p.hp, cards: {}, kills: {}, dealt: 0, taken: 0, players: g.players.length, classes: (g.startClasses || []).map((c) => clip(c)), resumed: g.turn > 1 };
-        rec('fight_start', { players: cur.players, classes: cur.classes, hp: p.hp, deck: (g.cfg.deck || []).reduce((n, d) => n + (d.count || 0), 0), waves: g.waveCount, resumed: cur.resumed || undefined });
+        const p = g.players[0] || g.player;
+        cur = { game: g, t0: Date.now(), hp0: p.hp, seats: {}, foes: {}, kills: {}, dealt: 0, taken: 0, classes: (g.startClasses || []).map((c) => clip(c)), resumed: g.turn > 1, turnT: {} };
+        pend = {};
+        g.players.forEach((x) => seat(g, x.id));
+        rec('fight_start', { players: g.players.length, classes: cur.classes, hp: p.hp, deck: (g.cfg.deck || []).reduce((n, d) => n + (d.count || 0), 0), waves: g.waveCount,
+          foes: g.enemies.filter((e) => e.alive).map(nameOf), resumed: cur.resumed || undefined });
       }
       if ((g.phase === 'won' || g.phase === 'lost') && !cur.ended) { endFight(g.phase); flush('fight'); }
     } catch (e) { /* Telemetrie darf das Spiel nie stören */ }
   };
 
-  // Modul-Anschlüsse (nur wenn das Modul an ist): jedes Ereignis des Kampfs, Kartenangebote
+  // Modul-Anschlüsse (nur wenn das Modul an ist): jedes Ereignis des Kampfs, Zugbeginn, Kartenangebote. g.player = wer gerade handelt.
+  const isPlayer = (g, id) => g.players.some((p) => p.id === id);
   HB.moduleHooks('telemetry', {
     onEvent(g, ev) {
       try {
-        if (!active()) return;
+        if (!active() || g.netCopy) return;
         if (!cur || cur.game !== g) T.observe(g);
         if (!cur) return;
+        const me = g.player ? g.player.id : 'player';
         switch (ev.type) {
-          case 'card_played': cur.cards[clip(ev.card)] = (cur.cards[clip(ev.card)] || 0) + 1; break;
-          case 'damage': if (g.players.some((p) => p.id === ev.unit)) { cur.taken += ev.amount; cur.lastKind = clip(ev.kind, 20); } else cur.dealt += ev.amount; break;
-          case 'enemy_attack': { const e = g.enemies.find((x) => x.uid === ev.unit); if (e && !ev.forced) cur.lastAttacker = clip(e.name || e.type); break; }
-          case 'death': { const e = g.enemies.find((x) => x.uid === ev.unit); if (e) { const n = clip(e.name || e.type); cur.kills[n] = (cur.kills[n] || 0) + 1; } break; }
+          case 'card_played': card(seat(g, me), clip(ev.card)).played++; break;
+          case 'damage': {
+            if (isPlayer(g, ev.unit)) {
+              seat(g, ev.unit).taken += ev.amount; cur.taken += ev.amount; cur.lastKind = clip(ev.kind, 20);
+              if (g.phase === 'enemy' && g.activeEnemy) foe(nameOf(g.activeEnemy)).hit += ev.amount;
+            } else {
+              cur.dealt += ev.amount;
+              const e = g.enemies.find((x) => x.uid === ev.unit); if (e) foe(nameOf(e)).hurt += ev.amount;
+              if (g.phase === 'player' && g.player) seat(g, me).dealt += ev.amount;
+            }
+            break;
+          }
+          case 'blocked': if (isPlayer(g, ev.unit)) seat(g, ev.unit).blocked += ev.amount || 0; break;
+          case 'enemy_attack': { const e = g.enemies.find((x) => x.uid === ev.unit); if (e && !ev.forced) cur.lastAttacker = nameOf(e); break; }
+          case 'death': {
+            const e = g.enemies.find((x) => x.uid === ev.unit); if (!e) break;
+            const n = nameOf(e); cur.kills[n] = (cur.kills[n] || 0) + 1; foe(n).kills++;
+            if (g.phase === 'player' && g.player) seat(g, me).kills++;
+            break;
+          }
+          case 'player_down': seat(g, ev.unit).down = g.turn; break;
           case 'boss_spawned': cur.boss = true; break;
-          case 'card_gained': if (ev.temp) break; rec('deck_change', { added: clip(ev.card), source: clip(ev.source, 30), turn: ev.turn }); break;
-          case 'card_removed': rec('deck_change', { removed: clip(ev.card), turn: ev.turn }); break;
-          case 'relic_gained': rec('relic_gained', { relic: clip(ev.relic), turn: ev.turn }); break;
-          case 'crypt_choice': rec('crypt_choice', { event: clip(ev.event), option: ev.option, ok: ev.ok }); break;
-          case 'wave_cleared': rec('wave_cleared', { wave: ev.wave, turn: ev.turn, hp: g.player.hp }); break;
+          case 'turn_end': {
+            const s = seat(g, ev.unit), hand = ev.hand || [], t = cur.turnT[ev.unit];
+            hand.forEach((n) => card(s, clip(n)).left++);
+            if (s.turns.length < TURNS_MAX) s.turns.push({ turn: g.turn, sec: t ? Math.round((Date.now() - t.at) / 1000) : undefined, played: playedOf(s) - (t ? t.played : 0),
+              energy_left: ev.energy, energy: ev.maxEnergy, hand_left: hand.length });
+            endPick(ev.unit, ''); // Angebot bis Zugende nicht genommen = übersprungen
+            break;
+          }
+          case 'card_gained': {
+            if (ev.temp) break;
+            const o = pend[me]; if (o && o.offered.includes(clip(ev.card))) endPick(me, clip(ev.card));
+            rec('deck_change', { added: clip(ev.card), source: clip(ev.source, 30), seat: me, turn: ev.turn });
+            break;
+          }
+          case 'card_removed': rec('deck_change', { removed: clip(ev.card), seat: me, turn: ev.turn }); break;
+          case 'gold_changed': { // Kassenbuch je Platz: Zweck → [rein, raus]
+            const p = g.players.find((x) => x.id === ev.unit) || {}, n = ev.amount || 0, s = seat(g, ev.unit);
+            const why = p.cryptEvent ? 'crypt' : p.marketOffer ? 'market' : (lastEv === 'wave_cleared' || lastEv === 'route_open') ? 'fight' : 'other';
+            const b = s.gold[why] = s.gold[why] || [0, 0];
+            if (n > 0) b[0] += n; else b[1] -= n;
+            break;
+          }
+          case 'relic_gained': rec('relic_gained', { relic: clip(ev.relic), seat: ev.unit, turn: ev.turn }); break;
+          case 'crypt_choice': rec('crypt_choice', { event: clip(ev.event), option: ev.option, ok: ev.ok, seat: ev.by }); break;
+          case 'wave_cleared': rec('wave_cleared', { wave: ev.wave, turn: ev.turn, hp: g.players.map((p) => p.hp) }); break;
+          case 'player_joined': case 'player_left': rec(ev.type, { seat: ev.unit, players: g.players.length, turn: ev.turn }); break;
           default: break;
         }
+        if (ev.type !== 'gold_changed') lastEv = ev.type;
       } catch (e) { /* egal */ }
     },
-    offered(g, list, kind) {
-      try { rec('offer', { kind: clip(kind, 20), offered: (list || []).map((d) => clip(d && d.name)), turn: g.turn }); } catch (e) { /* egal */ }
+    onTurnStart(g, p) {
+      try { if (active() && cur && cur.game === g) cur.turnT[p.id] = { at: Date.now(), played: playedOf(seat(g, p.id)) }; } catch (e) { /* egal */ }
     },
+    offered(g, list, kind) {
+      try {
+        if (!active() || g.netCopy) return;
+        const offered = (list || []).map((d) => clip(d && d.name)), id = g.player ? g.player.id : 'player';
+        rec('offer', { kind: clip(kind, 20), offered, seat: id, turn: g.turn });
+        if (cur && cur.game === g) { endPick(id, ''); pend[id] = { kind: clip(kind, 20), offered, t: Date.now(), turn: g.turn }; }
+      } catch (e) { /* egal */ }
+    },
+  });
+
+  // Fehler im Spiel (wie UW errors): höchstens 20 verschiedene je Sitzung, nur Dateiname statt Pfad
+  const errSeen = new Set();
+  addEventListener('error', (ev) => {
+    try {
+      const msg = clip(ev.message, 160), where = clip(String(ev.filename || '').split('/').pop() + ':' + (ev.lineno || 0), 60);
+      if (errSeen.size >= 20 || errSeen.has(msg + where)) return;
+      errSeen.add(msg + where); rec('error', { msg, where });
+    } catch (e) { /* egal */ }
   });
 
   // ---- Senden ----
@@ -17893,10 +18005,10 @@ window.HB = window.HB || {};
   const saveOutbox = (list) => { while (list.length > OUTBOX_MAX || JSON.stringify(list).length > OUTBOX_BYTES) list.shift(); if (list.length) store.set('outbox', JSON.stringify(list)); else store.del('outbox'); };
   async function flushOutbox() {
     if (sending || !active()) return;
-    const list = outbox(); if (!list.length) return;
+    if (!outbox().length) return;
     sending = true;
-    try {
-      while (list.length && active()) { await T.upload(list[0].name, list[0].doc); if (!active()) break; list.shift(); saveOutbox(list); } // Widerruf während des Sendens: nichts zurückschreiben
+    try { // Ausgang jedes Mal neu lesen: was während des Sendens dazukommt, geht gleich mit (sonst erst beim nächsten Anlass)
+      for (let list = outbox(); list.length && active(); list = outbox()) { await T.upload(list[0].name, list[0].doc); if (!active()) break; const now = outbox(); if (now.length && now[0].name === list[0].name) now.shift(); saveOutbox(now); } // Widerruf während des Sendens: nichts zurückschreiben
     } catch (e) { /* bleibt liegen bis zum nächsten Anlass */ }
     sending = false;
   }
