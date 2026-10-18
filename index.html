@@ -125,7 +125,7 @@ body[data-mode="setup"] .tile:hover, body[data-live="1"] .tile:hover { fill: #36
 .setup-hint, .hint-enemy { color: var(--muted); padding: 12px; }
 
 .card { width: 176px; min-height: 230px; font-size: 16px; background: linear-gradient(#2d3240, #232733); border: 2px solid #4a5163; border-radius: 10px; padding: 12px 10px; display: flex; flex-direction: column; gap: 8px; cursor: grab; user-select: none; touch-action: none; position: relative; transition: transform .1s; }
-.card:hover { transform: translateY(-6px); border-color: var(--accent); }
+.card:hover { transform: translateY(-6px); }
 .card.t-self { border-color: #4f7a45; }
 .card.noenergy .cost { color: #888; background: #333; }
 .card.lifted { opacity: .25; }
@@ -358,8 +358,7 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 #intent .wave.pending { border-color: var(--enemy); color: #ffb0aa; display: inline-flex; gap: 5px; align-items: center; }
 #intent .wave.free { border-color: var(--move, #5aa0ff); color: #a8ccff; display: inline-flex; gap: 5px; align-items: center; }
 .pickhint.market { color: var(--accent); }
-.card.offer { cursor: pointer; border-color: var(--accent); }
-.card.offer:hover { box-shadow: 0 0 0 3px var(--accent); }
+.card.offer { cursor: pointer; }
 .features { border-color: var(--accent); }
 
 /* Markt-Fenster */
@@ -1222,7 +1221,6 @@ button { color: #17130a; }
 .card.rar-legendary { --rc: #db3d33; --rw: 5px; --plate: rgba(6, 4, 16, .62); }
 .card.cat-curse { --plate: rgba(60, 20, 90, .3); }
 .card.t-self, .card.offer { border-color: var(--rc); }
-.card:hover, .card.offer:hover { border-color: var(--accent); }
 /* Tafel: gewölbte Oberkante, eingeritzte Innenlinie (UW: _apply_tafel_look) */
 .card.cat-power { border-radius: 34px 34px 5px 5px; }
 .card.cat-power::after { content: ""; position: absolute; inset: 3px; border: 1px solid rgba(168, 115, 220, .8); border-radius: 31px 31px 3px 3px; pointer-events: none; background: none; }
@@ -1682,8 +1680,10 @@ body[data-public="1"] #devwin, body[data-public="1"] #btn-dev { display: none !i
 #editor .etplace.on { color: #bff0c9; filter: none; }
 
 /* Markt: Deck-Ansicht zum Verbannen – viele Karten, scrollbar */
-.offerrow.deckpick { flex-wrap: wrap; max-height: 52vh; overflow-y: auto; justify-content: center; }
-.offerrow.deckpick .card { min-height: 250px; }
+.offerrow.deckpick { flex-wrap: wrap; justify-content: center; }
+.offerrow.deckpick .card { width: 150px; min-height: 210px; }
+.relictile.banishtile { align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
+.relictile.banishtile.done { opacity: .4; cursor: default; }
 
 </style>
 </head>
@@ -16363,30 +16363,14 @@ window.HB = window.HB || {};
       foot.append(Object.assign(document.createElement('span'), { className: 'hint', textContent: 'Gewählte Karte kommt auf deinen Ablagestapel.' }), button('Überspringen (keine Karte)', 'sec', () => g.apply({ type: 'draft', player: me().id, index: -1 })));
       box.appendChild(foot);
     } else {
-      box.innerHTML = `<div class="mtitle">${I.icon('market')} Markt</div>`
-        + `<div class="msub">${g.marketPicked ? '✓ Karte genommen' : 'Eine Karte nehmen:'}</div>`;
-      box.appendChild(offerRow(g.marketOffer, (i) => g.apply({ type: 'marketPick', player: me().id, index: i }), g.marketPicked));
-      if (HB.goldOn(g.cfg)) box.lastChild.querySelectorAll('.card').forEach((el, i) => { const pr = HB.goldPrice(g, 'card', g.marketOffer[i]);
-        el.insertAdjacentHTML('beforeend', `<div class="discard-tag${HB.goldOf(g, me()) < pr ? ' poor' : ''}">${I.icon('coin')} ${pr}</div>`); }); // Preis (Modul Gold)
-      // Von Mitspielern verbannte Karten: zusätzlich zur normalen Wahl (einmal je Besuch), solange der Markt steht
-      const extras = (g.marketBanished || []).map((b, i) => ({ b, i })).filter((x) => x.b.by !== me().id);
-      if (extras.length) {
-        const sub = document.createElement('div'); sub.className = 'msub';
-        sub.textContent = g.marketExtraTaken ? '✓ Verbannte Karte genommen' : 'Verbannt von Mitspielern – zusätzlich nehmbar (einmal):';
-        box.appendChild(sub);
-        box.appendChild(offerRow(extras.map((x) => x.b.def), (k) => g.apply({ type: 'marketBanished', player: me().id, index: extras[k].i }), g.marketExtraTaken));
-      }
-      if ((g.cfg.market || {}).allowRemove) {
-        const sub = document.createElement('div'); sub.className = 'msub';
-        sub.textContent = g.marketRemoved ? '✓ Karte verbannt' : (g.players.length > 1 ? 'Optional: eine Karte aus deinem Deck verbannen (Mitspieler können sie zusätzlich nehmen):' : 'Optional: eine Karte aus deinem Deck verbannen:');
-        box.appendChild(sub);
-        const bp = HB.goldPrice(g, 'banish'), cost = bp ? ` (${bp} Gold)` : '';
+      const canBanish = !!(g.cfg.market || {}).allowRemove;
+      const bp = HB.goldPrice(g, 'banish'), cost = bp ? ` (${bp} Gold)` : '';
+      if (banish && canBanish && !g.marketRemoved) {
+        // Verbannen: eigener Bildschirm – das Angebot ist weg, nur dein Deck (echte Karten, Tooltips) bzw. die Bestätigung
         const cards = [...g.ownedCards()].sort((x, y) => x.def.name.localeCompare(y.def.name));
-        const picked = banish && cards.find((c) => c.uid === banish.pick);
-        if (!banish || g.marketRemoved) {
-          const b = button(`Verbannen…${cost}`, 'sec rm', () => { banish = { pick: null }; renderMarket(g); });
-          b.disabled = g.marketRemoved; box.appendChild(b);
-        } else if (picked) {
+        const picked = cards.find((c) => c.uid === banish.pick);
+        box.innerHTML = `<div class="mtitle">${I.icon('discard')} Karte verbannen</div>`;
+        if (picked) {
           // zweiter Schritt: bestätigen (kein confirm(), Dialoge erscheinen im Artefakt nicht)
           box.appendChild(Object.assign(document.createElement('div'), { className: 'msub', textContent: `„${picked.def.name}“ wirklich verbannen${cost}? Sie verlässt dein Deck dauerhaft.` }));
           box.appendChild(offerRow([picked.def], () => {}, true));
@@ -16394,19 +16378,41 @@ window.HB = window.HB || {};
           const poor = bp && HB.goldOf(g, me()) < bp;
           const yes = button(poor ? 'Zu wenig Gold' : 'Ja, verbannen', 'primary', () => { banish = null; g.apply({ type: 'marketRemove', player: me().id, card: picked.uid }).then(() => renderMarket(g)); });
           yes.disabled = !!poor;
-          row.append(yes, button('Zurück', 'sec', () => { banish.pick = null; renderMarket(g); }));
+          row.append(yes, button('Andere Karte wählen', 'sec', () => { banish.pick = null; renderMarket(g); }));
           box.appendChild(row);
         } else {
-          // erster Schritt: das ganze Deck als echte Karten (Tooltips wie sonst), Klick wählt eine
-          box.appendChild(Object.assign(document.createElement('div'), { className: 'msub', textContent: `Dein Deck (${cards.length} Karten) – klicke die Karte, die du verbannen willst:` }));
+          box.appendChild(Object.assign(document.createElement('div'), { className: 'msub', textContent: `Dein Deck (${cards.length} Karten) – klicke die Karte, die du verbannen willst${g.players.length > 1 ? ' (Mitspieler können sie zusätzlich nehmen)' : ''}:` }));
           const row = offerRow(cards.map((c) => c.def), (i) => { banish.pick = cards[i].uid; renderMarket(g); });
           row.classList.add('deckpick'); box.appendChild(row);
-          box.appendChild(button('Abbrechen', 'sec', () => { banish = null; renderMarket(g); }));
+          box.appendChild(button('Zurück zum Markt', 'sec', () => { banish = null; renderMarket(g); }));
         }
+      } else {
+        box.innerHTML = `<div class="mtitle">${I.icon('market')} Markt</div>`
+          + `<div class="msub">${g.marketPicked ? '✓ Karte genommen' : 'Eine Karte nehmen:'}</div>`;
+        const mrow = offerRow(g.marketOffer, (i) => g.apply({ type: 'marketPick', player: me().id, index: i }), g.marketPicked);
+        if (HB.goldOn(g.cfg)) mrow.querySelectorAll('.card').forEach((el, i) => { const pr = HB.goldPrice(g, 'card', g.marketOffer[i]);
+          el.insertAdjacentHTML('beforeend', `<div class="discard-tag${HB.goldOf(g, me()) < pr ? ' poor' : ''}">${I.icon('coin')} ${pr}</div>`); }); // Preis (Modul Gold)
+        // eigene Kachel: Verbannen (öffnet das Deck)
+        if (canBanish) {
+          const t = document.createElement('div'); t.className = 'relictile banishtile' + (g.marketRemoved ? ' done' : '');
+          t.innerHTML = `<div class="rt-icon">${I.icon('discard')}</div><div class="rt-title">${g.marketRemoved ? '✓ Karte verbannt' : 'Verbannen'}</div>`
+            + `<div class="rt-text">${g.marketRemoved ? '' : `Eine Karte dauerhaft aus deinem Deck entfernen${cost}.`}</div>`;
+          if (!g.marketRemoved) t.addEventListener('click', () => { banish = { pick: null }; renderMarket(g); });
+          mrow.appendChild(t);
+        }
+        box.appendChild(mrow);
+        // Von Mitspielern verbannte Karten: zusätzlich zur normalen Wahl (einmal je Besuch), solange der Markt steht
+        const extras = (g.marketBanished || []).map((b, i) => ({ b, i })).filter((x) => x.b.by !== me().id);
+        if (extras.length) {
+          const sub = document.createElement('div'); sub.className = 'msub';
+          sub.textContent = g.marketExtraTaken ? '✓ Verbannte Karte genommen' : 'Verbannt von Mitspielern – zusätzlich nehmbar (einmal):';
+          box.appendChild(sub);
+          box.appendChild(offerRow(extras.map((x) => x.b.def), (k) => g.apply({ type: 'marketBanished', player: me().id, index: extras[k].i }), g.marketExtraTaken));
+        }
+        const foot = document.createElement('div'); foot.className = 'mfoot';
+        foot.append(button('Fertig', '', () => g.apply({ type: 'marketClose', player: me().id })), Object.assign(document.createElement('span'), { className: 'hint', textContent: 'Genommene Karten kommen auf den Ablagestapel. Danach spielst du deinen Zug normal weiter.' }));
+        box.appendChild(foot);
       }
-      const foot = document.createElement('div'); foot.className = 'mfoot';
-      foot.append(button('Fertig', '', () => g.apply({ type: 'marketClose', player: me().id })), Object.assign(document.createElement('span'), { className: 'hint', textContent: 'Genommene Karten kommen auf den Ablagestapel. Danach spielst du deinen Zug normal weiter.' }));
-      box.appendChild(foot);
     }
     m.innerHTML = ''; m.appendChild(box);
     m.hidden = false;
