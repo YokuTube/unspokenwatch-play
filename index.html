@@ -1688,6 +1688,10 @@ body[data-public="1"] #devwin, body[data-public="1"] #btn-dev { display: none !i
   .etedit { margin-left: 0; }
 }
 
+.etrow.placing { border-color: #3f8f55; background: rgba(47, 125, 70, .2); }
+#editor .etplace { flex: none; font-size: 12px; padding: 2px 8px; }
+#editor .etplace.on { color: #bff0c9; filter: none; }
+
 </style>
 </head>
 <body data-mode="setup" data-public="1">
@@ -9404,8 +9408,7 @@ window.HB = window.HB || {};
       else if (tool === 'start') { if (ei < 0 && oi < 0) this.player.pos = { ...h }; }
       else if (pAt) return;
       else if (tool === 'enemy') {
-        if (ei >= 0) this.enemies.splice(ei, 1);
-        else {
+        if (ei < 0) { // nur setzen (mehrfach klicken); Löschen mit dem Radierer
           clear();
           this.enemies.push(this.newEnemy(this.placeTypeId(), h));
         }
@@ -12634,22 +12637,6 @@ window.HB = window.HB || {};
     box.append(btn('+ Intention', () => { list.push({ steps: [{ type: 'move', amount: 2 }, { type: 'attack', amount: 5, range: 1 }] }); changed(true); }));
     return box;
   }
-  // Im Kampf: Icon eines Gegnertyps anklicken, danach auf ein Feld klicken = Gegner spawnen (auch abgehakte Typen, zum Testen)
-  function spawnBox(c) {
-    const row = el('div', { class: 'spawnrow' });
-    c.enemyTypes.forEach((t) => {
-      const on = HB.app.tool === 'enemy' && c.placeType === t.id;
-      row.append(el('button', {
-        class: 'spawnbtn' + (on ? ' on' : ''), title: `${t.name} (${t.hp} Leben): anklicken, dann aufs Spielfeld klicken`,
-        onclick: () => { c.placeType = t.id; HB.app.tool = 'enemy'; changed(true); HB.app.toast(`${t.name}: jetzt auf ein freies Feld klicken`); },
-      }, el('span', { class: 'spawnic', html: I.icon(t.icon || 'enemy') }), el('span', {}, t.name)));
-    });
-    return el('div', { class: 'icard' },
-      el('div', { class: 'ihead' }, el('b', {}, 'Im Kampf spawnen')),
-      el('p', { class: 'hint' }, 'Typ anklicken, dann auf ein freies Feld klicken (mehrmals möglich). Klick auf einen Gegner mit diesem Werkzeug entfernt ihn wieder.'),
-      row);
-  }
-
   // Gegnertypen: kompakte Liste (eine Zeile je Typ) mit Suche, Filter, Sortierung; Klick auf die Zeile klappt GENAU diesen Typ zum Bearbeiten auf
   let openType = null; // id des aufgeklappten Typs (nur einer; bleibt nach dem Neuzeichnen)
   const enemyView = { q: '', f: 'all', sort: 'orig' }; // Suche/Filter/Sortierung bleiben beim Neuzeichnen
@@ -12658,7 +12645,7 @@ window.HB = window.HB || {};
   function enemiesTab(c, bosses = false) {
     const v = enemyView;
     const box = el('div', {}, el('p', { class: 'hint' }, bosses ? 'Boss-Typen (Haken „Boss“ aus = wandert zu den Gegnern). Darunter Boss-Sets: ein Boss mit festen Begleitern – in Bosswellen wählbar.' : 'Gegnertypen. Zeile anklicken = bearbeiten (Intentionen, Startwirkungen, Bild). „Symbol“ ist nur das Bild auf dem Spielfeld – es ändert nichts am Verhalten.'),
-      HB.app.liveActive ? spawnBox(c) : el('p', { class: 'hint' }, 'Gegner spawnen: im laufenden Kampf (Live an) erscheint hier eine Leiste mit allen Typen – anklicken und aufs Feld klicken.'));
+      HB.app.liveActive ? el('p', { class: 'hint' }, 'Im Kampf: „⊕ In den Kampf“ an einer Zeile wählen, dann beliebig oft aufs Feld klicken. Esc oder derselbe Knopf beendet.') : el('p', { class: 'hint' }, 'Gegner in den Kampf setzen: im laufenden Kampf (Live an) hat jede Zeile den Knopf „In den Kampf“.'));
     const mine = c.enemyTypes.filter((t) => !!t.boss === bosses);
     const kind = (t) => (t.boss ? 'boss' : t.elite ? 'elite' : 'normal');
     const filters = [['all', 'Alle'], ...(bosses ? [] : [['normal', 'Normal']]), ['elite', 'Elite'], ...(bosses ? [['boss', 'Boss']] : []), ['off', 'Ausgeschaltet']];
@@ -12697,12 +12684,20 @@ window.HB = window.HB || {};
       const on = el('input', { type: 'checkbox', title: 'Aktiv: der Typ kommt im Spiel vor. Aus = bleibt gespeichert, taucht aber nicht in Wellen („Gemischt“) und nicht bei der Auswahl zum Platzieren auf. Schon platzierte Gegner bleiben.',
         onclick: (ev) => ev.stopPropagation(), onchange: (ev) => { t.disabled = !ev.target.checked; changed(true); } });
       on.checked = !t.disabled;
-      const row = el('div', { class: 'etrow' + (t.disabled ? ' off' : '') + (open ? ' open' : ''), onclick: (ev) => { if (ev.target.closest('button, input, select, label')) return; openType = open ? null : t.id; render(); } },
+      const row = el('div', { class: 'etrow' + (t.disabled ? ' off' : '') + (HB.app.liveActive && HB.app.tool === 'enemy' && c.placeType === t.id ? ' placing' : '') + (open ? ' open' : ''), onclick: (ev) => { if (ev.target.closest('button, input, select, label')) return; openType = open ? null : t.id; render(); } },
         el('span', { class: 'chev' }, open ? '▾' : '▸'), thumb,
         el('span', { class: 'etmain' }, el('span', { class: 'etname' }, t.name || '(ohne Name)'),
           marks.length ? el('span', { class: 'etmarks' }, marks.map(([m, k]) => el('span', { class: 'etmark ' + k }, m))) : null),
         el('span', { class: 'ethp', title: 'Leben' }, `${t.hp} ♥`),
         el('span', { class: 'etint', title: 'Intentionen (aktiv / alle)' }, nOn === nAll ? `${nAll} Int.` : `${nOn}/${nAll} Int.`),
+        HB.app.liveActive && !t.disabled ? (() => {
+          const placing = HB.app.tool === 'enemy' && c.placeType === t.id;
+          return Object.assign(btn(placing ? "⊕ wird platziert" : "⊕ In den Kampf", (ev) => {
+            ev.stopPropagation();
+            if (placing) { HB.app.tool = 'inspect'; HB.app.toast('Platzieren beendet.'); } else { c.placeType = t.id; HB.app.tool = 'enemy'; HB.app.toast(`${t.name}: aufs Feld klicken (mehrfach möglich), Esc beendet`); }
+            changed(true);
+          }, 'mini etplace' + (placing ? ' on' : '')), { title: 'Auswählen, dann aufs Feld klicken – mehrfach möglich. Esc oder erneut klicken beendet.' });
+        })() : null,
         el('label', { class: 'etsw', title: 'Aktiv' }, on));
       wrap.append(row);
       if (open) wrap.append(typeEditor(c, t));
@@ -17025,6 +17020,7 @@ window.HB = window.HB || {};
     document.addEventListener('keydown', (e) => {
       if (e.target.matches('input, textarea, select')) return;
       if (e.key === 'Escape' && app.pick) { endPick(); return; }
+      if (e.key === 'Escape' && app.liveActive && app.tool === 'enemy') { app.tool = 'inspect'; app.toast('Platzieren beendet.'); HB.editor && HB.editor.render(); return; }
       if (e.key === 'Escape' && app.game && app.mode === 'combat' && me().pendingMove) { app.game.apply({ type: 'cancelMove', player: me().id }); return; }
       if ((e.key === 'e' || e.key === 'E') && app.game && app.mode === 'combat') app.game.apply({ type: 'endTurn', player: me().id });
       // Koop-Probe: Taste 1–4 wechselt den gesteuerten Spieler (nicht während eine Karte gezogen wird; offene Zielwahl endet)
