@@ -1699,6 +1699,9 @@ body[data-kill="1"] #board { cursor: crosshair; }
 /* Editor: Kopfzeile der Klassen-/Familien-Tabelle bleibt beim Scrollen oben stehen (sonst weiß man nicht mehr, welche Spalte welche Klasse ist) */
 .classtbl th { position: sticky; top: var(--tabsH, 0px); z-index: 3; background: var(--panel); box-shadow: 0 2px 0 var(--line); }
 
+/* Klassenwahl: Klassen ohne eigene Karten sind nicht wählbar */
+.cpopt.off, .cpopt:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.6); }
+
 </style>
 </head>
 <body data-mode="setup" data-public="1">
@@ -1877,6 +1880,7 @@ window.HB = window.HB || {};
     "class.hint": "Mit Klasse bietet der Kartendraft nur ihre Karten an. Vorauswahl und Startdecks: Editor → Klassen.",
     "class.none": "Ohne Klasse",
     "class.owndeck": "eigenes Startdeck",
+    "class.nocards": "noch keine Karten",
     "class.pick": "Klasse wählen",
     "class.yours": "Deine Klasse",
     "common.cancel": "Abbrechen",
@@ -2172,6 +2176,7 @@ window.HB = window.HB || {};
     "class.hint": "With a class, the card draft only offers its cards. Preselection and starting decks: Editor → Classes.",
     "class.none": "No class",
     "class.owndeck": "own starting deck",
+    "class.nocards": "no cards yet",
     "class.pick": "Choose class",
     "class.yours": "Your class",
     "common.cancel": "Cancel",
@@ -5619,6 +5624,9 @@ window.HB = window.HB || {};
     if (k && k.ownDeck) { const e = (k.deck || {})[d.cid] || {}; return { count: e.count || 0, startHand: e.startHand || 0 }; }
     return { count: d.count || 0, startHand: d.startHand || 0 };
   };
+  // Hat die Klasse eigene Karten? Eigenes Startdeck: mindestens eine Karte darin; sonst: mindestens eine Karte, die nur für sie gilt.
+  // Klassen ohne eigene Karten sind bei der Klassenwahl nicht wählbar
+  HB.classHasCards = (cfg, k) => !k || (k.ownDeck ? Object.values(k.deck || {}).some((e) => (e.count || 0) > 0) : ((cfg && cfg.deck) || []).some((d) => (d.classes || []).includes(k.id)));
   HB.cardForClass = (d, cls) => !cls || !(d.classes || []).length || d.classes.includes(cls);
   // Start-Relikte eines Spielers: die für alle (cfg.player.relics) plus die seiner Klasse (cfg.classes[].relics)
   HB.startRelics = (cfg, p) => { if (HB.moduleOn && !HB.moduleOn(cfg, 'relics')) return []; const id = HB.playerClass(cfg, p), k = id && (cfg.classes || []).find((x) => x.id === id); return [...((cfg.player || {}).relics || []), ...((k && k.relics) || [])]; };
@@ -17042,8 +17050,8 @@ window.HB = window.HB || {};
     const ov = document.createElement('div'); ov.id = 'classpick';
     const cfg = app.config, classesOn = HB.moduleOn(cfg, 'classes') && (cfg.classes || []).length;
     const clsName = (id) => (id ? ((cfg.classes || []).find((k) => k.id === id) || {}).name || id : HB.t('class.none'));
-    const clsButtons = (cur, attr) => !classesOn ? '' : '<div class="cpopts">' + [['', HB.t('class.none')], ...cfg.classes.map((k) => [k.id, k.name])]
-      .map(([id, n]) => `<button type="button" class="cpopt${cur === id ? ' on' : ''}" ${attr}="${HB.esc(id)}">${HB.esc(n)}</button>`).join('') + '</div>';
+    const clsButtons = (cur, attr) => !classesOn ? '' : '<div class="cpopts">' + [['', HB.t('class.none'), true], ...cfg.classes.map((k) => [k.id, k.name, HB.classHasCards(cfg, k)])]
+      .map(([id, n, ok]) => `<button type="button" class="cpopt${cur === id ? ' on' : ''}${ok ? '' : ' off'}"${ok ? '' : ` disabled title="${HB.esc(HB.t('class.nocards'))}"`} ${attr}="${HB.esc(id)}">${HB.esc(n)}</button>`).join('') + '</div>';
     const seatList = (seats, mine) => '<div class="lobbylist">' + seats.map((s, i) => `<div class="lobbyseat${s.id === mine ? ' me' : ''}"><b>${HB.t('online.player', { n: i + 1 })}</b>`
       + `<span>${s.host ? HB.t('online.host') : HB.t('online.guest')}${s.id === mine ? HB.t('online.you') : ''}</span>${classesOn ? `<span class="muted">${HB.esc(clsName(s.cls))}</span>` : ''}</div>`).join('') + '</div>';
     const close = () => ov.remove();
@@ -17127,15 +17135,16 @@ window.HB = window.HB || {};
   // Klassenwahl vor dem Kampf: je Spieler eine Klasse oder „Ohne Klasse“ (dann alle Karten). Vorauswahl = Editor → Klassen.
   function showClassPick(done) {
     const cfg = app.config, n = Math.max(1, Math.min(4, cfg.playerCount || 1));
-    const pick = Array.from({ length: n }, (_, i) => (cfg.playerClasses || [])[i] || '');
+    const usable = (id) => !id || HB.classHasCards(cfg, (cfg.classes || []).find((k) => k.id === id));
+    const pick = Array.from({ length: n }, (_, i) => { const id = (cfg.playerClasses || [])[i] || ''; return usable(id) ? id : ''; }); // Vorauswahl nur, wenn die Klasse Karten hat
     const ov = document.createElement('div'); ov.id = 'classpick';
     const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = (ev) => { if (ev.key === 'Escape') close(); };
     const draw = () => {
-      const opts = [['', HB.t('class.none'), HB.t('class.allcards')], ...cfg.classes.map((k) => [k.id, k.name, k.ownDeck ? HB.t('class.owndeck') : ''])];
+      const opts = [['', HB.t('class.none'), HB.t('class.allcards')], ...cfg.classes.map((k) => [k.id, k.name, HB.classHasCards(cfg, k) ? (k.ownDeck ? HB.t('class.owndeck') : '') : HB.t('class.nocards'), !HB.classHasCards(cfg, k)])];
       ov.innerHTML = `<div class="modalbox cpbox"><div class="mtitle">${I.icon('deck')} ${HB.t('class.pick')}</div>`
         + pick.map((v, i) => `<div class="cprow"><span class="cpwho">${n > 1 ? HB.t('online.player', { n: i + 1 }) : HB.t('class.yours')}</span><div class="cpopts">`
-          + opts.map(([id, name, sub]) => `<button type="button" class="cpopt${v === id ? ' on' : ''}" data-p="${i}" data-id="${HB.esc(id)}">${HB.esc(name)}${sub ? `<small>${sub}</small>` : ''}</button>`).join('')
+          + opts.map(([id, name, sub, off]) => `<button type="button" class="cpopt${v === id ? ' on' : ''}${off ? ' off' : ''}"${off ? ' disabled' : ''} data-p="${i}" data-id="${HB.esc(id)}">${HB.esc(name)}${sub ? `<small>${sub}</small>` : ''}</button>`).join('')
           + '</div></div>').join('')
         + `<p class="cphint">${HB.t('class.hint')}</p>`
         + `<div class="cpbtns"><button type="button" class="cpcancel">${HB.t('common.cancel')}</button><button type="button" class="primary cpgo">${HB.t('menu.startfight')}</button></div></div>`;
