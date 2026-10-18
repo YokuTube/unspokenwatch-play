@@ -345,6 +345,11 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 .healer { pointer-events: none; }
 .healer polygon { fill: rgba(95, 209, 122, .22); stroke: var(--ok); stroke-width: 2; }
 .healer svg { color: var(--ok); }
+.crypt { pointer-events: none; }
+.crypt polygon { fill: rgba(150, 120, 200, .22); stroke: #a58bd6; stroke-width: 2; }
+.crypt svg { color: #c5b3ea; }
+.modalbox .mtext { max-width: 560px; margin: 6px auto 10px; line-height: 1.45; font-style: italic; }
+.modalbox .mopts { display: flex; flex-direction: column; gap: 8px; align-items: stretch; max-width: 420px; margin: 12px auto 0; }
 .market polygon { stroke-width: 2; }
 .spawnmark { pointer-events: none; }
 .spawnmark polygon { fill: rgba(200, 68, 62, .12); stroke: var(--enemy); stroke-width: 2; stroke-dasharray: 5 4; }
@@ -1490,6 +1495,12 @@ window.HB = window.HB || {};
 //   commands: { typ(game, spieler, cmd) } – eigene Befehle für game.apply({ type: typ, … }); nur, wenn das Modul an ist
 //   onCleared(game)                    – alle Gegner tot: true = es geht weiter (Modul übernimmt), false = Sieg, undefined = nicht zuständig.
 //                                        Reihenfolge der Liste zählt: das erste zuständige Modul entscheidet.
+//   onTurnStart(game, spieler)          – Zugbeginn eines Spielers, nach seinen Zuständen (Block ist schon verfallen), vor dem Ziehen
+//   onEvent(game, ev)                  – jedes Ereignis (game.emit), nur wenn das Modul an ist; nur zuhören, nichts zurückgeben
+//   modal(game, spieler)               – Fenster über dem Spielfeld (main.js zeichnet es): { sig, icon, title, text, lines, options: [{ label, sub, cmd }] } oder null
+//   slots(game, n, kind)               – Seltenheit je Angebotsplatz (['rare', 'common', …]); das erste zuständige Modul zählt
+//   offer(game, pool, n, kind, slots)  – Kartenangebot (Draft/Markt/Truhe) aus pool wählen: Liste von Karten, undefined = nicht zuständig
+//   offered(game, liste, kind)         – das Angebot steht fest (z. B. Glückszähler nachführen)
 window.HB = window.HB || {};
 (function (HB) {
   HB.MODULES = [
@@ -1499,6 +1510,9 @@ window.HB = window.HB || {};
     { id: 'market', label: 'Markt nach jeder Welle', get: (c) => !!(c.market && c.market.enabled), set: (c, v) => { c.market.enabled = v; } },
     { id: 'healer', label: 'Heiler nach jeder Welle', get: (c) => !!(c.healer && c.healer.enabled), set: (c, v) => { c.healer.enabled = v; } },
     { id: 'draft', label: 'Kartendraft nach jeder Welle', get: (c) => !!(c.draft && c.draft.enabled), set: (c, v) => { c.draft.enabled = v; } },
+    { id: 'affinity', label: 'Neigung (Draft und Markt richten sich nach genommenen/gespielten Karten; Familien im Editor → Neigung)', get: (c) => !!(c.affinity && c.affinity.enabled), set: (c, v) => { c.affinity = { ...(HB.defaultAffinity ? HB.defaultAffinity() : {}), ...(c.affinity || {}), enabled: v }; } },
+    { id: 'rarity', label: 'Seltenheit je Angebotsplatz (Bänder, Glückszähler, Anlauf wie in Unspoken Watch)', get: (c) => !!(c.rarity && c.rarity.enabled), set: (c, v) => { c.rarity = { ...(HB.defaultRarity ? HB.defaultRarity() : {}), ...(c.rarity || {}), enabled: v }; } },
+    { id: 'crypt', label: 'Krypta-Ereignisse (Ort „Krypta“: Ereignis mit Wahl, aus Unspoken Watch)', get: (c) => !!(c.crypt && c.crypt.enabled), set: (c, v) => { c.crypt = { ...(HB.defaultCrypt ? HB.defaultCrypt() : {}), ...(c.crypt || {}), enabled: v }; } },
     { id: 'classes', label: 'Klassen (Klassenwahl, Kartenpool und Startdeck je Klasse)', get: (c) => c.classesEnabled !== false, set: (c, v) => { c.classesEnabled = v; } },
     { id: 'relics', label: 'Relikte (Start-Relikte, Schatztruhen)', get: (c) => c.relicsEnabled !== false, set: (c, v) => { c.relicsEnabled = v; } },
     { id: 'corpses', label: 'Leichen (tote Gegner bleiben liegen, Betreten kostet mehr; für alte Kadaverexplosion)', get: (c) => !!c.corpsesEnabled, set: (c, v) => { c.corpsesEnabled = v; } },
@@ -1510,6 +1524,12 @@ window.HB = window.HB || {};
   HB.moduleHooks = (id, hooks) => Object.assign(HB.module(id), hooks);
   HB.moduleSaveFields = () => HB.MODULES.flatMap((m) => m.saveFields || []);
   HB.moduleCommand = (g, type) => { for (const m of HB.MODULES) if (m.commands && m.commands[type] && HB.moduleOn(g.cfg, m.id)) return m.commands[type]; return null; };
+  HB.moduleTurnStart = (g, p) => { for (const m of HB.MODULES) if (m.onTurnStart && HB.moduleOn(g.cfg, m.id)) m.onTurnStart(g, p); };
+  HB.moduleEvent = (g, ev) => { for (const m of HB.MODULES) if (m.onEvent && HB.moduleOn(g.cfg, m.id)) m.onEvent(g, ev); };
+  HB.moduleSlots = (g, n, kind) => { for (const m of HB.MODULES) if (m.slots && HB.moduleOn(g.cfg, m.id)) return m.slots(g, n, kind); return null; };
+  HB.moduleOffer = (g, pool, n, kind, slots) => { for (const m of HB.MODULES) if (m.offer && HB.moduleOn(g.cfg, m.id)) { const r = m.offer(g, pool, n, kind, slots); if (r !== undefined) return r; } return undefined; };
+  HB.moduleOffered = (g, list, kind) => { for (const m of HB.MODULES) if (m.offered && HB.moduleOn(g.cfg, m.id)) m.offered(g, list, kind); };
+  HB.moduleModal = (g, p) => { for (const m of HB.MODULES) if (m.modal && HB.moduleOn(g.cfg, m.id)) { const r = m.modal(g, p); if (r) return r; } return null; };
   HB.moduleCleared = (g) => { for (const m of HB.MODULES) if (m.onCleared && HB.moduleOn(g.cfg, m.id)) { const r = m.onCleared(g); if (r !== undefined) return r; } return undefined; };
 })(window.HB);
 
@@ -2166,6 +2186,55 @@ window.HB = window.HB || {};
 
 </script>
   <script>
+// Register: Orte am Feld (HB.PLACES) – etwas, zu dem man hinläuft und das beim Betreten wirkt (Markt, Heiler; später Krypta-Ereignis,
+// Schmiede, Orakel). Der Schlüssel ist zugleich das Feld von HB.Game (game.market, game.healer) und steht in SAVE_FIELDS (game.js).
+// Ein Ort auf dem Feld: { pos, usedBy: [Spieler-IDs] }. Er gilt für jeden Spieler einmal und verschwindet, wenn alle Lebenden da waren.
+// Merkmale:
+//   label, appear (Log-Zeile beim Erscheinen), icon, cls (CSS-Klasse der Zeichnung), hint (Tooltip der Zeichnung), info(g) → Text im Info-Kasten, infoCls
+//   module      – HB.MODULES-id: nur dann erscheint er nach einer geschafften Welle (Weiterziehen setzt ihn je Feldart selbst)
+//   chance(g)   – Chance in % nach einer Welle; range(g) – max. Abstand zum Spieler (0 = überall)
+//   exclusive   – ohne Weiterziehen: wer einen solchen Ort benutzt, für den sind die anderen „exclusive“-Orte weg (Markt ODER Heiler)
+//   event       – Ereignis (game.emit) beim Benutzen; use(g, p) – Wirkung für den aktiven Spieler p; onGone(g) – Ort ist weg
+window.HB = window.HB || {};
+(function (HB) {
+  const marketRange = (g) => (g.cfg.market || {}).spawnRange || 0;
+  HB.PLACES = {
+    market: {
+      label: 'Markt', appear: 'Ein Markt ist erschienen!', icon: 'market', cls: 'market', infoCls: 'market', hint: 'Markt: hinlaufen und eine Karte wählen',
+      info: (g) => `Stell dich drauf: ${(g.cfg.market || {}).offer || 6} Karten zur Auswahl, eine nehmen${(g.cfg.market || {}).allowRemove ? ' und eine aus dem Deck entfernen' : ''}. Nutzt du Markt oder Heiler, verschwinden beide.`,
+      module: 'market', chance: (g) => (g.cfg.market || {}).chance ?? 100, range: marketRange, exclusive: true, event: 'market_open',
+      use(g) {
+        const n = (g.cfg.market && g.cfg.market.offer) || 6;
+        const offer = g.poolOffer(n, 'market');
+        g.marketOffer = offer; g.marketPicked = false; g.marketRemoved = false; g.marketExtraTaken = false;
+        g.log('Markt: eine Karte nehmen und/oder eine Karte aus dem Deck verbannen.');
+        if (!offer.length) g.notice('Markt: keine Karten im Pool (im Karteneditor „Markt“ anhaken)', 'wave');
+      },
+      // verbannte Karten bleiben, bis alle Marktfenster zu sind (closeMarket)
+      onGone(g) { if (!g.players.some((q) => q.marketOffer)) g.marketBanished = []; },
+    },
+    healer: {
+      label: 'Heiler', appear: 'Ein Heiler ist erschienen!', icon: 'heal', cls: 'healer', infoCls: 'heal', hint: 'Heiler: hinlaufen und Leben auffüllen',
+      info: (g) => `Stell dich drauf: heilt ${(g.cfg.healer || {}).percent || 30} % deiner Max-Leben. Nutzt du Heiler oder Markt, verschwinden beide.`,
+      module: 'healer', chance: (g) => (g.cfg.healer || {}).chance ?? 50, range: marketRange, exclusive: true, event: 'healer_used',
+      use(g, p) {
+        const multi = g.players.length > 1;
+        const pct = (g.cfg.healer && g.cfg.healer.percent) || 30;
+        const amount = Math.round(p.maxHp * pct / 100);
+        const before = p.hp;
+        p.hp = Math.min(p.maxHp, p.hp + amount);
+        g.fx(p.pos, `+${p.hp - before}`, 'heal');
+        g.notice(multi ? `Heiler: ${g.unitName(p)} +${p.hp - before} Leben` : `Heiler: +${p.hp - before} Leben`, 'heal');
+        g.log(multi ? `Heiler: ${g.unitName(p)} heilt ${p.hp - before} Leben.` : `Heiler: du heilst ${p.hp - before} Leben.`);
+        g.endFreeMove(p);
+      },
+    },
+  };
+  HB.PLACE_KEYS = Object.keys(HB.PLACES);
+})(window.HB);
+
+</script>
+  <script>
 // Karten-Register: HB.CARD_EFFECTS (Beschreibung, Text, Fläche, Vorschau je Effekt), Kartentext, Kurzzahlen, Schlüsselwörter.
 // Die WIRKUNG der Effekte steht in handlers.js (APPLY bzw. HB.UNIT_EFFECTS).
 window.HB = window.HB || {};
@@ -2427,7 +2496,7 @@ window.HB = window.HB || {};
 (function (HB) {
   const H = HB.hex;
   const { uid, bumpUid, clone, shuffle } = HB.util;
-  // Weitere Methoden der Klasse: game-enemies.js, game-waves.js, game-cards.js (über HB.extendGame)
+  // Weitere Methoden der Klasse: game-enemies.js, game-waves.js, game-cards.js, game-spread.js (Seuche, Auren), game-edit.js (Editor im Kampf) – über HB.extendGame
   // Register: board.js (Bodenfelder, Kombinationen, Fallen), cards.js (Karteneffekte), handlers.js (Wirkungen, Zustände, Gegner-Aktionen)
 
   // Felder, die beim Speichern/Wiederherstellen eines laufenden Kampfs 1:1 übernommen werden
@@ -2689,7 +2758,7 @@ window.HB = window.HB || {};
     // ---------- Aufbau ----------
     init() {
       const c = this.cfg;
-      this.turn = 0; this.kills = 0; this.market = null; this.healer = null; this.marketBanished = []; this.activeEnemy = null;
+      this.turn = 0; this.kills = 0; this.clearPlaces(); this.marketBanished = []; this.activeEnemy = null;
       this.waveNo = 1; this.pendingWave = null;
       this.actorIdx = 0;
       this.buildFloors(((c.waves || {}).list || [])[0]); // Ebenen/Karten der ersten Welle (game-floors.js); Ebene 0 ist aktiv
@@ -2739,30 +2808,6 @@ window.HB = window.HB || {};
       }
     }
     fx(pos, text, kind) { if (!this.quietFx) this.hooks.fx && this.hooks.fx(pos, text, kind); }
-    // Auren „solange man drin steht“ (mode 'while'): alte Zuschläge abziehen (u.auraGrant), dann neu vergeben – je Figur im Radius
-    // wirken die Wirkungen einmal; was sie an Zahlen-Zuständen erhöhen (Kraft, Eile, Dornen …), merkt sich auraGrant.
-    // Läuft bei jeder Änderung (changed): wer die Aura verlässt oder wenn sie endet, verliert den Zuschlag wieder. Stapelt nie.
-    refreshAuras() {
-      if (this.inAuraRefresh || !this.floors) return;
-      const units = [...(this.players || []), ...this.floors.flatMap((f) => f.enemies || [])];
-      const carriers = units.filter((u) => (u.auras || []).some((a) => a.mode !== 'tick') && (u.isPlayer ? u.hp > 0 : u.alive));
-      if (!carriers.length && !units.some((u) => u.auraGrant)) return;
-      this.inAuraRefresh = true; this.quietFx = true;
-      const fields = [...new Set(HB.STATUS_ORDER.map((k) => HB.STATUSES[k].field))];
-      try {
-        for (const u of units) if (u.auraGrant) { for (const [f, n] of Object.entries(u.auraGrant)) if (typeof u[f] === 'number') u[f] = Math.max(0, u[f] - n); delete u.auraGrant; }
-        for (const c of carriers) {
-          if (c.isPlayer ? (c.floor | 0) !== this.floor : !this.enemies.includes(c)) continue; // nur auf der aktiven Etage
-          for (const a of c.auras.filter((x) => x.mode !== 'tick')) {
-            for (const o of HB.auraTargets(this, c, a)) {
-              const before = Object.fromEntries(fields.map((f) => [f, typeof o[f] === 'number' ? o[f] : 0]));
-              (a.effects || []).forEach((e) => HB.applyUnitEffect(this, o, e, c));
-              for (const f of fields) { const d = (typeof o[f] === 'number' ? o[f] : 0) - before[f]; if (d > 0) { o.auraGrant = o.auraGrant || {}; o.auraGrant[f] = (o.auraGrant[f] || 0) + d; } }
-            }
-          }
-        }
-      } finally { this.inAuraRefresh = false; this.quietFx = false; }
-    }
     // Ereignis-Strom für die spätere Darstellung (Godot: Animation + Sound je Ereignis-Typ).
     // Rein als Daten – im Browser-Prototyp hängt (noch) nichts Sichtbares daran. Typen: docs/plattform-plan.md
     emit(type, data = {}) {
@@ -2774,6 +2819,7 @@ window.HB = window.HB || {};
       const ev = { n: ++this.eventSeq, turn: this.turn, type, ...data };
       this.events.push(ev);
       if (this.events.length > 500) this.events.shift();
+      HB.moduleEvent(this, ev); // Module hören zu (z. B. Neigung: Karte genommen/gespielt)
       this.hooks.event && this.hooks.event(ev);
     }
     unitId(u) { return u ? (u.isPlayer ? u.id : u.uid) : null; }
@@ -2851,7 +2897,7 @@ window.HB = window.HB || {};
       for (const p of this.players) {
         p.ended = false;
         if (p.hp <= 0) { p.ended = true; continue; }
-        this.as(p, () => { this.runStatuses(p, 'onTurnStartEarly'); this.tileTurnStart(p); this.runStatuses(p, 'onTurnStart'); });
+        this.as(p, () => { this.runStatuses(p, 'onTurnStartEarly'); this.tileTurnStart(p); this.runStatuses(p, 'onTurnStart'); HB.moduleTurnStart(this, p); });
         if (this.checkEnd()) return this.changed();
         if (p.hp <= 0) { p.ended = true; continue; } // z. B. am Gift gestorben
         this.as(p, () => { p.energy = p.maxEnergy; this.draw(this.cfg.player.draw + HB.relicStat(this, p, 'draw')); HB.relicHook(this, p, 'onTurnStart'); });
@@ -2996,37 +3042,6 @@ window.HB = window.HB || {};
     }
 
 
-    // Seuche: e.plague zeigt auf den Ausbruch { jumpRange, infected:Set(uid) }. Hält dauerhaft. JEDES MAL, wenn das Gift eines Trägers
-    // tickt (Zugbeginn oder „Gift tickt sofort“), springt sie auf EINEN weiteren Gegner in Reichweite (jumpRange, Standard 2), der von
-    // diesem Ausbruch noch nicht betroffen war – der nächste zuerst; sein Gift (Wert beim Tick) wird addiert, er wird selbst Träger.
-    // Gibt es keinen solchen Gegner (niemand in der Nähe oder alle schon angesteckt), verfällt die Seuche beim Träger.
-    newOutbreak(e, fx) {
-      const ob = { id: uid(), jumpRange: fx.jumpRange || 2, roundsLeft: Infinity, infected: new Set([this.uidOf(e)]) };
-      e.plague = ob;
-      return ob;
-    }
-    tickOutbreaks() { /* Seuche hält dauerhaft – nichts zu zählen (Spielstände vor dem Umbau hatten Runden) */ }
-    // amount = Gift des Trägers beim Tick. true = jemand angesteckt
-    spreadPlague(e, amount = e.poison) {
-      const ob = e.plague;
-      if (!ob) return false;
-      const who = this.unitName(e), range = ob.jumpRange || 2;
-      const t = this.alive.filter((o) => o !== e && !ob.infected.has(o.uid) && H.distance(o.pos, e.pos) <= range)
-        .sort((a, b) => H.distance(a.pos, e.pos) - H.distance(b.pos, e.pos) || a.order - b.order)[0];
-      if (!t) {
-        e.plague = null;
-        this.log(`Seuche von ${who} verfällt (niemand Neues in Reichweite ${range}).`);
-        this.notice(`Seuche von ${who} verfällt`, 'plague');
-        return false;
-      }
-      HB.addStatus(this, t, 'poison', amount, { fx: 'plague' }); t.plague = ob; ob.infected.add(t.uid);
-      this.hooks.fxLine && this.hooks.fxLine(e.pos, t.pos, 'plague');
-      this.emit('plague_jump', { from: this.unitId(e), to: t.uid, fromPos: { ...e.pos }, toPos: { ...t.pos }, amount });
-      const msg = `Seuche: ${who} ${e.isPlayer ? 'steckst' : 'steckt'} ${t.name} an (+${amount} Gift)`;
-      this.log(msg + '.'); this.notice(msg, 'plague');
-      return true;
-    }
-
     tileTurnStart(u) {
       // begehbare Objekte (Giftwolke) wirken auch auf Fliegende – sie sind nicht am Boden
       const ob = this.objectAt(u.pos), od = this.objDef(ob);
@@ -3139,77 +3154,12 @@ window.HB = window.HB || {};
       if (ob && od.pickup && od.onPickup && od.onPickup(this, u, ob, od)) { this.objects = this.objects.filter((x) => x !== ob); this.emit('object_picked', { type: ob.type, unit: this.unitId(u), pos: { ...h } }); }
       else if (ob && od.onEnter) od.onEnter(this, u, ob, od); // begehbares Objekt (Giftwolke)
       if (!flying) for (const fx of this.effectsAt(h)) { const t = HB.tileEffectTypes[fx.type]; t && t.onEnter && t.onEnter(this, u, fx); }
-      if (u.isPlayer && final && this.floor === 0 && this.market && H.eq(this.market.pos, h)) this.as(u, () => this.useReward('market'));
-      else if (u.isPlayer && final && this.floor === 0 && this.healer && H.eq(this.healer.pos, h)) this.as(u, () => this.useReward('healer'));
+      const place = u.isPlayer && final && this.floor === 0 && this.placeAt(h); // Orte (Markt, Heiler …) nur in der Oberwelt
+      if (place) this.as(u, () => this.useReward(place));
     }
 
-    // ---------- Live-Bearbeitung im Kampf ----------
+    // Gegner-Nummern (Reihenfolge) neu vergeben – Live-Bearbeitung im Kampf: game-edit.js
     renumber() { let n = 1; this.enemies.forEach((e) => { if (e.alive) e.order = n++; }); }
-
-    // Gleiche Werkzeuge wie im Aufbau, aber direkt auf den laufenden Kampf.
-    editTile(tool, h) {
-      if (!this.board.has(h)) return;
-      const pAt = this.isPlayerAt(h);
-      const ei = this.enemies.findIndex((e) => e.alive && H.eq(e.pos, h));
-      const oi = this.obstacles.findIndex((o) => H.eq(o.pos, h));
-      const clear = () => {
-        if (ei >= 0) this.enemies.splice(ei, 1);
-        const o2 = this.obstacles.findIndex((o) => H.eq(o.pos, h));
-        if (o2 >= 0) this.obstacles.splice(o2, 1);
-        this.tileEffects = this.tileEffects.filter((t) => !H.eq(t.pos, h));
-        this.traps = this.traps.filter((t) => !H.eq(t.pos, h));
-        this.corpses = this.corpses.filter((c) => !H.eq(c.pos, h));
-        this.objects = this.objects.filter((o) => !H.eq(o.pos, h));
-      };
-      // Test-Werkzeuge
-      if (tool === 'kill') {
-        if (ei >= 0) { const e = this.enemies[ei]; this.log(`Test: ${e.name} getötet.`); this.killEnemy(e); }
-        this.checkEnd(); this.changed();
-        return;
-      }
-      if (tool === 'corpse') {
-        if (this.corpseAt(h)) this.corpses = this.corpses.filter((c) => !H.eq(c.pos, h));
-        else if (oi < 0) this.corpses.push({ pos: { ...h }, maxHp: this.cfg.testCorpseHp || this.cfg.enemyDefaults.hp, name: 'Leiche' });
-        this.changed();
-        return;
-      }
-      // Objekt-Werkzeug ('obj:<typ>'): setzen bzw. nochmal klicken = entfernen
-      if (tool.startsWith('obj:') && HB.OBJECT_TYPES[tool.slice(4)]) {
-        const type = tool.slice(4), had = this.objectAt(h);
-        this.objects = this.objects.filter((o) => !H.eq(o.pos, h));
-        if ((!had || had.type !== type) && !this.enemyAt(h) && !pAt) { if (oi >= 0) this.obstacles.splice(oi, 1); this.objects.push({ type, pos: { ...h }, hp: HB.OBJECT_TYPES[type].hp }); }
-        this.changed();
-        return;
-      }
-      if (HB.TRAP_TYPES[tool]) {
-        const had = this.trapAt(h);
-        this.traps = this.traps.filter((t) => !H.eq(t.pos, h));
-        if (!had || had.type !== tool) { if (oi >= 0) this.obstacles.splice(oi, 1); this.traps.push({ type: tool, pos: { ...h } }); }
-        this.changed();
-        return;
-      }
-      if (tool === 'erase') { if (!pAt) clear(); }
-      else if (tool === 'start') { if (ei < 0 && oi < 0) this.player.pos = { ...h }; }
-      else if (pAt) return;
-      else if (tool === 'enemy') {
-        if (ei >= 0) this.enemies.splice(ei, 1);
-        else {
-          clear();
-          this.enemies.push(this.newEnemy(this.placeTypeId(), h));
-        }
-      } else if (tool === 'rock' || tool === 'fence') {
-        const sight = tool === 'rock';
-        if (oi >= 0 && this.obstacles[oi].blocksSight === sight) this.obstacles.splice(oi, 1);
-        else { clear(); this.obstacles.push({ pos: { ...h }, blocksSight: sight }); }
-      } else if (tool === 'poisonField') {
-        const had = this.tileEffects.some((t) => H.eq(t.pos, h));
-        this.tileEffects = this.tileEffects.filter((t) => !H.eq(t.pos, h));
-        if (!had) { if (oi >= 0) this.obstacles.splice(oi, 1); this.addTileEffect('poisonField', h, { amount: 2 }); }
-      }
-      if (this.obstacleAt(h)) this.traps = this.traps.filter((t) => !H.eq(t.pos, h));
-      this.renumber();
-      this.changed();
-    }
 
     // Eigenes Objekt (Wand, Puppe … mit owner) abreißen – Rechtsklick, nur der Spieler, der es erschaffen hat
     destroyOwnObject(p, h) {
@@ -3221,36 +3171,8 @@ window.HB = window.HB || {};
       this.changed();
       return true;
     }
-    // Test: Gegner sofort töten (wie ein normaler Tod: Leiche, Seuche springt, Markt-Zähler)
-    killEnemy(e) { if (e && e.alive) this.damage(e, e.hp); }
-    // Test: Kopie einer Karte direkt auf die Hand (Handlimit gilt hier nicht)
-    // Karten im Kampf (Hand, Stapel, Ablage …) auf den Stand der Einstellung bringen – Änderungen im Editor gelten sofort
-    refreshCardDefs() {
-      const byId = new Map((this.cfg.deck || []).filter((d) => d.cid).map((d) => [d.cid, d]));
-      for (const p of this.players) for (const list of [p.hand, p.drawPile, p.discard, p.exhausted]) {
-        for (const card of list || []) {
-          // alte Karten (aus einem Spielstand) ohne Kennung: einmalig über den Namen zuordnen
-          if (card.def && !card.def.cid) { const m = (this.cfg.deck || []).find((d) => d.name === card.def.name && d.cid); if (m) card.def.cid = m.cid; }
-          const src = card.def && byId.get(card.def.cid); if (src) card.def = HB.migrateCard(clone(src)); }
-      }
-    }
-    addCardToHand(def) {
-      this.hand.push(this.newCard(def));
-      this.changed();
-    }
     // Neue Kartenkopie (eigene uid) – für Hand, Ablage, Draft …
     newCard(def) { return { uid: uid(), def: HB.migrateCard(clone(def)) }; }
-
-    // Aktuelle Kampfaufstellung als Aufbau-Konfiguration
-    toSetupConfig(base) {
-      const c = clone(base);
-      c.enemies = this.alive.map((e) => ({ name: e.name, hp: e.maxHp, pos: { ...e.pos } }));
-      c.obstacles = this.obstacles.map((o) => ({ pos: { ...o.pos }, blocksSight: o.blocksSight }));
-      c.tileEffects = this.tileEffects.map((t) => ({ ...t, pos: { ...t.pos } }));
-      c.traps = this.traps.map((t) => ({ ...t, pos: { ...t.pos } }));
-      HB.setStarts(c.player, this.players.map((p) => ({ ...p.pos }))); // Starts aller Spieler aus der jetzigen Aufstellung
-      return c;
-    }
 
     // ---------- Befehle (Koop) ----------
     // Alle Eingaben der Spieler laufen als Befehl durch apply(): { type, player: 'player' | 'p2' …, … }. Befehle werden NACHEINANDER
@@ -4045,7 +3967,7 @@ window.HB = window.HB || {};
     get waveCount() { const w = this.cfg.waves; return w && w.enabled ? Math.max(1, (w.list || []).length) : 1; }
     freeTile(h) {
       return this.board.has(h) && !this.blocksMove(h) && !this.enemyAt(h) && !this.isPlayerAt(h) && !this.trapAt(h) && !this.objectAt(h)
-        && !(this.market && H.eq(this.market.pos, h)) && !(this.healer && H.eq(this.healer.pos, h))
+        && !this.placeAt(h)
         && !(this.pendingWave && this.pendingWave.spots.some((s) => (s.floor | 0) === this.floor && H.eq(s.pos, h)));
     }
     pickRandom(list) { return list[Math.floor(Math.random() * list.length)]; }
@@ -4155,63 +4077,48 @@ window.HB = window.HB || {};
       this.log(msg); this.notice(msg, 'wave');
     }
 
-    // ---------- Markt & Heiler ----------
-    // Markt/Heiler erscheinen nach einer geschafften Welle irgendwo auf dem Feld und bleiben bis zum Ende des nächsten
-    // Kampfs (werden bei der nächsten geschafften Welle ersetzt). spawnRange 0 = überall, sonst max. Abstand zum Spieler.
+    // ---------- Orte am Feld (Markt, Heiler … – Register HB.PLACES in places.js) ----------
+    // Sie erscheinen nach einer geschafften Welle irgendwo auf dem Feld und bleiben bis zum Ende des nächsten
+    // Kampfs (werden bei der nächsten geschafften Welle ersetzt). range 0 = überall, sonst max. Abstand zum Spieler.
+    placeAt(h) { return HB.PLACE_KEYS.find((k) => this[k] && H.eq(this[k].pos, h)) || null; }
+    clearPlaces() { for (const k of HB.PLACE_KEYS) this[k] = null; }
     spawnRewards() { this.withFloor(0, () => this.spawnRewardsHere()); }
     spawnRewardsHere() {
-      const m = this.cfg.market || {}, hl = this.cfg.healer || {};
-      this.market = null; this.healer = null; this.marketBanished = [];
+      this.clearPlaces(); this.marketBanished = [];
       const near = (center, r) => this.board.tiles.filter((h) => this.freeTile(h) && H.distance(h, center) >= 1 && (!r || H.distance(h, center) <= r));
       const lp = this.floorPlayers.length ? this.floorPlayers : (this.livePlayers.length ? this.livePlayers : this.players);
       const anchor = (lp.length > 1 ? this.pickRandom(lp) : lp[0]).pos; // bei mehreren Spielern in der Nähe eines zufälligen
-      if (m.enabled && Math.random() * 100 < (m.chance ?? 100)) {
-        const spot = near(anchor, m.spawnRange || 0);
-        if (spot.length) { this.market = { pos: { ...this.pickRandom(spot) } }; this.log('Ein Markt ist erschienen!'); }
-      }
-      if (hl.enabled && Math.random() * 100 < (hl.chance ?? 50)) {
-        // Der Heiler erscheint irgendwo (wie der Markt, unabhängig von ihm – nebeneinander nur durch Zufall)
-        const spot = near(anchor, m.spawnRange || 0);
-        if (spot.length) { this.healer = { pos: { ...this.pickRandom(spot) } }; this.log('Ein Heiler ist erschienen!'); }
+      for (const k of HB.PLACE_KEYS) { // jeder Ort unabhängig von den anderen – nebeneinander nur durch Zufall
+        const pl = HB.PLACES[k];
+        if (!pl.module || !HB.moduleOn(this.cfg, pl.module) || !(Math.random() * 100 < pl.chance(this))) continue;
+        const spot = near(anchor, pl.range ? pl.range(this) : 0);
+        if (spot.length) { this[k] = { pos: { ...this.pickRandom(spot) } }; this.log(pl.appear); }
       }
     }
-    // Markt/Heiler gelten für den Spieler, der draufsteht (dieser Spieler ist der aktive): jeder Spieler entscheidet selbst, ob und wann er
-    // hingeht. Beide bleiben liegen, bis jeder lebende Spieler sie benutzt hat (oder die nächste Welle neue bringt).
+    // Ort für alle Lebenden benutzt → verschwindet
+    placeDoneFor(k) {
+      const t = this[k];
+      if (t && t.usedBy && this.livePlayers.every((q) => t.usedBy.includes(q.id))) { this[k] = null; const pl = HB.PLACES[k]; pl.onGone && pl.onGone(this); }
+    }
+    // Ein Ort gilt für den Spieler, der draufsteht (dieser Spieler ist der aktive): jeder Spieler entscheidet selbst, ob und wann er
+    // hingeht. Er bleibt liegen, bis jeder lebende Spieler ihn benutzt hat (oder die nächste Welle neue bringt).
     useReward(kind) {
-      const p = this.player, thing = kind === 'healer' ? this.healer : this.market;
-      if (!thing) return;
+      const p = this.player, thing = this[kind], pl = HB.PLACES[kind];
+      if (!thing || !pl) return;
       thing.usedBy = thing.usedBy || [];
       if (thing.usedBy.includes(p.id)) return; // dieser Spieler war schon da
       thing.usedBy.push(p.id);
-      // Ohne Weiterziehen: Markt ODER Heiler – wer eins benutzt, für den ist das andere weg (Weiterziehen hat je Feld nur eins)
-      const other = kind === 'healer' ? this.market : this.healer, otherKey = kind === 'healer' ? 'market' : 'healer';
-      if (other && !this.routeOn()) {
+      // Ohne Weiterziehen: Markt ODER Heiler – wer einen benutzt, für den sind die anderen weg (Weiterziehen hat je Feld nur einen)
+      if (pl.exclusive && !this.routeOn()) for (const k of HB.PLACE_KEYS) {
+        const other = this[k];
+        if (k === kind || !other || !HB.PLACES[k].exclusive) continue;
         other.usedBy = other.usedBy || [];
         if (!other.usedBy.includes(p.id)) other.usedBy.push(p.id);
-        if (this.livePlayers.every((q) => other.usedBy.includes(q.id))) { this[otherKey] = null; if (otherKey === 'market' && !this.players.some((q) => q.marketOffer)) this.marketBanished = []; }
+        this.placeDoneFor(k);
       }
-      this.emit(kind === 'healer' ? 'healer_used' : 'market_open', { pos: { ...p.pos }, by: p.id });
-      const multi = this.players.length > 1;
-      if (kind === 'healer') {
-        const pct = (this.cfg.healer && this.cfg.healer.percent) || 30;
-        const amount = Math.round(p.maxHp * pct / 100);
-        const before = p.hp;
-        p.hp = Math.min(p.maxHp, p.hp + amount);
-        this.fx(p.pos, `+${p.hp - before}`, 'heal');
-        this.notice(multi ? `Heiler: ${this.unitName(p)} +${p.hp - before} Leben` : `Heiler: +${p.hp - before} Leben`, 'heal');
-        this.log(multi ? `Heiler: ${this.unitName(p)} heilt ${p.hp - before} Leben.` : `Heiler: du heilst ${p.hp - before} Leben.`);
-        this.endFreeMove(p);
-      } else {
-        const n = (this.cfg.market && this.cfg.market.offer) || 6;
-        const offer = this.poolOffer(n, 'market');
-        this.marketOffer = offer; this.marketPicked = false; this.marketRemoved = false; this.marketExtraTaken = false;
-        this.log('Markt: eine Karte nehmen und/oder eine Karte aus dem Deck verbannen.');
-        if (!offer.length) this.notice('Markt: keine Karten im Pool (im Karteneditor „Markt“ anhaken)', 'wave');
-      }
-      // Alle lebenden Spieler waren da: verschwindet (verbannte Karten gehen mit)
-      if (this.livePlayers.every((q) => thing.usedBy.includes(q.id))) {
-        if (kind === 'healer') this.healer = null; else this.market = null; // verbannte Karten bleiben, bis alle Marktfenster zu sind (closeMarket)
-      }
+      this.emit(pl.event, { pos: { ...p.pos }, by: p.id });
+      pl.use(this, p);
+      this.placeDoneFor(kind); // alle lebenden Spieler waren da: verschwindet
       this.changed();
     }
     // Zufällige Karten: Markt = Haken „Markt“ (inPool), Kartendraft = Haken „Draft“ (inDraft)
@@ -4220,7 +4127,10 @@ window.HB = window.HB || {};
     poolOffer(n, kind) {
       const cls = kind === 'draft' || this.cfg.classMarket ? HB.playerClass(this.cfg, this.player) : null;
       const pool = this.cfg.deck.filter((d) => !HB.cardCategory(d).noPool && (kind === 'draft' ? d.inDraft : d.inPool) && HB.cardForClass(d, cls));
-      return shuffle([...pool]).slice(0, n).map((d) => HB.migrateCard(clone(d)));
+      const slots = pool.length ? HB.moduleSlots(this, n, kind) : null; // Seltenheit je Platz (Modul rarity), sonst keine
+      const picked = HB.moduleOffer(this, pool, n, kind, slots) || shuffle([...pool]).slice(0, n); // Modul (Neigung, Seltenheit) wählt, sonst Zufall
+      if (picked.length) HB.moduleOffered(this, picked, kind);
+      return picked.map((d) => HB.migrateCard(clone(d)));
     }
     // Karte (Kopie aus der Einstellung) in einen Stapel des aktiven Spielers: 'discard' | 'draw' (zufällig eingemischt) | 'top' | 'hand' (voll → Ablage)
     giveCard(d, to = 'discard') {
@@ -4370,7 +4280,7 @@ window.HB = window.HB || {};
     elite: { label: 'Elite', icon: 'crown', elite: true, reward: 'elite' },
     market: { label: 'Markt', icon: 'market', easy: true, reward: 'market' },
     healer: { label: 'Heiler', icon: 'heal', easy: true, reward: 'healer' },
-    crypt: { label: 'Krypta', icon: 'skull', reward: 'chest' }, // vorerst normaler Kampf + Truhe; später das Krypta-Ereignis
+    crypt: { label: 'Krypta', icon: 'skull', reward: (g) => (HB.moduleOn(g.cfg, 'crypt') ? 'crypt' : 'chest') }, // Kampf, dann Krypta-Ort (Modul crypt) oder Truhe
     boss: { label: 'Boss', icon: 'crown', boss: true, reward: 'won' },
   };
   HB.defaultRoute = () => ({ enabled: false, bossAfter: 5, exitsMin: 2, exitsMax: 3, easyMul: 60, eliteRelic: 50,
@@ -4401,17 +4311,17 @@ window.HB = window.HB || {};
       const r = this.route = this.route || { stage: 1, kind: 'fight', entry: null };
       if (r.exits) return true; // schon offen
       const rc = this.routeCfg(), kind = HB.ROUTE_KINDS[r.kind] || HB.ROUTE_KINDS.fight;
-      if (kind.reward === 'won') return false; // Boss besiegt → Sieg (checkEnd)
+      const reward = typeof kind.reward === 'function' ? kind.reward(this) : kind.reward; // Belohnung kann vom Modul abhängen
+      if (reward === 'won') return false; // Boss besiegt → Sieg (checkEnd)
       this.floors.forEach((f) => { f.tileEffects = []; f.corpses = []; });
       for (const p of this.players) { HB.CLEANSE_ORDER.forEach((k) => HB.STATUSES[k].clear(p)); Object.assign(p, { grace: 0, nextAttackPoison: 0 }); }
       // Belohnung je Feldart
-      this.market = null; this.healer = null;
+      this.clearPlaces();
       const spot = () => { const c = this.board.tiles.filter((h) => this.freeTile(h)); return c.length ? { pos: { ...this.pickRandom(c) } } : null; };
-      if (kind.reward === 'market') this.market = spot();
-      if (kind.reward === 'healer') this.healer = spot();
+      if (HB.PLACES[reward]) this[reward] = spot(); // Belohnung ist ein Ort am Feld (Markt, Heiler)
       for (const p of this.livePlayers) this.as(p, () => {
-        if (kind.reward === 'draft' || kind.reward === 'elite') this.startDraft(kind.reward === 'elite' ? 1 : 0);
-        if (kind.reward === 'chest' || (kind.reward === 'elite' && Math.random() * 100 < rc.eliteRelic)) this.openChest(3);
+        if (reward === 'draft' || reward === 'elite') this.startDraft(reward === 'elite' ? 1 : 0);
+        if (reward === 'chest' || (reward === 'elite' && Math.random() * 100 < rc.eliteRelic)) this.openChest(3);
       });
       for (const p of this.livePlayers) { p.freeMove = true; delete p.routeVote; }
       // Ausgänge: zufällige Seiten (ohne Eingang), Art zufällig nach Gewicht; vor dem Boss nur ein Ausgang „Boss“
@@ -4454,7 +4364,7 @@ window.HB = window.HB || {};
       this.setFloor(0);
       const f = this.floors[0];
       Object.assign(f, { obstacles: [], objects: [], tileEffects: [], traps: [], corpses: [], enemies: [] });
-      this.market = null; this.healer = null; this.pendingWave = null; this.marketBanished = [];
+      this.clearPlaces(); this.pendingWave = null; this.marketBanished = [];
       // Spieler an der Eingangsseite (der erste auf dem Eingangsfeld, die anderen daneben)
       const entry = this.routeSideTile(r.entry), spots = [entry, ...this.tilesNear(entry, (h) => !H.eq(h, entry))];
       this.livePlayers.forEach((p, k) => { p.pos = { ...spots[k] }; p.floor = 0; delete p.routeVote; delete p.freeMove; delete p.pendingMove; p.facing = H.dirTo(entry, this.routeSideTile(this.opposite(r.entry))); });
@@ -4502,6 +4412,2233 @@ window.HB = window.HB || {};
     saveFields: ['route'],
     commands: { routeVote: (g, p, cmd) => g.routeVote(p, cmd.exit) },
     onCleared: (g) => g.routeCleared(),
+  });
+})(window.HB);
+
+</script>
+  <script>
+// Modul „Neigung“ (HB.MODULES id 'affinity', Einstellung cfg.affinity, Familien cfg.families, Karte d.families) – nach Unspoken Watch
+// (UW docs/neigung-und-regel-effekte.md, aufbereitet in docs/uw-daten.md): keine Klassen, die Richtung entsteht aus dem, was man nimmt
+// und spielt. Die Neigung LENKT jedes Kartenangebot (Draft, Markt, Truhe), sie filtert nie.
+// - Familien sind Daten: cfg.families = [{ id, name, weight }] (weight < 1 = Allerweltsfamilie: zählt schwächer, gehört an der „Tür“ zur
+//   neutralen Richtung). Karten gehören über d.families = [ids] dazu (Editor → Neigung oder Karteneditor).
+// - Je Spieler (Koop: jeder seine eigene): p.affinity = { familienId: Wert }, p.affSignals = Anzahl Signale, p.affPlayed = schon
+//   gezählte Karten dieses Kampfs. Signale: Karte genommen (card_gained) und Karte gespielt (card_played, je Karte einmal pro Kampf).
+//   Startkarten zählen nicht. Neuer Kampf (wave_spawned: nächste Welle oder neues Feld beim Weiterziehen) → Werte × decay %.
+// - Angebot mit n Plätzen: ⅓ sicher (Karte der stärksten Familie, nie eine, die schon im Deck liegt), ⅓ Tür (erst eine Richtung
+//   würfeln, umgekehrt zur Neigung gewichtet, mind. doorMin %, dann eine Karte daraus – damit Neues kommt), Rest bevorzugt
+//   (Gewicht 1 + pull × Anteil, volle Stärke erst nach `ramp` Signalen). 3 Plätze = 1/1/1, Markt 6 = 2/2/2, 2 Plätze = 1 sicher + 1 Tür.
+//   Zweite Neigung: liegt die nächste Familie bei ≥ ratio % der stärksten, wird ein bevorzugter Platz (sonst die Tür) ein sicherer für sie.
+//   Leere Neigung: jeder Platz aus einer anderen Familie.
+window.HB = window.HB || {};
+(function (HB) {
+  const { shuffle } = HB.util;
+  HB.defaultAffinity = () => ({ enabled: false, decay: 80, ramp: 3, pull: 6, ratio: 67, doorMin: 5 });
+  HB.affinityCfg = (cfg) => ({ ...HB.defaultAffinity(), ...((cfg && cfg.affinity) || {}) });
+  const famList = (cfg) => (cfg && cfg.families) || [];
+  // Familien einer Karte (aktueller Stand der Einstellung über cid/Name, sonst die Kopie im Kampf); nur Familien, die es gibt
+  HB.cardFamilies = (cfg, d) => {
+    if (!d) return [];
+    const src = (cfg.deck || []).find((x) => (d.cid && x.cid === d.cid)) || (cfg.deck || []).find((x) => x.name === d.name) || d;
+    const ids = new Set(famList(cfg).map((f) => f.id));
+    return (src.families || []).filter((id) => ids.has(id));
+  };
+  const famWeight = (cfg, id) => { const f = famList(cfg).find((x) => x.id === id); return f && f.weight != null ? f.weight : 1; };
+  // Anteile der Neigung eines Spielers (0–1 je Familie), stärkste zuerst – für Anzeige und Angebot
+  HB.affinityShares = (p) => {
+    const a = (p && p.affinity) || {}, total = Object.values(a).reduce((x, v) => x + v, 0);
+    return Object.entries(a).filter(([, v]) => v > 0).map(([id, v]) => ({ id, share: total > 0 ? v / total : 0 })).sort((x, y) => y.share - x.share);
+  };
+
+  // Signal: Karte genommen oder gespielt
+  function record(g, p, def) {
+    const fams = HB.cardFamilies(g.cfg, def);
+    if (!p || !fams.length) return;
+    p.affinity = p.affinity || {};
+    for (const id of fams) p.affinity[id] = (p.affinity[id] || 0) + famWeight(g.cfg, id);
+    p.affSignals = (p.affSignals || 0) + 1;
+  }
+  function decay(g) {
+    const k = HB.affinityCfg(g.cfg).decay / 100;
+    for (const p of g.players) {
+      p.affPlayed = [];
+      if (!p.affinity) continue;
+      for (const id of Object.keys(p.affinity)) { p.affinity[id] *= k; if (p.affinity[id] < 0.05) delete p.affinity[id]; }
+    }
+  }
+  const defByName = (g, name) => (g.cfg.deck || []).find((d) => d.name === name);
+
+  const pickWeighted = (list, w) => {
+    const sum = w.reduce((a, x) => a + x, 0);
+    let r = Math.random() * sum;
+    for (let i = 0; i < list.length; i++) { r -= w[i]; if (r < 0) return list[i]; }
+    return list[list.length - 1];
+  };
+  const pickOne = (list) => list[Math.floor(Math.random() * list.length)];
+
+  // Angebot für den aktiven Spieler: n Karten aus pool (Liste von Karten der Einstellung)
+  function offer(g, pool, n, kind, slots) {
+    const cfg = g.cfg, fams = famList(cfg);
+    if (!fams.length || !pool.length) return undefined; // ohne Familien: wie ohne Modul
+    const ac = HB.affinityCfg(cfg), p = g.player;
+    const famsOf = (d) => HB.cardFamilies(cfg, d);
+    const keyOf = (d) => d.cid || d.name;
+    const owned = new Set(g.ownedCards().map((c) => c.def && keyOf(c.def)));
+    const out = [], used = new Set();
+    // Seltenheit je Platz (Modul rarity): Kandidaten der gewürfelten Seltenheit des nächsten Platzes, gibt es keine, alle
+    const freeAll = () => pool.filter((d) => !used.has(d));
+    const free = () => { const f = freeAll(); return slots && slots[out.length] ? HB.byRarity(f, slots[out.length]) : f; };
+    const take = (d) => { if (d) { used.add(d); out.push(d); } return d; };
+    const aff = p.affinity || {}, total = Object.values(aff).reduce((a, v) => a + v, 0);
+    const share = (id) => (total > 0 ? (aff[id] || 0) / total : 0);
+    // Rangfolge der Familien mit Neigung; Gleichstand zufällig
+    const ranked = Object.keys(aff).filter((id) => aff[id] > 0 && fams.some((f) => f.id === id))
+      .map((id) => ({ id, r: Math.random() })).sort((a, b) => aff[b.id] - aff[a.id] || a.r - b.r).map((x) => x.id);
+
+    if (!ranked.length) { // leere Neigung: jeder Platz aus einer anderen Familie
+      const left = shuffle(fams.map((f) => f.id));
+      for (let i = 0; i < n && free().length; i++) {
+        let d = null;
+        while (!d && left.length) { const id = left.shift(), c = free().filter((x) => famsOf(x).includes(id)); if (c.length) d = pickOne(c); }
+        take(d || pickOne(free()));
+      }
+      return shuffle(out);
+    }
+
+    let sure = Math.max(1, Math.round(n / 3)), door = n >= 2 ? Math.max(1, Math.round(n / 3)) : 0;
+    if (sure + door > n) door = Math.max(0, n - sure);
+    let pref = n - sure - door;
+    const next = ranked[sure];
+    if (next && aff[next] >= (ac.ratio / 100) * aff[ranked[0]]) { if (pref > 0) { pref--; sure++; } else if (door > 0) { door--; sure++; } }
+    // sicher: stärkste Familie zuerst, je Platz eine andere; Karte nicht schon im Deck; keine gefunden → bevorzugt
+    const sureFams = [];
+    for (let i = 0; i < sure; i++) {
+      let d = null;
+      for (const id of ranked) {
+        if (sureFams.includes(id)) continue;
+        const fit = (x) => famsOf(x).includes(id) && !owned.has(keyOf(x));
+        let c = free().filter(fit); if (!c.length) c = freeAll().filter(fit); // Familie hat diese Seltenheit nicht: andere Seltenheit
+        if (c.length) { d = pickOne(c); sureFams.push(id); break; }
+      }
+      if (d) take(d); else pref++;
+    }
+    // bevorzugt: je Karte gewichtet nach dem Anteil ihrer stärksten Familie; volle Stärke nach `ramp` Signalen (quadratisch)
+    const pull = ac.pull * Math.min(1, ((p.affSignals || 0) / Math.max(1, ac.ramp)) ** 2);
+    for (let i = 0; i < pref; i++) {
+      const c = free(); if (!c.length) break;
+      take(pickWeighted(c, c.map((d) => 1 + pull * Math.max(0, ...famsOf(d).map(share)))));
+    }
+    // Tür: erst die Richtung (umgekehrt zur Neigung, mind. doorMin %), dann eine Karte daraus. Allerweltsfamilien (weight < 1) und
+    // Karten ohne Familie bilden zusammen die neutrale Richtung.
+    const strong = fams.filter((f) => (f.weight ?? 1) >= 1).map((f) => f.id);
+    const minW = ac.doorMin / 100;
+    for (let i = 0; i < door; i++) {
+      const c = free(); if (!c.length) break;
+      const dirs = strong.filter((id) => c.some((d) => famsOf(d).includes(id)));
+      const neutral = c.filter((d) => !famsOf(d).some((id) => strong.includes(id)));
+      const neutralShare = Object.keys(aff).filter((id) => !strong.includes(id)).reduce((a, id) => a + share(id), 0);
+      const opts = [...dirs.map((id) => ({ id, w: Math.max(minW, 1 - share(id)) })), ...(neutral.length ? [{ id: null, w: Math.max(minW, 1 - neutralShare) }] : [])];
+      if (!opts.length) { take(pickOne(c)); continue; }
+      const o = pickWeighted(opts, opts.map((x) => x.w));
+      take(pickOne(o.id === null ? neutral : c.filter((d) => famsOf(d).includes(o.id))));
+    }
+    return shuffle(out); // Reihenfolge verrät die Rolle nicht
+  }
+
+  HB.moduleHooks('affinity', {
+    onEvent(g, ev) {
+      if (ev.type === 'card_gained') record(g, g.player, defByName(g, ev.card));
+      else if (ev.type === 'card_played') {
+        const p = g.player, d = defByName(g, ev.card), key = d && (d.cid || d.name);
+        if (!p || !d || (p.affPlayed || []).includes(key)) return;
+        (p.affPlayed = p.affPlayed || []).push(key);
+        record(g, p, d);
+      } else if (ev.type === 'wave_spawned') decay(g);
+    },
+    offer,
+  });
+
+  // Vorschlag für den Editor (Knopf „Beispiel-Familien“): Familie Gift mit allen Karten, die Gift/Seuche benutzen. Nur auf Knopfdruck.
+  HB.AFFINITY_EXAMPLES = [
+    { name: 'Gift', match: ['poison', 'poisonMult', 'plague', 'poisonZone', 'buffPoison', 'poisonTick', 'seed', 'poisonField', 'poisonTrap'] },
+  ];
+  HB.cardUsesTypes = (d, types) => {
+    const seen = (o) => o && typeof o === 'object' && (Array.isArray(o) ? o.some(seen) : (types.includes(o.type) || types.includes(o.kind) || Object.values(o).some(seen)));
+    return seen(d.effects || []);
+  };
+})(window.HB);
+
+</script>
+  <script>
+// Modul „Seltenheit je Angebotsplatz“ (HB.MODULES id 'rarity', Einstellung cfg.rarity) – Rechnung aus UW (docs/uw-daten.md Abschnitt 3,
+// UW GameManager.roll_offer_rarities). Jeder Platz eines Kartenangebots würfelt 0–99; Bänder von unten: legendär, Tafel, selten, Rest normal.
+// - Kampf (Kartendraft, Truhe, Krypta-Kartenwahl) und Elite (Weiterziehen-Feld „Elite“) haben eigene Bänder; der Markt: Legendär-Band +
+//   Selten-Chance je Platz, keine Tafeln.
+// - Glückszähler je Spieler (p.rarityPity, Start pityStart): +1 je Kampf-Angebot ohne Legendäre (Deckel pityMax), zeigt ein Angebot eine
+//   Legendäre → zurück auf den Start. Der Markt hebt ihn nie, setzt ihn aber zurück. Er verbreitert das Legendär-Band auf Kosten von „normal“.
+// - Anlauf: Selten- und Tafel-Band (auch im Markt) starten bei rampStart % ihrer Breite, voll nach rampOffers Kampf-Angeboten (p.rarityOffers).
+// Anschlüsse: slots (Seltenheit je Platz) → das Angebot (Neigung oder hier offer) wählt je Platz eine Karte dieser Seltenheit, gibt es keine,
+// eine beliebige → offered (Zähler nachführen). Gibt es im Pool keine Karte der Seltenheit, rückt sie zur nächst häufigeren.
+window.HB = window.HB || {};
+(function (HB) {
+  const { shuffle } = HB.util;
+  HB.defaultRarity = () => ({ enabled: false, fight: { legendary: 1, power: 8, rare: 37 }, elite: { legendary: 4, power: 14, rare: 40 },
+    market: { legendary: 1, rare: 35 }, pityStart: -2, pityMax: 8, rampStart: 40, rampOffers: 5 });
+  HB.rarityCfg = (cfg) => { const d = HB.defaultRarity(), c = (cfg && cfg.rarity) || {};
+    return { ...d, ...c, fight: { ...d.fight, ...(c.fight || {}) }, elite: { ...d.elite, ...(c.elite || {}) }, market: { ...d.market, ...(c.market || {}) } }; };
+  const ORDER = ['legendary', 'power', 'rare', 'common']; // fehlt eine Seltenheit im Pool: nächst häufigere
+  const isElite = (g) => g.routeOn() && !!(HB.ROUTE_KINDS[(g.route || {}).kind] || {}).elite; // Angebot nach einem Elite-Feld
+
+  function slots(g, n, kind) {
+    const rc = HB.rarityCfg(g.cfg), p = g.player;
+    const pity = p.rarityPity ?? rc.pityStart;
+    const ramp = Math.min(1, (rc.rampStart + (100 - rc.rampStart) * Math.min(1, (p.rarityOffers || 0) / Math.max(1, rc.rampOffers))) / 100);
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const r = Math.random() * 100;
+      if (kind === 'market') {
+        const leg = Math.max(0, rc.market.legendary + pity);
+        out.push(r < leg ? 'legendary' : Math.random() * 100 < rc.market.rare * ramp ? 'rare' : 'common');
+      } else {
+        const b = isElite(g) ? rc.elite : rc.fight, leg = Math.max(0, b.legendary + pity), pow = b.power * ramp, rare = b.rare * ramp;
+        out.push(r < leg ? 'legendary' : r < leg + pow ? 'power' : r < leg + pow + rare ? 'rare' : 'common');
+      }
+    }
+    return out;
+  }
+  // Karten des Pools mit dieser Seltenheit; keine → nächst häufigere Seltenheit
+  HB.byRarity = (list, r) => {
+    for (let k = ORDER.indexOf(r); k >= 0 && k < ORDER.length; k++) { const f = list.filter((d) => HB.cardRarityKey(d) === ORDER[k]); if (f.length) return f; }
+    return list;
+  };
+  // ohne Neigung: je Platz eine zufällige Karte der gewürfelten Seltenheit
+  function offer(g, pool, n, kind, sl) {
+    if (!sl) return undefined;
+    const used = new Set(), out = [];
+    for (let i = 0; i < n; i++) {
+      const free = pool.filter((d) => !used.has(d)); if (!free.length) break;
+      const c = HB.byRarity(free, sl[i]), d = c[Math.floor(Math.random() * c.length)];
+      used.add(d); out.push(d);
+    }
+    return shuffle(out);
+  }
+  function offered(g, list, kind) {
+    const rc = HB.rarityCfg(g.cfg), p = g.player, leg = list.some((d) => HB.cardRarityKey(d) === 'legendary');
+    if (leg) p.rarityPity = rc.pityStart;
+    else if (kind !== 'market') p.rarityPity = Math.min(rc.pityMax, (p.rarityPity ?? rc.pityStart) + 1);
+    if (kind !== 'market') p.rarityOffers = (p.rarityOffers || 0) + 1;
+  }
+  HB.moduleHooks('rarity', { slots, offer, offered });
+})(window.HB);
+
+</script>
+  <script>
+// Erzeugt von tools/import_crypt.py aus docs/uw-daten/crypt_events.csv (UW) – nicht von Hand aendern.
+window.HB = window.HB || {};
+HB.CRYPT_EVENTS = [
+ {
+  "id": "krypta_ahnengruft",
+  "title": "Die Ahnengruft",
+  "text": "Drei Sarkophage, drei Namen, dieselbe Jahreszahl. Auf jedem Deckel steht, was der Tote noch bei sich trägt.",
+  "weight": 4.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Der Krieger",
+    "chance": 100,
+    "ok": "combat:block+12;combat:strength+2",
+    "fail": ""
+   },
+   {
+    "text": "Die Krämerin",
+    "chance": 100,
+    "ok": "gold+60",
+    "fail": ""
+   },
+   {
+    "text": "Der Runenschneider",
+    "chance": 100,
+    "ok": "rune;gold+45",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_gravedigger",
+  "title": "Der alte Totengräber",
+  "text": "Ein lebender Mensch, hier unten, und ein frisch ausgehobenes Grab ohne Namen. Er schaufelt weiter, während er mit dir redet.",
+  "weight": 4.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Ihm helfen",
+    "chance": 100,
+    "ok": "damage+6;gold+50;flag:profile:gravedigger_helped",
+    "fail": ""
+   },
+   {
+    "text": "Ihn ausfragen",
+    "chance": 100,
+    "ok": "boss_preview;boss:enemy_vulnerable+2",
+    "fail": ""
+   },
+   {
+    "text": "Ihn in Ruhe lassen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_runenschmelze",
+  "title": "Die Runenschmelze",
+  "text": "Ein kalter Ofen, in dem noch Runen liegen, darüber die Namen derer, die sie geschnitten haben. Er braucht Hitze — und Hitze kostet.",
+  "weight": 4.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Mit eigenem Blut anheizen",
+    "chance": 100,
+    "ok": "damage+8;rune+2",
+    "fail": ""
+   },
+   {
+    "text": "Mit Gold anheizen",
+    "chance": 100,
+    "ok": "gold-55;rune+2",
+    "fail": ""
+   },
+   {
+    "text": "Kalt lassen",
+    "chance": 100,
+    "ok": "gold+45",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_kartenschreiber",
+  "title": "Der Kartenschreiber",
+  "text": "Ein blinder Schreiber tastet über leeres Pergament. Neben ihm ein Stapel fertiger Blätter, jedes mit einem Namen und einer Zahl. Seine Tinte ist rot.",
+  "weight": 4.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Fünf Tropfen geben",
+    "chance": 100,
+    "ok": "damage+5;card_copy",
+    "fail": ""
+   },
+   {
+    "text": "Eine ganze Hand voll",
+    "chance": 60,
+    "ok": "damage+7;card_copy;card_draft+3",
+    "fail": "damage+8"
+   },
+   {
+    "text": "Das Pergament leer lassen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_voice_whisper",
+  "title": "Flüstern im Dunkel",
+  "text": "Stimmen locken tiefer in die Gänge. Sie kennen deinen Namen — und sprechen ihn aus, als stünde er schon an einer Wand.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Folgen",
+    "chance": 100,
+    "ok": "next:crypt_voice_pact",
+    "fail": ""
+   },
+   {
+    "text": "Sofort umkehren",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_voice_pact",
+  "title": "Die Stimme",
+  "text": "Eine Gestalt aus Nebel bietet dir einen Pakt an. Sie verlangt nichts — noch nicht.",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Annehmen",
+    "chance": 100,
+    "ok": "gold+90;max_hp+3;debt:boss:enemy_block+15",
+    "fail": ""
+   },
+   {
+    "text": "Ihr eine Rune zurückgeben",
+    "chance": 100,
+    "ok": "rune-1;boss:enemy_vulnerable+3;say:crypt_voice.pakt",
+    "fail": ""
+   },
+   {
+    "text": "Ablehnen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_gebeinturm",
+  "title": "Turm aus Gebeinen",
+  "text": "Knochen zu einer Säule gestapelt, sorgfältig, über Jahre. Ganz oben ein Schädel mit einer Münze im Mund.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Nach der Münze greifen",
+    "chance": 55,
+    "ok": "next:krypta_gebeinturm_2",
+    "fail": "damage+11"
+   },
+   {
+    "text": "Den Turm umstoßen und den Lärm hinnehmen",
+    "chance": 100,
+    "ok": "gold+45;combat:extra_enemy",
+    "fail": ""
+   },
+   {
+    "text": "Vorbeigehen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_gebeinturm_2",
+  "title": "Was die Münze kauft",
+  "text": "Die Münze ist warm. Der Schädel klappert — er will ein Geschäft, kein Almosen.",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Münze zurückgeben und um Rat fragen",
+    "chance": 100,
+    "ok": "boss_preview;boss:enemy_vulnerable+3",
+    "fail": ""
+   },
+   {
+    "text": "Die Münze behalten. Er vergisst es nicht bis zum Ende des Akts.",
+    "chance": 100,
+    "ok": "gold+85;debt:boss:enemy_strength+2",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_graeber_wand",
+  "title": "Drei Namen an der Wand",
+  "text": "Jemand hat hier gearbeitet, lange bevor du kamst. Drei Namen nebeneinander, tief in den Stein geritzt — und unter jedem eine Zeile, die erst lesbar wird, wenn du den Stein berührst.",
+  "weight": 4.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": true,
+  "opts": [
+   {
+    "text": "Die Zeichen abschreiten",
+    "chance": 100,
+    "ok": "graeber",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_kindersarg",
+  "title": "Der kleine Sarg",
+  "text": "Kaum einen Meter lang, ohne Namen, nur ein Datum. Jemand hat frische Blumen daraufgelegt — in einer Krypta, die seit Jahren zu ist.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Die Blumen richten",
+    "chance": 100,
+    "ok": "heal+15;combat:immunity+2",
+    "fail": ""
+   },
+   {
+    "text": "Den Deckel heben",
+    "chance": 35,
+    "ok": "rune:rare",
+    "fail": "damage+12;combat:vulnerable+2"
+   }
+  ]
+ },
+ {
+  "id": "crypt_lying_messenger",
+  "title": "Der Lügenbote",
+  "text": "Ein Schemen mit zwei Umschlägen, beide an denselben Namen adressiert. Er sagt, einer davon sei eine Gabe. Er sagt auch, er lüge ständig.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Den linken Umschlag",
+    "chance": 50,
+    "ok": "gold+120",
+    "fail": "damage+6",
+    "hidden": true
+   },
+   {
+    "text": "Den rechten Umschlag",
+    "chance": 50,
+    "ok": "rune:rare",
+    "fail": "combat:vulnerable+2",
+    "hidden": true
+   },
+   {
+    "text": "Beide zurückweisen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_side_passage",
+  "title": "Der Nebengang",
+  "text": "Ein schmaler Gang, frisch freigeräumt. Von der anderen Seite.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Hineingehen und den Kampf annehmen",
+    "chance": 100,
+    "ok": "gold+75;rune;combat:extra_enemy",
+    "fail": ""
+   },
+   {
+    "text": "Umkehren",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_seelenbuch",
+  "title": "Das Seelenbuch",
+  "text": "Ein Buch, das eine Seite verlangt, bevor es eine hergibt. Die ersten hundert Seiten sind schon voll. Deine Seite.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Eine Seite geben",
+    "chance": 100,
+    "ok": "damage+10;card_bury",
+    "fail": ""
+   },
+   {
+    "text": "Nur darin blättern",
+    "chance": 100,
+    "ok": "card_draft+2",
+    "fail": ""
+   },
+   {
+    "text": "Es zuklappen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_tiefer_gang",
+  "title": "Der tiefe Gang",
+  "text": "Eine Treppe führt weiter hinab, als die Krypta tief sein dürfte. Ab hier stehen keine Namen mehr an den Wänden. Von unten kommt warme Luft.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Hinabsteigen",
+    "chance": 100,
+    "ok": "next:krypta_tiefer_gang_2",
+    "fail": ""
+   },
+   {
+    "text": "Die Treppe verschütten",
+    "chance": 100,
+    "ok": "combat:block+10",
+    "fail": ""
+   },
+   {
+    "text": "Oben bleiben",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_tiefer_gang_2",
+  "title": "Die zweite Ebene",
+  "text": "Hier unten ist nichts begraben. Hier unten wurde etwas eingesperrt. Die Tür steht offen.",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Weiter hinab",
+    "chance": 60,
+    "ok": "next:krypta_tiefer_gang_3",
+    "fail": "damage+16"
+   },
+   {
+    "text": "Mitnehmen, was greifbar ist",
+    "chance": 100,
+    "ok": "gold+70;rune",
+    "fail": ""
+   },
+   {
+    "text": "Umkehren",
+    "chance": 100,
+    "ok": "heal+10",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_tiefer_gang_3",
+  "title": "Ganz unten",
+  "text": "Ein Raum voller Rüstzeug, Runen und Gold — und in der Mitte ein leerer Stuhl, der noch warm ist.",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Alles nehmen und rennen",
+    "chance": 100,
+    "ok": "gold+90;rune_pouch+3;combat:extra_enemy",
+    "fail": ""
+   },
+   {
+    "text": "Nur die Runen nehmen",
+    "chance": 100,
+    "ok": "rune+2;combat:block+12",
+    "fail": ""
+   },
+   {
+    "text": "Nichts anrühren und gehen",
+    "chance": 100,
+    "ok": "max_hp+5;heal+20",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_letzte_seite",
+  "title": "Die letzte Seite",
+  "text": "Hinten im Seelenbuch klebt eine Seite fest, die sich nicht umblättern lässt. Etwas darunter bewegt sich.",
+  "weight": 2.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Losreißen",
+    "chance": 45,
+    "ok": "next:krypta_letzte_seite_2",
+    "fail": "damage+12;combat:vulnerable+3"
+   },
+   {
+    "text": "Das Buch verbrennen",
+    "chance": 100,
+    "ok": "gold+120",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_letzte_seite_2",
+  "title": "Was darunter stand",
+  "text": "Unter der Seite steht ein einziger Name — und der gehört etwas Legendärem.",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Den Namen aussprechen",
+    "chance": 100,
+    "ok": "legendary_card",
+    "fail": ""
+   },
+   {
+    "text": "Schweigen und das Buch schließen",
+    "chance": 100,
+    "ok": "max_hp+5;heal+25",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_voice_waiting",
+  "title": "Ein vertrauter Klang",
+  "text": "Die Stimme klingt heute nicht mehr fremd. Sie hat gewartet, bis du wiederkommst — und du bist wiedergekommen.",
+  "weight": 2.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Zuhören",
+    "chance": 100,
+    "ok": "promise:crypt:rune:rare",
+    "fail": ""
+   },
+   {
+    "text": "Mitsprechen",
+    "chance": 50,
+    "ok": "rune:rare;say:crypt_voice.klang",
+    "fail": "damage+6;combat:vulnerable+2",
+    "hidden": true
+   },
+   {
+    "text": "Weghören",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_leere_platte",
+  "title": "Die leere Platte",
+  "text": "Eine fertige Grabplatte, poliert, ohne Namen. Der Meissel liegt daneben, als hätte jemand nur kurz aufgehört.",
+  "weight": 2.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Deinen Namen einschlagen",
+    "chance": 100,
+    "ok": "card_socket;max_hp-5",
+    "fail": ""
+   },
+   {
+    "text": "Die Platte zerschlagen",
+    "chance": 100,
+    "ok": "gold+90",
+    "fail": ""
+   },
+   {
+    "text": "Liegen lassen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "krypta_eyvind",
+  "title": "Der verriegelte Sarg",
+  "text": "EYVIND, DER ZWEIMAL KAM. Die Riegel sitzen aussen am Deckel, nicht innen, und sie sind neuer als der Stein.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Aufriegeln",
+    "chance": 55,
+    "ok": "rune:rare",
+    "fail": "damage+12;combat:vulnerable+2"
+   },
+   {
+    "text": "Nachziehen und weitergehen",
+    "chance": 100,
+    "ok": "combat:block+12",
+    "fail": ""
+   },
+   {
+    "text": "Nichts anfassen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_tally_sigga",
+  "title": "Die Strichliste",
+  "text": "SIGGA, DIE ZÄHLTE. Hinter ihr stehen Striche in Fünfergruppen, über die ganze Wand. Die letzte Gruppe hat vier.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Den fünften Strich ziehen. Am Ende des Akts wird er gezählt.",
+    "chance": 100,
+    "ok": "rune+2;debt:boss:vulnerable+3",
+    "fail": ""
+   },
+   {
+    "text": "Die Striche zählen",
+    "chance": 100,
+    "ok": "gold+80",
+    "fail": ""
+   },
+   {
+    "text": "Nichts anfassen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_voice_not_last",
+  "title": "Nicht der Letzte",
+  "text": "Du hast ihn gehalten und er hat losgelassen. Die Steine hier tragen mehr Namen, als du ausgesprochen hast, und einer davon ist noch warm.",
+  "weight": 2.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Den warmen Stein anfassen",
+    "chance": 100,
+    "ok": "max_hp+4;say:crypt_voice.nicht_der_letzte",
+    "fail": ""
+   },
+   {
+    "text": "Den Namen darauf lesen",
+    "chance": 100,
+    "ok": "graeber;say:crypt_voice.nicht_der_letzte",
+    "fail": ""
+   },
+   {
+    "text": "Den Stein umdrehen",
+    "chance": 100,
+    "ok": "rune:rare+2;boss:enemy_strength+3;say:crypt_voice.nicht_der_letzte",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_bone_shelf",
+  "title": "Das Knochenregal",
+  "text": "GUNNAR ORDNETE SIE NACH GRÖSSE. Regal um Regal, Fach um Fach. Ein Fach ist leer.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Zwei Karten ins Regal legen",
+    "chance": 100,
+    "ok": "card_bury+2",
+    "fail": ""
+   },
+   {
+    "text": "Eine Karte hineinlegen",
+    "chance": 100,
+    "ok": "card_bury",
+    "fail": ""
+   },
+   {
+    "text": "Das Fach leer lassen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_open_tab",
+  "title": "Die offene Rechnung",
+  "text": "TOVE, DIE ANSCHREIBEN LIESS. Das Buch liegt aufgeschlagen, die Feder ist noch nass.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Anschreiben lassen",
+    "chance": 100,
+    "ok": "gold+120;flag:open_tab",
+    "fail": ""
+   },
+   {
+    "text": "Das Buch zuklappen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_predecessor_oath",
+  "title": "Der Schwur des Vorgängers",
+  "text": "Einer, der vor dir die Wacht hielt, streckt dir die Hand hin. Er hat noch etwas zu vergeben.",
+  "weight": 2.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Annehmen. Er nimmt dafür etwas von dir.",
+    "chance": 100,
+    "ok": "random_oath;max_hp-8",
+    "fail": ""
+   },
+   {
+    "text": "Ablehnen",
+    "chance": 100,
+    "ok": "heal+10",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_descent_tally_wall",
+  "title": "Die Strichliste",
+  "text": "DREI ZÜGE, IMMER WIEDER. Eine Wacht vor dir hat hier gesessen und dieselben drei Züge in den Stein geritzt, bis die Wand nachgab. Einer davon ist deiner.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Deinen Zug danebenritzen",
+    "chance": 100,
+    "ok": "card_copy",
+    "fail": ""
+   },
+   {
+    "text": "Einen ihrer Züge lernen",
+    "chance": 100,
+    "ok": "card_transform",
+    "fail": ""
+   },
+   {
+    "text": "Einen deiner Züge hierlassen",
+    "chance": 100,
+    "ok": "card_bury",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_descent_empty_setting",
+  "title": "Die leere Fassung",
+  "text": "HIER SASS EIN STEIN. Die Fassung im Grabmal ist noch warm, als hätte ihn eben jemand herausgebrochen. Deine Runen passen hinein.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Eine Rune hineinlegen",
+    "chance": 100,
+    "ok": "rune-1;card_draft:rare+3",
+    "fail": ""
+   },
+   {
+    "text": "Die Fassung herausbrechen",
+    "chance": 100,
+    "ok": "card_socket;damage+6",
+    "fail": ""
+   },
+   {
+    "text": "Weitergehen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_descent_ledger",
+  "title": "Das Schuldbuch der Vorigen",
+  "text": "GENOMMEN — GESCHULDET. Auf einem Grab liegt ein aufgeschlagenes Buch. Jede Wacht hat eine Zeile geschrieben. Die letzte Zeile ist leer.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Eine Zeile schreiben",
+    "chance": 100,
+    "ok": "rune:rare;debt:boss:enemy_strength+3",
+    "fail": ""
+   },
+   {
+    "text": "Eine alte Zeile begleichen",
+    "chance": 100,
+    "ok": "gold-60;boss:enemy_vulnerable+3",
+    "fail": ""
+   },
+   {
+    "text": "Das Buch zuschlagen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_descent_two_graves",
+  "title": "Zwei offene Gräber",
+  "text": "ZWEI SCHAUFELN, EIN NAME. Zwei frische Gräber nebeneinander. In einem liegt etwas, das dir gehört. Das andere ist leer und genau so lang wie du.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Das volle ausgraben",
+    "chance": 100,
+    "ok": "card_draft:mark+3",
+    "fail": ""
+   },
+   {
+    "text": "Zwei Karten ins leere legen",
+    "chance": 100,
+    "ok": "card_bury+2",
+    "fail": ""
+   },
+   {
+    "text": "Dich ins leere legen",
+    "chance": 100,
+    "ok": "max_hp+5;combat:vulnerable+2",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_descent_door_below",
+  "title": "Die Tür darunter",
+  "text": "HIER HÖRT DIE LISTE AUF. Am Ende des Gangs eine Tür, von innen verriegelt. Dahinter atmet etwas im Takt deiner Schritte.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Lauschen",
+    "chance": 100,
+    "ok": "boss_preview;boss:enemy_vulnerable+3",
+    "fail": ""
+   },
+   {
+    "text": "Von außen einen Riegel vorschieben",
+    "chance": 100,
+    "ok": "boss:block+15;damage+8",
+    "fail": ""
+   },
+   {
+    "text": "Anklopfen",
+    "chance": 100,
+    "ok": "rune:rare+2;debt:boss:enemy_strength+3",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_descent_scales",
+  "title": "Die Waage",
+  "text": "WAS WIEGT EIN WORT. Eine Waage aus Knochen. Eine Schale ist leer, in der anderen liegt der Staub von Runen, die niemand mehr trägt.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Eine Rune in die leere Schale",
+    "chance": 100,
+    "ok": "rune-1;max_hp+5",
+    "fail": ""
+   },
+   {
+    "text": "Blut in die leere Schale",
+    "chance": 100,
+    "ok": "damage+12;rune:rare+2",
+    "fail": ""
+   },
+   {
+    "text": "Den Staub nehmen",
+    "chance": 100,
+    "ok": "gold+135",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_descent_own_hand",
+  "title": "Die eigene Handschrift",
+  "text": "DIE LISTE DER LETZTEN. Eine Wand voller Namen, darunter Züge, in einer Handschrift, die du kennst, ohne sie je gesehen zu haben.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Zwei Zeilen ausstreichen",
+    "chance": 100,
+    "ok": "card_bury+2",
+    "fail": ""
+   },
+   {
+    "text": "Eine Zeile nachziehen",
+    "chance": 100,
+    "ok": "card_socket",
+    "fail": ""
+   },
+   {
+    "text": "Eine Zeile dazuschreiben",
+    "chance": 100,
+    "ok": "card_transform:mark",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_unna_bowl",
+  "title": "Unnas Schale",
+  "text": "UNNA hält dir eine Schale hin. „Trink. Dann erzähl ich dir, warum keiner mehr gekommen ist.“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Trinken",
+    "chance": 60,
+    "ok": "heal+15;say:meister.meister_unna.bitte_1",
+    "fail": "combat:poison+8;say:meister.meister_unna.bitte_1",
+    "hidden": true
+   },
+   {
+    "text": "Eine Rune in die Schale legen",
+    "chance": 100,
+    "ok": "rune-1;rune:master:meister_unna+2",
+    "fail": ""
+   },
+   {
+    "text": "Ablehnen und gegen sie kämpfen",
+    "chance": 100,
+    "ok": "fight:master:meister_unna",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_unna_flasks",
+  "title": "Drei Fläschchen",
+  "text": "Drei Fläschchen auf einem Grabstein. UNNA lächelt. „Eins heilt. Eins nicht. Beim dritten weiß ich es selbst nicht mehr.“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Eins nehmen",
+    "chance": 100,
+    "ok": "oneof@unna_flasks:heal+12/combat:poison+6/rune:rare;next:crypt_unna_flasks_2",
+    "fail": "",
+    "hidden": true
+   },
+   {
+    "text": "Gehen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_unna_flasks_2",
+  "title": "Noch eins?",
+  "text": "„Noch eins?“ Zwei Fläschchen stehen noch da.",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Noch eins nehmen",
+    "chance": 100,
+    "ok": "oneof@unna_flasks:heal+12/combat:poison+6/rune:rare;next:crypt_unna_flasks_3",
+    "fail": "",
+    "hidden": true
+   },
+   {
+    "text": "Gehen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_unna_flasks_3",
+  "title": "Das letzte",
+  "text": "„Das letzte? Du gefällst mir.“ Ein Fläschchen steht noch da.",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Das letzte nehmen",
+    "chance": 100,
+    "ok": "oneof@unna_flasks:heal+12/combat:poison+6/rune:rare;say:meister.meister_unna.bitte_2",
+    "fail": "",
+    "hidden": true
+   },
+   {
+    "text": "Gehen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_njal_mark",
+  "title": "Njals Zeichen",
+  "text": "NJAL hebt den Finger. „Halt still. Ich will sehen, ob es auf dir hält.“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Stillhalten",
+    "chance": 100,
+    "ok": "combat:vulnerable+3;rune:rare;say:meister.meister_njal.bitte_1",
+    "fail": ""
+   },
+   {
+    "text": "Ihm eine Karte hinhalten",
+    "chance": 100,
+    "ok": "card_socket;say:meister.meister_njal.bitte_1",
+    "fail": ""
+   },
+   {
+    "text": "Ablehnen und gegen ihn kämpfen",
+    "chance": 100,
+    "ok": "fight:master:meister_njal",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_njal_list",
+  "title": "Die Namensliste",
+  "text": "NJAL hält dir eine Liste hin. Ganz unten steht ein Name, den du nicht lesen kannst. „Einer zu viel. Streich ihn.“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Den untersten Namen streichen",
+    "chance": 50,
+    "ok": "rune:master:meister_njal+2;say:meister.meister_njal.bitte_2",
+    "fail": "combat:enemy_strength+2;fight:master:meister_njal",
+    "hidden": true
+   },
+   {
+    "text": "Eine deiner Karten streichen",
+    "chance": 100,
+    "ok": "card_bury",
+    "fail": ""
+   },
+   {
+    "text": "Nichts streichen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_leif_wall",
+  "title": "Leifs Mauer",
+  "text": "LEIF steht quer im Gang. „Ich geh hier nicht weg.“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "60 Gold zahlen",
+    "chance": 100,
+    "ok": "gold-60;combat:block+10;say:meister.meister_leif.bitte_1",
+    "fail": ""
+   },
+   {
+    "text": "Eine Rune in seine Mauer setzen",
+    "chance": 100,
+    "ok": "rune-1;boss:block+15;say:meister.meister_leif.bitte_1",
+    "fail": ""
+   },
+   {
+    "text": "Ablehnen und gegen ihn kämpfen",
+    "chance": 100,
+    "ok": "fight:master:meister_leif",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_leif_stones",
+  "title": "Steine tragen",
+  "text": "LEIF schleppt Grabsteine. „Trag mit. Einer allein reicht nicht.“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Einen Stein tragen",
+    "chance": 100,
+    "ok": "damage+6;rune;next:crypt_leif_stones_2",
+    "fail": ""
+   },
+   {
+    "text": "Nicht tragen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_leif_stones_2",
+  "title": "Noch einer?",
+  "text": "LEIF setzt den Stein ab. „Noch einer?“",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Noch einen tragen",
+    "chance": 100,
+    "ok": "damage+8;rune:master:meister_leif",
+    "fail": ""
+   },
+   {
+    "text": "Noch einen tragen",
+    "chance": 100,
+    "ok": "damage+8;rune:master:meister_leif;next:crypt_leif_stones_3",
+    "fail": ""
+   },
+   {
+    "text": "Aufhören",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_leif_stones_3",
+  "title": "Der dritte Stein",
+  "text": "„Der letzte ist der schwerste. Das war schon immer so.“",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Den dritten tragen",
+    "chance": 100,
+    "ok": "damage+10;max_hp+4;say:meister.meister_leif.bitte_2",
+    "fail": ""
+   },
+   {
+    "text": "Aufhören",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_frodi_strike",
+  "title": "Schlag mich doch",
+  "text": "FRODI breitet die Arme aus. „Na los. Schlag zu. Trau dich.“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Zuschlagen",
+    "chance": 50,
+    "ok": "combat:abwehr+2",
+    "fail": "damage+8",
+    "hidden": true
+   },
+   {
+    "text": "Die Hand unten lassen",
+    "chance": 100,
+    "ok": "rune:master:meister_frodi+2;say:meister.meister_frodi.bitte_1",
+    "fail": "",
+    "hidden": true
+   },
+   {
+    "text": "Ablehnen und gegen ihn kämpfen",
+    "chance": 100,
+    "ok": "fight:master:meister_frodi",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_frodi_thorn",
+  "title": "Ein Stück Dunkel",
+  "text": "FRODI hält dir ein Stück Dunkel hin. „Nimm. Darin sieht dich keiner.“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Nehmen",
+    "chance": 100,
+    "ok": "damage+6;combat:abwehr+3;say:meister.meister_frodi.bitte_2",
+    "fail": ""
+   },
+   {
+    "text": "Es ihm zurückgeben",
+    "chance": 100,
+    "ok": "combat:enemy_weak+3;fight:master:meister_frodi",
+    "fail": ""
+   },
+   {
+    "text": "Ablehnen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_jorun_ink",
+  "title": "Schreib mit mir",
+  "text": "JORUN streckt dir die Hand mit den kurzen Fingern hin. „Blut ist Tinte! Wie viel hast du?“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "5 Leben geben",
+    "chance": 100,
+    "ok": "damage+5;rune;next:crypt_jorun_ink_2",
+    "fail": ""
+   },
+   {
+    "text": "Nichts geben",
+    "chance": 100,
+    "ok": "fight:master:meister_jorun",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_jorun_ink_2",
+  "title": "Mehr!",
+  "text": "„Mehr!“",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "8 Leben geben",
+    "chance": 100,
+    "ok": "damage+8;rune+2",
+    "fail": ""
+   },
+   {
+    "text": "8 Leben geben",
+    "chance": 100,
+    "ok": "damage+8;rune+2;next:crypt_jorun_ink_3",
+    "fail": ""
+   },
+   {
+    "text": "Aufhören",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_jorun_ink_3",
+  "title": "Noch mehr!",
+  "text": "„Noch mehr! Jetzt wird es ein Wort!“",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "12 Leben geben",
+    "chance": 100,
+    "ok": "damage+12;rune:rare;say:meister.meister_jorun.bitte_1",
+    "fail": ""
+   },
+   {
+    "text": "Aufhören",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_jorun_reads",
+  "title": "Jorun liest dein Deck",
+  "text": "JORUN fährt mit blutigem Finger über deine Karten. „Die da ist schwach. Gib her.“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Sie umschreiben lassen",
+    "chance": 100,
+    "ok": "damage+8;card_transform;say:meister.meister_jorun.bitte_2",
+    "fail": ""
+   },
+   {
+    "text": "Sie zerreißen lassen",
+    "chance": 100,
+    "ok": "card_bury",
+    "fail": ""
+   },
+   {
+    "text": "Ablehnen und gegen sie kämpfen",
+    "chance": 100,
+    "ok": "fight:master:meister_jorun",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_merchant",
+  "title": "Der Krypta-Händler",
+  "text": "Ein gefallener Wächter mit einem Sack voller Steine. „Hab ich alles hier unten gefunden. Will keiner mehr haben.“ Er schüttet drei Runen auf einen Sargdeckel.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Kaufen",
+    "chance": 100,
+    "ok": "rune_shop+3;flag:profile:merchant_met",
+    "fail": ""
+   },
+   {
+    "text": "Eine Rune stehlen",
+    "chance": 50,
+    "ok": "rune",
+    "fail": "fight:enemy:crypt_merchant",
+    "hidden": true
+   },
+   {
+    "text": "Gehen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_merchant_return",
+  "title": "Der Händler ist wieder da",
+  "text": "Derselbe Sack, derselbe Sargdeckel. „Du schon wieder. Diesmal hab ich was Besseres.“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Kaufen",
+    "chance": 100,
+    "ok": "rune_shop:rare+3;unflag:profile:merchant_met",
+    "fail": ""
+   },
+   {
+    "text": "Gehen",
+    "chance": 100,
+    "ok": "unflag:profile:merchant_met",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_chained",
+  "title": "Der Angekettete",
+  "text": "Ein Mann in Reisekleidung, an die Wand gekettet. Die Ketten tragen das Zeichen der Wacht. „Mach mich los. Ich will nur nach unten.“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Losmachen",
+    "chance": 100,
+    "ok": "damage+8;boss:enemy_weak+3;flag:chained_freed",
+    "fail": ""
+   },
+   {
+    "text": "Ihn erschlagen",
+    "chance": 100,
+    "ok": "rune;gold+40",
+    "fail": ""
+   },
+   {
+    "text": "Liegen lassen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_chained_return",
+  "title": "Der Mann von damals",
+  "text": "Er sitzt an einer anderen Wand, Jahre später, halb tot. Er erkennt dich und hält dir etwas hin, das er unten gefunden hat.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Nehmen",
+    "chance": 100,
+    "ok": "rune:rare;unflag:chained_freed",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_coffin_warden",
+  "title": "Der Wächter am Sarg",
+  "text": "Ein gefallener Wächter ohne Gesicht steht vor einem verschlossenen Sarg, die Hand auf dem Deckel. „Der hier bleibt zu.“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Blut geben",
+    "chance": 100,
+    "ok": "damage+8;rune:rare",
+    "fail": ""
+   },
+   {
+    "text": "Kämpfen",
+    "chance": 100,
+    "ok": "fight:enemy:crypt_coffin_warden;win:rune:rare;win:gold+60",
+    "fail": ""
+   },
+   {
+    "text": "Gehen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_fire_guest",
+  "title": "Der Gast vom Feuer",
+  "text": "Einer, den du in dieser Wacht erschlagen hast, liegt zwischen den Gräbern, als hätte er hier immer gelegen. „Du schon wieder.“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Ihm eine Rune zurückgeben",
+    "chance": 100,
+    "ok": "rune-1;heal+10;origin:slain",
+    "fail": ""
+   },
+   {
+    "text": "Ihn noch einmal erschlagen",
+    "chance": 100,
+    "ok": "fight:slain;win:gold+60",
+    "fail": ""
+   },
+   {
+    "text": "Gehen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_stuck_lid",
+  "title": "Der verklemmte Deckel",
+  "text": "Ein Sargdeckel, eine Handbreit offen. Darunter glimmt es. Der Deckel klemmt.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Ziehen",
+    "chance": 40,
+    "ok": "rune:rare",
+    "fail": "damage+4;next:crypt_stuck_lid_2",
+    "hidden": true
+   },
+   {
+    "text": "Gehen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_stuck_lid_2",
+  "title": "Nochmal?",
+  "text": "Der Deckel hat sich bewegt, ein Stück nur.",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Nochmal ziehen",
+    "chance": 55,
+    "ok": "rune:rare",
+    "fail": "damage+5",
+    "hidden": true
+   },
+   {
+    "text": "Nochmal ziehen",
+    "chance": 55,
+    "ok": "rune:rare",
+    "fail": "damage+5;next:crypt_stuck_lid_3",
+    "hidden": true
+   },
+   {
+    "text": "Gehen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_stuck_lid_3",
+  "title": "Ein letztes Mal",
+  "text": "Deine Finger bluten. Der Spalt ist jetzt breiter.",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Ein letztes Mal ziehen",
+    "chance": 70,
+    "ok": "rune:rare",
+    "fail": "damage+6",
+    "hidden": true
+   },
+   {
+    "text": "Gehen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_bone_dice",
+  "title": "Die Knochenwürfel",
+  "text": "Zwei tote Wachen würfeln mit Knochen. „Wer verliert, hält die nächste Nacht.“ Sie schauen auf. „Spielst du mit?“",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "30 Gold setzen",
+    "chance": 50,
+    "ok": "gold+30;next:crypt_bone_dice_2",
+    "fail": "gold-30",
+    "hidden": true
+   },
+   {
+    "text": "Um Leben würfeln",
+    "chance": 50,
+    "ok": "heal+12",
+    "fail": "damage+6",
+    "hidden": true
+   },
+   {
+    "text": "Zusehen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_bone_dice_2",
+  "title": "Alles oder nichts?",
+  "text": "Du hast gewonnen. „Alles oder nichts?“",
+  "weight": 0.0,
+  "start": false,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Alles oder nichts",
+    "chance": 50,
+    "ok": "gold+60",
+    "fail": "gold-60",
+    "hidden": true
+   },
+   {
+    "text": "Aufhören",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_gravedigger_deeper",
+  "title": "Das Grab ist tiefer",
+  "text": "Der alte Totengräber steht tiefer in demselben Grab ohne Namen. Er hat dich erwartet und hält dir etwas hin, das er unten gefunden hat.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Nehmen, was er fand",
+    "chance": 100,
+    "ok": "rune:rare;unflag:profile:gravedigger_helped",
+    "fail": ""
+   },
+   {
+    "text": "Weiter mitgraben",
+    "chance": 100,
+    "ok": "damage+6;gold+50;flag:profile:gravedigger_helped",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_sleeper",
+  "title": "Die Schläferin",
+  "text": "NICHT WECKEN. Eine Wacht schläft im Stehen an der Wand, halb schon Stein. Ihre Hand hält etwas fest.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Ihr nehmen, was sie hält",
+    "chance": 100,
+    "ok": "card_draft:rare+3;combat:extra_enemy",
+    "fail": ""
+   },
+   {
+    "text": "Ihr eine Karte in die Hand legen",
+    "chance": 100,
+    "ok": "card_hold:sleeper;flag:sleeper_holds",
+    "fail": ""
+   },
+   {
+    "text": "Sie schlafen lassen",
+    "chance": 100,
+    "ok": "heal+10",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_sleeper_wakes",
+  "title": "Die Schläferin ist wach",
+  "text": "Sie steht nicht mehr an der Wand. Sie wartet auf dich, deine Karte in der Hand, und auf der Karte ist ein Platz mehr eingeschnitten.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Die Karte nehmen",
+    "chance": 100,
+    "ok": "card_return:sleeper:socket;unflag:sleeper_holds",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_debt_collector",
+  "title": "Der Schuldeneintreiber",
+  "text": "Er hat ein Buch dabei, in dem dein Name steht, zwei Zeilen unter Namen, die hier unten begraben liegen. Daneben die Summe, die du angeschrieben hast.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Bezahlen",
+    "chance": 100,
+    "ok": "settle:160:10;unflag:open_tab",
+    "fail": ""
+   },
+   {
+    "text": "Eine Rune als Pfand geben",
+    "chance": 100,
+    "ok": "rune-1;unflag:open_tab",
+    "fail": ""
+   },
+   {
+    "text": "Das Buch verbrennen",
+    "chance": 55,
+    "ok": "unflag:open_tab",
+    "fail": "unflag:open_tab;fight:enemy:crypt_debt_collector",
+    "hidden": true
+   }
+  ]
+ },
+ {
+  "id": "crypt_last_watch_grave",
+  "title": "Das Grab der letzten Wacht",
+  "text": "Ein frisches Grab ohne Namen. Die Erde ist noch locker. Die Karten, die darin liegen, kennst du.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Aufgraben",
+    "chance": 100,
+    "ok": "fight:ghost",
+    "fail": ""
+   },
+   {
+    "text": "Zuschütten",
+    "chance": 100,
+    "ok": "heal+5",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_dark_bargain",
+  "title": "Ein Handel im Dunkeln",
+  "text": "Zwischen zwei Gräbern sitzt jemand mit einer Waage. Er wiegt nicht Gold, er wiegt, was du hergibst.",
+  "weight": 2.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Handeln",
+    "chance": 100,
+    "ok": "trade_pact",
+    "fail": ""
+   },
+   {
+    "text": "Weitergehen",
+    "chance": 100,
+    "ok": "heal+5",
+    "fail": ""
+   }
+  ]
+ },
+ {
+  "id": "crypt_dead_rise",
+  "title": "Die Gefallenen",
+  "text": "Zwischen den Gräbern steht einer, den du auf dem Weg hierher niedergestreckt hast. Er hat dich nicht vergessen.",
+  "weight": 3.0,
+  "start": true,
+  "auto": "",
+  "next": "",
+  "repeat": false,
+  "opts": [
+   {
+    "text": "Dich stellen",
+    "chance": 100,
+    "ok": "fight:crypt;win:gold+40",
+    "fail": ""
+   },
+   {
+    "text": "Gehen",
+    "chance": 100,
+    "ok": "nothing",
+    "fail": ""
+   }
+  ]
+ }
+];
+
+</script>
+  <script>
+// Modul „Krypta-Ereignisse“ (HB.MODULES id 'crypt', Einstellung cfg.crypt, Daten HB.CRYPT_EVENTS aus js/crypt-events.js) – nach UW.
+// Ablauf: Ort „Krypta“ (HB.PLACES.crypt) betreten → Ereignis (Titel, Text, bis zu drei Wahlen) → Wahl würfelt (chance %) Erfolg/Misserfolg
+// → Wirkungen → Ergebnis-Fenster → ggf. Folge-Ereignis (Wirkung next:… oder Spalte chain_next). Je Spieler (Koop: jeder sein eigenes,
+// Zustand p.cryptEvent; g.crypt ist der Ort am Feld). Wirkungen sind ein Register (HB.CRYPT_EFFECTS): ein UW-Wirkungswort ohne Eintrag (Gold, Runen, Karten begraben …)
+// macht die Wahl unbrauchbar; sie wird nicht angezeigt. Ein Ereignis (auch ein Folge-Ereignis) braucht mind. zwei brauchbare Wahlen, sonst bleibt es aus.
+// Neue Wirkungen nur nach Rücksprache mit dem Nutzer (Plan, Abschnitt 5).
+// Erscheinen: Weiterziehen-Feldart „Krypta“ (statt der Truhe, wenn das Modul an ist) oder nach einer Welle mit cfg.crypt.chance %.
+window.HB = window.HB || {};
+(function (HB) {
+  HB.defaultCrypt = () => ({ enabled: false, chance: 0 });
+  const cryptCfg = (cfg) => ({ ...HB.defaultCrypt(), ...((cfg && cfg.crypt) || {}) });
+
+  // „damage+6“, „gold-55“, „combat:block+12“, „next:krypta_x“, „card_draft:rare+3“ → { word, arg, n }
+  HB.parseCryptEffect = (s) => {
+    const m = String(s).trim().match(/^([a-z_]+)(?::(.+?))?(?:([+-])(\d+))?$/);
+    if (!m) return { word: String(s).trim(), arg: null, n: 0 };
+    return { word: m[1], arg: m[2] || null, n: m[4] ? (m[3] === '-' ? -1 : 1) * parseInt(m[4], 10) : 0 };
+  };
+  const parts = (str) => String(str || '').split(';').map((x) => x.trim()).filter(Boolean).map(HB.parseCryptEffect);
+
+  // Zustände, die „combat:…“ (gilt im nächsten Kampf) hier schon kennt: UW-Wort → HB.STATUSES-Schlüssel
+  const COMBAT_STATUS = { block: 'block', strength: 'strength' };
+  const statusLabel = (k) => (HB.STATUSES[k] && HB.STATUSES[k].label) || k;
+
+  // Register der Wirkungen: ok(e) = geht hier (Standard ja), apply(g, p, e, ctx) – ctx.lines (Ergebnis-Text), ctx.next (Folge-Ereignis)
+  HB.CRYPT_EFFECTS = {
+    nothing: { apply() {} },
+    say: { apply() {} }, // UW-Textschlüssel (Stimme, Meister) – die Texte gibt es hier noch nicht
+    damage: { ok: (e) => e.n > 0, apply(g, p, e, ctx) { const b = p.hp; p.hp = Math.max(1, p.hp - e.n); g.fx(p.pos, `-${b - p.hp}`, 'hit'); ctx.lines.push(`−${b - p.hp} Leben`); } },
+    heal: { ok: (e) => e.n > 0, apply(g, p, e, ctx) { const b = p.hp; p.hp = Math.min(p.maxHp, p.hp + e.n); g.fx(p.pos, `+${p.hp - b}`, 'heal'); ctx.lines.push(`+${p.hp - b} Leben`); } },
+    max_hp: { ok: (e) => e.n !== 0, apply(g, p, e, ctx) {
+      p.maxHp = Math.max(1, p.maxHp + e.n); if (e.n > 0) p.hp += e.n; p.hp = Math.min(p.hp, p.maxHp);
+      ctx.lines.push(`Max-Leben ${e.n > 0 ? '+' : '−'}${Math.abs(e.n)}`);
+    } },
+    // Kartenwahl aus dem Draft-Pool (Neigung lenkt mit, falls an); Zusätze wie :rare/:mark gibt es hier nicht → normale Wahl
+    card_draft: { apply(g, p, e, ctx) {
+      const offer = g.as(p, () => g.poolOffer(Math.max(1, e.n || 3), 'draft'));
+      if (offer.length) { p.draftOffer = offer; ctx.lines.push(`Kartenwahl: ${offer.length} Karten`); }
+    } },
+    combat: { ok: (e) => !!COMBAT_STATUS[e.arg] && e.n > 0, apply(g, p, e, ctx) {
+      (p.cryptEventNext = p.cryptEventNext || []).push({ status: COMBAT_STATUS[e.arg], n: e.n });
+      ctx.lines.push(`Nächster Kampf: ${statusLabel(COMBAT_STATUS[e.arg])} +${e.n}`);
+    } },
+    next: { ok: (e, seen) => usable(e.arg, false, seen), apply(g, p, e, ctx) { ctx.next = e.arg; } },
+  };
+
+  const byId = (id) => (HB.CRYPT_EVENTS || []).find((x) => x.id === id);
+  function effOk(str, seen) {
+    return parts(str).every((e) => { const d = HB.CRYPT_EFFECTS[e.word]; return !!d && (!d.ok || d.ok(e, seen)); });
+  }
+  const optOk = (o, seen) => !o.hidden && effOk(o.ok, seen) && (o.chance >= 100 || effOk(o.fail, seen));
+  // brauchbare Wahlen eines Ereignisses (Index in ev.opts bleibt erhalten)
+  HB.cryptOptions = (ev, seen = new Set([ev.id])) => ev.opts.map((o, i) => ({ o, i })).filter((x) => optOk(x.o, seen));
+  function usable(id, asStart, seen = new Set()) {
+    const ev = byId(id);
+    if (!ev || seen.has(id)) return false; // Kreis in der Kette: nicht weiter folgen
+    const s = new Set(seen); s.add(id);
+    if (ev.auto && !effOk(ev.auto, s)) return false;
+    return HB.cryptOptions(ev, s).length >= 2; // auch Folge-Ereignisse: eine echte Wahl, nicht nur „Ablehnen“
+  }
+  HB.cryptUsable = (id, asStart = true) => usable(id, asStart);
+  HB.cryptStartEvents = () => (HB.CRYPT_EVENTS || []).filter((ev) => ev.start && usable(ev.id, true));
+
+  function runEffects(g, p, str, ctx) {
+    for (const e of parts(str)) { const d = HB.CRYPT_EFFECTS[e.word]; if (d && (!d.ok || d.ok(e, new Set()))) d.apply(g, p, e, ctx); }
+  }
+  function enter(g, p, id) {
+    const ev = byId(id);
+    p.cryptEvent = { id, result: null };
+    if (ev.auto) { const ctx = { lines: [] }; runEffects(g, p, ev.auto, ctx); p.cryptEvent.auto = ctx.lines; }
+    g.log(`Krypta: ${ev.title}.`);
+  }
+  // Ort betreten: zufälliges Start-Ereignis (Gewicht), das in diesem Lauf noch nicht kam (außer „wiederholbar“)
+  function begin(g, p) {
+    const seen = g.cryptSeen || [];
+    const list = HB.cryptStartEvents().filter((ev) => ev.repeat || !seen.includes(ev.id));
+    if (!list.length) { g.notice('Die Krypta schweigt.', 'wave'); g.log('Krypta: kein Ereignis mehr übrig.'); g.endFreeMove(p); return; }
+    const sum = list.reduce((a, ev) => a + (ev.weight || 1), 0);
+    let r = Math.random() * sum, ev = list[list.length - 1];
+    for (const x of list) { r -= x.weight || 1; if (r < 0) { ev = x; break; } }
+    g.cryptSeen = [...seen, ev.id];
+    enter(g, p, ev.id);
+  }
+  function pick(g, p, i) {
+    const ev = p.cryptEvent && byId(p.cryptEvent.id);
+    if (!ev || p.cryptEvent.result) return;
+    const opt = HB.cryptOptions(ev).find((x) => x.i === i);
+    if (!opt) return;
+    const okRoll = opt.o.chance >= 100 || Math.random() * 100 < opt.o.chance;
+    const ctx = { lines: [] };
+    runEffects(g, p, okRoll ? opt.o.ok : opt.o.fail, ctx);
+    g.emit('crypt_choice', { event: ev.id, option: i, ok: okRoll, by: p.id });
+    g.log(`Krypta: ${opt.o.text} – ${okRoll ? 'gelingt' : 'misslingt'}${ctx.lines.length ? ` (${ctx.lines.join(', ')})` : ''}.`);
+    p.cryptEvent.result = { choice: opt.o.text, ok: okRoll, chance: opt.o.chance, lines: ctx.lines, next: ctx.next || null };
+  }
+  function done(g, p) {
+    const c = p.cryptEvent, ev = c && byId(c.id);
+    if (!c || !c.result) return;
+    const next = c.result.next || (ev && ev.next && usable(ev.next, false) ? ev.next : null);
+    if (next && usable(next, false)) { enter(g, p, next); return; }
+    delete p.cryptEvent;
+    g.endFreeMove(p);
+  }
+
+  HB.PLACES.crypt = {
+    label: 'Krypta', appear: 'Eine Krypta hat sich geöffnet!', icon: 'skull', cls: 'crypt', infoCls: 'crypt', hint: 'Krypta: hinlaufen, ein Ereignis erwartet dich',
+    info: () => 'Stell dich drauf: ein Krypta-Ereignis mit einer Wahl. Jeder Spieler erlebt sein eigenes.',
+    module: 'crypt', chance: (g) => cryptCfg(g.cfg).chance, event: 'crypt_open',
+    use(g, p) { begin(g, p); },
+  };
+  HB.PLACE_KEYS = Object.keys(HB.PLACES);
+
+  HB.moduleHooks('crypt', {
+    saveFields: ['crypt', 'cryptSeen'],
+    commands: {
+      cryptPick: (g, p, cmd) => { pick(g, p, cmd.option | 0); g.changed(); return true; },
+      cryptDone: (g, p) => { done(g, p); g.changed(); return true; },
+    },
+    // „combat:…“ gilt im nächsten Kampf: die nächste Welle / das nächste Feld erscheint (wave_spawned) → scharf; beim folgenden
+    // Zugbeginn des Spielers (nach dem Verfallen des alten Blocks) wirkt es
+    onEvent(g, ev) {
+      if (ev.type === 'wave_spawned') for (const p of g.players) for (const x of p.cryptEventNext || []) x.armed = true;
+    },
+    onTurnStart(g, p) {
+      const now = (p.cryptEventNext || []).filter((x) => x.armed);
+      if (!now.length) return;
+      now.forEach((x) => HB.addStatus(g, p, x.status, x.n));
+      p.cryptEventNext = p.cryptEventNext.filter((x) => !x.armed);
+      if (!p.cryptEventNext.length) delete p.cryptEventNext;
+    },
+    // Fenster (main.js zeichnet es allgemein): Ereignis mit Wahlen bzw. Ergebnis mit „Weiter“
+    modal(g, p) {
+      const c = p && p.cryptEvent, ev = c && byId(c.id);
+      if (!ev) return null;
+      const intro = (c.auto && c.auto.length) ? [c.auto.join(', ')] : [];
+      if (c.result) {
+        const r = c.result;
+        return { sig: `crypt:${c.id}:res`, icon: 'skull', title: ev.title,
+          text: `${r.choice}${r.chance < 100 ? (r.ok ? ' – gelingt.' : ' – misslingt.') : '.'}`, lines: r.lines.length ? r.lines : ['Nichts geschieht.'],
+          options: [{ label: 'Weiter', cmd: { type: 'cryptDone' }, primary: true }] };
+      }
+      return { sig: `crypt:${c.id}`, icon: 'skull', title: ev.title, text: ev.text, lines: intro,
+        options: HB.cryptOptions(ev).map(({ o, i }) => ({ label: o.text, sub: o.chance < 100 ? `${o.chance} %` : '', cmd: { type: 'cryptPick', option: i } })) };
+    },
   });
 })(window.HB);
 
@@ -4589,7 +6726,7 @@ window.HB = window.HB || {};
       this.buildFloors(def);
       this.playerStarts(this.players.length).forEach((pos, i) => { this.players[i].pos = pos; this.players[i].floor = 0; });
       this.rollRandomObstacles();
-      this.market = null; this.healer = null;
+      this.clearPlaces();
       this.placeWaiting();
       this.emit('map_changed', { maps: ids });
       return true;
@@ -4831,10 +6968,7 @@ window.HB = window.HB || {};
       this.players.splice(this.players.indexOf(p), 1);
       this.players.forEach((q, i) => { q.idx = i; });
       this.actorIdx = 0;
-      for (const k of ['market', 'healer']) { // Markt/Heiler verschwinden, wenn alle übrigen schon dort waren
-        const t = this[k];
-        if (t && t.usedBy && this.livePlayers.every((q) => t.usedBy.includes(q.id))) { this[k] = null; if (k === 'market') this.marketBanished = []; }
-      }
+      for (const k of HB.PLACE_KEYS) this.placeDoneFor(k); // Orte verschwinden, wenn alle übrigen schon dort waren
       this.rescaleEnemies(oldHp);
       this.log(`${name} hat den Kampf verlassen.${this.players.length === 1 ? ' Du kämpfst jetzt allein weiter.' : ''}`);
       this.notice(`${name} verlässt den Kampf`, 'wave');
@@ -5337,6 +7471,179 @@ window.HB = window.HB || {};
     settleChoices() { while (this.choice && (this.choice.left <= 0 || !this.choiceCards().length)) this.choices.shift(); }
   }
   HB.extendGame(GameCards);
+})(window.HB);
+
+</script>
+  <script>
+// Wirkungen über mehrere Figuren: Seuche (springt beim Gift-Tick weiter) und Auren (Zuschlag, solange man drin steht).
+// Teil der Klasse HB.Game (game.js): Methoden werden mit HB.extendGame an Game.prototype gehängt.
+window.HB = window.HB || {};
+(function (HB) {
+  const H = HB.hex;
+  const { uid } = HB.util;
+  class GameSpread {
+    // Seuche: e.plague zeigt auf den Ausbruch { jumpRange, infected:Set(uid) }. Hält dauerhaft. JEDES MAL, wenn das Gift eines Trägers
+    // tickt (Zugbeginn oder „Gift tickt sofort“), springt sie auf EINEN weiteren Gegner in Reichweite (jumpRange, Standard 2), der von
+    // diesem Ausbruch noch nicht betroffen war – der nächste zuerst; sein Gift (Wert beim Tick) wird addiert, er wird selbst Träger.
+    // Gibt es keinen solchen Gegner (niemand in der Nähe oder alle schon angesteckt), verfällt die Seuche beim Träger.
+    newOutbreak(e, fx) {
+      const ob = { id: uid(), jumpRange: fx.jumpRange || 2, roundsLeft: Infinity, infected: new Set([this.uidOf(e)]) };
+      e.plague = ob;
+      return ob;
+    }
+    tickOutbreaks() { /* Seuche hält dauerhaft – nichts zu zählen (Spielstände vor dem Umbau hatten Runden) */ }
+    // amount = Gift des Trägers beim Tick. true = jemand angesteckt
+    spreadPlague(e, amount = e.poison) {
+      const ob = e.plague;
+      if (!ob) return false;
+      const who = this.unitName(e), range = ob.jumpRange || 2;
+      const t = this.alive.filter((o) => o !== e && !ob.infected.has(o.uid) && H.distance(o.pos, e.pos) <= range)
+        .sort((a, b) => H.distance(a.pos, e.pos) - H.distance(b.pos, e.pos) || a.order - b.order)[0];
+      if (!t) {
+        e.plague = null;
+        this.log(`Seuche von ${who} verfällt (niemand Neues in Reichweite ${range}).`);
+        this.notice(`Seuche von ${who} verfällt`, 'plague');
+        return false;
+      }
+      HB.addStatus(this, t, 'poison', amount, { fx: 'plague' }); t.plague = ob; ob.infected.add(t.uid);
+      this.hooks.fxLine && this.hooks.fxLine(e.pos, t.pos, 'plague');
+      this.emit('plague_jump', { from: this.unitId(e), to: t.uid, fromPos: { ...e.pos }, toPos: { ...t.pos }, amount });
+      const msg = `Seuche: ${who} ${e.isPlayer ? 'steckst' : 'steckt'} ${t.name} an (+${amount} Gift)`;
+      this.log(msg + '.'); this.notice(msg, 'plague');
+      return true;
+    }
+
+    // Auren „solange man drin steht“ (mode 'while'): alte Zuschläge abziehen (u.auraGrant), dann neu vergeben – je Figur im Radius
+    // wirken die Wirkungen einmal; was sie an Zahlen-Zuständen erhöhen (Kraft, Eile, Dornen …), merkt sich auraGrant.
+    // Läuft bei jeder Änderung (changed): wer die Aura verlässt oder wenn sie endet, verliert den Zuschlag wieder. Stapelt nie.
+    refreshAuras() {
+      if (this.inAuraRefresh || !this.floors) return;
+      const units = [...(this.players || []), ...this.floors.flatMap((f) => f.enemies || [])];
+      const carriers = units.filter((u) => (u.auras || []).some((a) => a.mode !== 'tick') && (u.isPlayer ? u.hp > 0 : u.alive));
+      if (!carriers.length && !units.some((u) => u.auraGrant)) return;
+      this.inAuraRefresh = true; this.quietFx = true;
+      const fields = [...new Set(HB.STATUS_ORDER.map((k) => HB.STATUSES[k].field))];
+      try {
+        for (const u of units) if (u.auraGrant) { for (const [f, n] of Object.entries(u.auraGrant)) if (typeof u[f] === 'number') u[f] = Math.max(0, u[f] - n); delete u.auraGrant; }
+        for (const c of carriers) {
+          if (c.isPlayer ? (c.floor | 0) !== this.floor : !this.enemies.includes(c)) continue; // nur auf der aktiven Etage
+          for (const a of c.auras.filter((x) => x.mode !== 'tick')) {
+            for (const o of HB.auraTargets(this, c, a)) {
+              const before = Object.fromEntries(fields.map((f) => [f, typeof o[f] === 'number' ? o[f] : 0]));
+              (a.effects || []).forEach((e) => HB.applyUnitEffect(this, o, e, c));
+              for (const f of fields) { const d = (typeof o[f] === 'number' ? o[f] : 0) - before[f]; if (d > 0) { o.auraGrant = o.auraGrant || {}; o.auraGrant[f] = (o.auraGrant[f] || 0) + d; } }
+            }
+          }
+        }
+      } finally { this.inAuraRefresh = false; this.quietFx = false; }
+    }
+  }
+  HB.extendGame(GameSpread);
+})(window.HB);
+
+</script>
+  <script>
+// Editor im laufenden Kampf: Felder bearbeiten (gleiche Werkzeuge wie im Aufbau), Test-Werkzeuge, Karten nachziehen, Aufstellung zurück in den Aufbau.
+// Teil der Klasse HB.Game (game.js): Methoden werden mit HB.extendGame an Game.prototype gehängt.
+window.HB = window.HB || {};
+(function (HB) {
+  const H = HB.hex;
+  const { clone } = HB.util;
+  class GameEdit {
+    // Gleiche Werkzeuge wie im Aufbau, aber direkt auf den laufenden Kampf.
+    editTile(tool, h) {
+      if (!this.board.has(h)) return;
+      const pAt = this.isPlayerAt(h);
+      const ei = this.enemies.findIndex((e) => e.alive && H.eq(e.pos, h));
+      const oi = this.obstacles.findIndex((o) => H.eq(o.pos, h));
+      const clear = () => {
+        if (ei >= 0) this.enemies.splice(ei, 1);
+        const o2 = this.obstacles.findIndex((o) => H.eq(o.pos, h));
+        if (o2 >= 0) this.obstacles.splice(o2, 1);
+        this.tileEffects = this.tileEffects.filter((t) => !H.eq(t.pos, h));
+        this.traps = this.traps.filter((t) => !H.eq(t.pos, h));
+        this.corpses = this.corpses.filter((c) => !H.eq(c.pos, h));
+        this.objects = this.objects.filter((o) => !H.eq(o.pos, h));
+      };
+      // Test-Werkzeuge
+      if (tool === 'kill') {
+        if (ei >= 0) { const e = this.enemies[ei]; this.log(`Test: ${e.name} getötet.`); this.killEnemy(e); }
+        this.checkEnd(); this.changed();
+        return;
+      }
+      if (tool === 'corpse') {
+        if (this.corpseAt(h)) this.corpses = this.corpses.filter((c) => !H.eq(c.pos, h));
+        else if (oi < 0) this.corpses.push({ pos: { ...h }, maxHp: this.cfg.testCorpseHp || this.cfg.enemyDefaults.hp, name: 'Leiche' });
+        this.changed();
+        return;
+      }
+      // Objekt-Werkzeug ('obj:<typ>'): setzen bzw. nochmal klicken = entfernen
+      if (tool.startsWith('obj:') && HB.OBJECT_TYPES[tool.slice(4)]) {
+        const type = tool.slice(4), had = this.objectAt(h);
+        this.objects = this.objects.filter((o) => !H.eq(o.pos, h));
+        if ((!had || had.type !== type) && !this.enemyAt(h) && !pAt) { if (oi >= 0) this.obstacles.splice(oi, 1); this.objects.push({ type, pos: { ...h }, hp: HB.OBJECT_TYPES[type].hp }); }
+        this.changed();
+        return;
+      }
+      if (HB.TRAP_TYPES[tool]) {
+        const had = this.trapAt(h);
+        this.traps = this.traps.filter((t) => !H.eq(t.pos, h));
+        if (!had || had.type !== tool) { if (oi >= 0) this.obstacles.splice(oi, 1); this.traps.push({ type: tool, pos: { ...h } }); }
+        this.changed();
+        return;
+      }
+      if (tool === 'erase') { if (!pAt) clear(); }
+      else if (tool === 'start') { if (ei < 0 && oi < 0) this.player.pos = { ...h }; }
+      else if (pAt) return;
+      else if (tool === 'enemy') {
+        if (ei >= 0) this.enemies.splice(ei, 1);
+        else {
+          clear();
+          this.enemies.push(this.newEnemy(this.placeTypeId(), h));
+        }
+      } else if (tool === 'rock' || tool === 'fence') {
+        const sight = tool === 'rock';
+        if (oi >= 0 && this.obstacles[oi].blocksSight === sight) this.obstacles.splice(oi, 1);
+        else { clear(); this.obstacles.push({ pos: { ...h }, blocksSight: sight }); }
+      } else if (tool === 'poisonField') {
+        const had = this.tileEffects.some((t) => H.eq(t.pos, h));
+        this.tileEffects = this.tileEffects.filter((t) => !H.eq(t.pos, h));
+        if (!had) { if (oi >= 0) this.obstacles.splice(oi, 1); this.addTileEffect('poisonField', h, { amount: 2 }); }
+      }
+      if (this.obstacleAt(h)) this.traps = this.traps.filter((t) => !H.eq(t.pos, h));
+      this.renumber();
+      this.changed();
+    }
+
+    // Test: Gegner sofort töten (wie ein normaler Tod: Leiche, Seuche springt, Markt-Zähler)
+    killEnemy(e) { if (e && e.alive) this.damage(e, e.hp); }
+    // Test: Kopie einer Karte direkt auf die Hand (Handlimit gilt hier nicht)
+    // Karten im Kampf (Hand, Stapel, Ablage …) auf den Stand der Einstellung bringen – Änderungen im Editor gelten sofort
+    refreshCardDefs() {
+      const byId = new Map((this.cfg.deck || []).filter((d) => d.cid).map((d) => [d.cid, d]));
+      for (const p of this.players) for (const list of [p.hand, p.drawPile, p.discard, p.exhausted]) {
+        for (const card of list || []) {
+          // alte Karten (aus einem Spielstand) ohne Kennung: einmalig über den Namen zuordnen
+          if (card.def && !card.def.cid) { const m = (this.cfg.deck || []).find((d) => d.name === card.def.name && d.cid); if (m) card.def.cid = m.cid; }
+          const src = card.def && byId.get(card.def.cid); if (src) card.def = HB.migrateCard(clone(src)); }
+      }
+    }
+    addCardToHand(def) {
+      this.hand.push(this.newCard(def));
+      this.changed();
+    }
+    // Aktuelle Kampfaufstellung als Aufbau-Konfiguration
+    toSetupConfig(base) {
+      const c = clone(base);
+      c.enemies = this.alive.map((e) => ({ name: e.name, hp: e.maxHp, pos: { ...e.pos } }));
+      c.obstacles = this.obstacles.map((o) => ({ pos: { ...o.pos }, blocksSight: o.blocksSight }));
+      c.tileEffects = this.tileEffects.map((t) => ({ ...t, pos: { ...t.pos } }));
+      c.traps = this.traps.map((t) => ({ ...t, pos: { ...t.pos } }));
+      HB.setStarts(c.player, this.players.map((p) => ({ ...p.pos }))); // Starts aller Spieler aus der jetzigen Aufstellung
+      return c;
+    }
+  }
+  HB.extendGame(GameEdit);
 })(window.HB);
 
 </script>
@@ -6844,13 +9151,11 @@ window.HB = window.HB || {};
       const ex = (t.extra || []).slice(0, 3).map((e, k) => I.svgIcon((HB.UNIT_EFFECTS[e.type] || {}).icon || 'flag', p.x - 10 + k * 10, p.y + 13, 10)).join('');
       obj += `<g class="trap trap-${HB.esc(t.type)}${ex ? ' trapx' : ''}"><title>${HB.esc(HB.trapLabel(t))}: ${HB.esc(tt.text ? tt.text(t) : '')}</title><circle cx="${p.x}" cy="${p.y}" r="${SIZE * 0.5}"/>${I.svgIcon(tt.icon || 'trapPoison', p.x, p.y - (ex ? 3 : 0), 22)}${ex}</g>`;
     }
-    if (view.market && !view.floor) { // Markt/Heiler nur in der Oberwelt
-      const p = px(view.market.pos);
-      obj += `<g class="market"><title>Markt: hinlaufen und eine Karte wählen</title><polygon points="${tc(p.x, p.y, SIZE - 3)}"/>${I.svgIcon('market', p.x, p.y, 26)}</g>`;
-    }
-    if (view.healer && !view.floor) {
-      const p = px(view.healer.pos);
-      obj += `<g class="healer"><title>Heiler: hinlaufen und Leben auffüllen</title><polygon points="${tc(p.x, p.y, SIZE - 3)}"/>${I.svgIcon('heal', p.x, p.y, 26)}</g>`;
+    if (!view.floor) for (const k of HB.PLACE_KEYS) { // Orte (Markt, Heiler …) nur in der Oberwelt
+      const t = view[k], pl = HB.PLACES[k];
+      if (!t) continue;
+      const p = px(t.pos);
+      obj += `<g class="${pl.cls}"><title>${HB.esc(pl.hint)}</title><polygon points="${tc(p.x, p.y, SIZE - 3)}"/>${I.svgIcon(pl.icon, p.x, p.y, 26)}</g>`;
     }
     if (view.setup && HB.app && HB.app.selHex && view.board.has(HB.app.selHex)) { const p = px(HB.app.selHex); obj += `<g class="selmark"><polygon points="${tc(p.x, p.y, SIZE - 2)}"/></g>`; }
     // Entfernte Felder (nur mit dem Werkzeug „Felder entfernen“): gestrichelt, anklickbar zum Wieder-Einsetzen
@@ -7507,7 +9812,7 @@ window.HB = window.HB || {};
   let tab = 'setup';
   try { tab = localStorage.getItem('hexdb.tab') || 'setup'; } catch (e) { /* egal */ }
 
-  const TABS = [['setup', 'Spielfeld'], ['test', 'Test (Kampf)'], ['values', 'Werte'], ['waves', 'Wellen'], ['enemies', 'Gegner'], ['bosses', 'Bosse'], ['cards', 'Karten'], ['relics', 'Relikte'], ['curses', 'Störkarten'], ['classes', 'Klassen'], ['traps', 'Fallen'], ['rules', 'Regeln'], ['data', 'Daten']];
+  const TABS = [['setup', 'Spielfeld'], ['test', 'Test (Kampf)'], ['values', 'Werte'], ['waves', 'Wellen'], ['enemies', 'Gegner'], ['bosses', 'Bosse'], ['cards', 'Karten'], ['relics', 'Relikte'], ['curses', 'Störkarten'], ['classes', 'Klassen'], ['affinity', 'Neigung'], ['traps', 'Fallen'], ['rules', 'Regeln'], ['data', 'Daten']];
 
   function el(tag, attrs = {}, ...kids) {
     const e = document.createElement(tag);
@@ -8043,9 +10348,13 @@ window.HB = window.HB || {};
       num('Markt: Karten zur Auswahl', () => c.market.offer, (v) => c.market.offer = Math.max(1, v), { icon: 'deck', min: 1 }),
       check('Markt: Karte aus dem Deck verbannen erlaubt (Mitspieler können sie zusätzlich nehmen)', () => c.market.allowRemove, (v) => c.market.allowRemove = v),
       num('Kartendraft: Karten zur Auswahl', () => c.draft.offer, (v) => c.draft.offer = Math.max(1, v), { icon: 'deck', min: 1 }),
+      check('Seltenheit je Angebotsplatz wie in Unspoken Watch (Modul)', () => HB.moduleOn(c, 'rarity'), (v) => HB.module('rarity').set(c, v), 'Jeder Platz würfelt legendär / Tafel / selten / normal; Glückszähler für Legendäre, Anlauf am Laufbeginn', true),
+      HB.moduleOn(c, 'rarity') ? rarityBox(c) : null,
       num('Heiler: Chance in %', () => c.healer.chance, (v) => c.healer.chance = Math.min(100, v), { icon: 'heal', max: 100 }),
       num('Heiler: heilt % der Max-Leben', () => c.healer.percent, (v) => c.healer.percent = v, { icon: 'heal' }),
-      el('p', { class: 'hint' }, 'Der Heiler erscheint direkt neben dem Markt. Benutzt du einen, verschwinden beide. Welche Karten im Markt angeboten werden, stellst du im Karteneditor mit „im Markt-Pool“ ein.'));
+      check('Krypta-Ereignisse (Modul)', () => HB.moduleOn(c, 'crypt'), (v) => HB.module('crypt').set(c, v), `Weiterziehen: Feldart „Krypta“ öffnet ein Ereignis statt der Truhe. ${HB.cryptStartEvents().length} von ${(HB.CRYPT_EVENTS || []).filter((e) => e.start).length} UW-Ereignissen gehen schon (die anderen brauchen Gold, Runen …)`, true),
+      HB.moduleOn(c, 'crypt') ? num('Krypta: Chance nach einer Welle in %', () => (c.crypt || {}).chance || 0, (v) => { c.crypt = { ...HB.defaultCrypt(), ...(c.crypt || {}), chance: Math.min(100, v) }; }, { icon: 'skull', max: 100, title: 'Ohne Weiterziehen: so oft erscheint nach einer Welle eine Krypta (0 = nie)' }) : null,
+      el('p', { class: 'hint' }, 'Markt und Heiler erscheinen unabhängig voneinander. Benutzt du einen, verschwinden beide. Welche Karten im Markt angeboten werden, stellst du im Karteneditor mit „im Markt-Pool“ ein.'));
   }
 
   // ---------- Relikte ----------
@@ -8183,6 +10492,75 @@ window.HB = window.HB || {};
           cb.checked = (d.classes || []).includes(k.id); return el('td', {}, cb); }))));
       box.append(el('h4', {}, 'Karten × Klassen'), el('p', { class: 'hint' }, 'Graue Zeilen = Karte ohne Klasse (für alle).'), tbl);
     }
+    return box;
+  }
+  // Seltenheit (Modul 'rarity', js/rarity.js): Bänder in Prozentpunkten, Glückszähler, Anlauf
+  function rarityBox(c) {
+    const rc = c.rarity = HB.rarityCfg(c);
+    const band = (sec, key, label) => num(label, () => rc[sec][key], (v) => { rc[sec][key] = Math.min(100, v); }, { max: 100, small: true });
+    return el('div', { class: 'icard' },
+      el('p', { class: 'hint' }, 'Bänder von unten (Wurf 0–99 je Platz): legendär, Tafel, selten, Rest normal. Fehlt eine Seltenheit im Pool, kommt die nächst häufigere.'),
+      el('div', { class: 'srow' }, el('span', { class: 'flbl' }, 'Kampf:'), band('fight', 'legendary', 'Legendär'), band('fight', 'power', 'Tafel'), band('fight', 'rare', 'Selten')),
+      el('div', { class: 'srow' }, el('span', { class: 'flbl' }, 'Elite-Feld:'), band('elite', 'legendary', 'Legendär'), band('elite', 'power', 'Tafel'), band('elite', 'rare', 'Selten')),
+      el('div', { class: 'srow' }, el('span', { class: 'flbl' }, 'Markt:'), band('market', 'legendary', 'Legendär'), num('Selten: Chance % je Platz', () => rc.market.rare, (v) => { rc.market.rare = Math.min(100, v); }, { max: 100, small: true })),
+      el('div', { class: 'srow' },
+        num('Glückszähler Start', () => rc.pityStart, (v) => { rc.pityStart = v; }, { min: -20, max: 20, small: true, title: '+1 je Kampf-Angebot ohne Legendäre, verbreitert das Legendär-Band' }),
+        num('Glückszähler Deckel', () => rc.pityMax, (v) => { rc.pityMax = v; }, { min: 0, max: 50, small: true }),
+        num('Anlauf: Start %', () => rc.rampStart, (v) => { rc.rampStart = Math.min(100, v); }, { max: 100, small: true, title: 'Selten- und Tafel-Band am Laufbeginn in % ihrer Breite' }),
+        num('Anlauf: voll nach Angeboten', () => rc.rampOffers, (v) => { rc.rampOffers = Math.max(1, v); }, { min: 1, small: true })));
+  }
+  // Neigung (Modul 'affinity', js/affinity.js): Familien als Liste, Zahlen, Tabelle Karten × Familien
+  function affinityTab(c) {
+    c.families = c.families || [];
+    const ac = c.affinity = { ...HB.defaultAffinity(), ...(c.affinity || {}) };
+    const cards = (c.deck || []).filter((d) => d.category !== 'curse');
+    const setFam = (d, id, on) => { d.families = (d.families || []).filter((x) => x !== id); if (on) d.families.push(id); if (!d.families.length) delete d.families; };
+    const box = el('div', {},
+      el('p', { class: 'hint' }, 'Statt Klassen: Kartendraft, Markt und Truhe richten sich nach den Familien der Karten, die ein Spieler nimmt und spielt. Die Neigung lenkt das Angebot, sie filtert nie (immer auch Neues). Jeder Spieler hat seine eigene. Familien hier anlegen und Karten zuordnen (auch im Karteneditor).'),
+      check('Neigung an (Modul, auch unter Werte → Funktionen an/aus)', () => HB.moduleOn(c, 'affinity'), (v) => HB.module('affinity').set(c, v), '', true),
+      el('div', { class: 'srow' },
+        num('Verblassen je Kampf: bleibt %', () => ac.decay, (v) => { ac.decay = Math.min(100, v); }, { max: 100, title: 'Zu Beginn jedes neuen Kampfs (nächste Welle, neues Feld) wird die Neigung mit diesem Prozentwert malgenommen' }),
+        num('Volle Stärke nach Signalen', () => ac.ramp, (v) => { ac.ramp = Math.max(1, v); }, { min: 1, title: 'Signal = Karte genommen oder (einmal je Kampf) gespielt' }),
+        num('Zug bevorzugter Plätze', () => ac.pull, (v) => { ac.pull = v; }, { title: 'Gewicht einer Karte = 1 + Zug × Anteil ihrer Familie' }),
+        num('Zweite Neigung ab % der ersten', () => ac.ratio, (v) => { ac.ratio = Math.min(100, v); }, { max: 100 }),
+        num('Tür: mind. % je Richtung', () => ac.doorMin, (v) => { ac.doorMin = Math.min(100, v); }, { max: 100 })));
+    c.families.forEach((f, i) => box.append(el('div', { class: 'icard' }, el('div', { class: 'srow' },
+      el('input', { type: 'text', value: f.name, maxlength: 20, oninput: (ev) => { f.name = ev.target.value; changed(); } }),
+      num('Gewicht %', () => Math.round((f.weight ?? 1) * 100), (v) => { f.weight = v / 100; }, { max: 200, title: 'Unter 100 % = Allerweltsfamilie (z. B. Angriff): zählt schwächer und gilt an der Tür als neutral' }),
+      el('span', { class: 'muted' }, `${cards.filter((d) => (d.families || []).includes(f.id)).length} Karten`),
+      btn('✕', () => { c.families.splice(i, 1); c.deck.forEach((d) => setFam(d, f.id, false)); changed(true); }, 'mini del')))));
+    box.append(el('div', { class: 'srow' },
+      btn('+ Familie', () => { c.families.push({ id: 'f' + Date.now().toString(36), name: 'Neue Familie', weight: 1 }); changed(true); }, 'mini'),
+      // Vorschlag auf Knopfdruck: Beispiel-Familie(n) mit passenden Karten (HB.AFFINITY_EXAMPLES); vorhandene Familien bleiben
+      btn('Beispiel: Gift (mit passenden Karten)', () => {
+        let n = 0;
+        for (const ex of HB.AFFINITY_EXAMPLES) {
+          let f = c.families.find((x) => x.name === ex.name);
+          if (!f) { f = { id: 'f' + Date.now().toString(36) + c.families.length, name: ex.name, weight: 1 }; c.families.push(f); }
+          cards.filter((d) => HB.cardUsesTypes(d, ex.match) && !(d.families || []).includes(f.id)).forEach((d) => { setFam(d, f.id, true); n++; });
+        }
+        HB.app.toast(`${n} Karten zugeordnet.`); changed(true);
+      }, 'mini sec'),
+      (c.classes || []).length ? btn('Familien aus Klassen übernehmen', () => {
+        for (const k of c.classes) {
+          let f = c.families.find((x) => x.name === k.name);
+          if (!f) { f = { id: 'f' + Date.now().toString(36) + c.families.length, name: k.name, weight: 1 }; c.families.push(f); }
+          cards.filter((d) => (d.classes || []).includes(k.id)).forEach((d) => setFam(d, f.id, true));
+        }
+        changed(true);
+      }, 'mini sec') : null));
+    if (c.families.length) {
+      const tbl = el('table', { class: 'classtbl' });
+      tbl.append(el('tr', {}, el('th', {}, 'Karte'), ...c.families.map((f) => el('th', { title: f.name }, f.name))));
+      cards.forEach((d) => tbl.append(el('tr', { class: (d.families || []).length ? '' : 'allcls' }, el('td', { title: (d.families || []).length ? '' : 'Ohne Familie (neutral)' }, d.name || '?'),
+        ...c.families.map((f) => { const cb = el('input', { type: 'checkbox', onchange: (ev) => { setFam(d, f.id, ev.target.checked); changed(true); } });
+          cb.checked = (d.families || []).includes(f.id); return el('td', {}, cb); }))));
+      box.append(el('h4', {}, 'Karten × Familien'), el('p', { class: 'hint' }, 'Graue Zeilen = Karte ohne Familie (neutral). Eine Karte kann zu mehreren Familien gehören.'), tbl);
+    }
+    // im Kampf: aktuelle Neigung je Spieler
+    const g = HB.app.mode === 'combat' && HB.app.game;
+    if (g) box.append(el('h4', {}, 'Neigung im laufenden Kampf'), ...g.players.map((p) => el('p', {},
+      `${g.unitName(p)}: ` + (HB.affinityShares(p).map((x) => `${(c.families.find((f) => f.id === x.id) || {}).name || x.id} ${Math.round(x.share * 100)} %`).join(', ') || 'noch keine') + ` (${p.affSignals || 0} Signale)`)));
     return box;
   }
   // Eigenes Startdeck einer Klasse: Anzahl je Karte (k.deck[cid]); aus = Startdeck wie bei den Karten eingestellt
@@ -8664,6 +11042,8 @@ window.HB = window.HB || {};
             // „Alle“: ein Klick nimmt alle Klassen-Haken weg (Karte für jede Klasse)
             check('Alle', () => !(d.classes || []).length, (v) => { if (v) delete d.classes; }, 'Karte für alle Klassen', true),
             ...c.classes.map((k) => check(k.name, () => (d.classes || []).includes(k.id), (v) => { d.classes = (d.classes || []).filter((x) => x !== k.id); if (v) d.classes.push(k.id); if (!d.classes.length) delete d.classes; }, '', true))) : null,
+          (c.families || []).length && d.category !== 'curse' ? el('div', { class: 'classpick' }, el('span', { class: 'flbl' }, 'Familien (Neigung):'),
+            ...c.families.map((f) => check(f.name, () => (d.families || []).includes(f.id), (v) => { d.families = (d.families || []).filter((x) => x !== f.id); if (v) d.families.push(f.id); if (!d.families.length) delete d.families; }, '', true))) : null,
           el('div', { class: 'fxlbl' }, 'Effekte (in dieser Reihenfolge):'),
           ...d.effects.map((fx, j) => effectRow(d, fx, j, true)),
           btn('+ Effekt', () => { d.effects.push({ type: 'damage', amount: 5 }); changed(true); }, 'sec')));
@@ -8748,7 +11128,7 @@ window.HB = window.HB || {};
         el('span', {}, HB.app.live ? 'Live: Änderungen wirken sofort im Kampf' : 'Live aus: Änderungen gelten ab dem nächsten Kampfstart')));
       if (HB.app.live && tab === 'cards') root.append(el('p', { class: 'note' }, 'Karten und Deck wirken erst beim nächsten Kampfstart.'));
     }
-    const body = { setup: () => (HB.app.mode === 'setup' ? mapTab(c) : combatMapNote()), test: () => el('div', {}, HB.app.liveActive ? livePlayer() : null, setupTab(HB.app.mapCfg())), values: valuesTab, waves: wavesTab, enemies: (x) => enemiesTab(x, false), bosses: (x) => enemiesTab(x, true), cards: (x) => cardsTab(x, false), relics: relicsTab, curses: (x) => cardsTab(x, true), traps: trapsTab, classes: classesTab, rules: rulesTab, data: dataTab }[tab](c);
+    const body = { setup: () => (HB.app.mode === 'setup' ? mapTab(c) : combatMapNote()), test: () => el('div', {}, HB.app.liveActive ? livePlayer() : null, setupTab(HB.app.mapCfg())), values: valuesTab, waves: wavesTab, enemies: (x) => enemiesTab(x, false), bosses: (x) => enemiesTab(x, true), cards: (x) => cardsTab(x, false), relics: relicsTab, curses: (x) => cardsTab(x, true), traps: trapsTab, classes: classesTab, affinity: affinityTab, rules: rulesTab, data: dataTab }[tab](c);
     root.append(el('div', { class: 'tabbody' }, body));
   }
 
@@ -9138,10 +11518,8 @@ window.HB = window.HB || {};
         out.push({ cls: st.css.replace('st-', ''), icon: st.icon, title: `${st.labelOf ? st.labelOf(pu) : st.label}${v !== '' ? ` (${v})` : ''}${st.kind ? ' · ' + HB.STATUS_KINDS[st.kind] : ''}${g.players.length > 1 ? ' – ' + g.unitName(pu) : ''}`, text: st.info(pu, g) });
       }
     }
-    if (g.market && H.eq(g.market.pos, h)) out.push({ cls: 'market', icon: 'market', title: 'Markt',
-      text: `Stell dich drauf: ${(g.cfg.market || {}).offer || 6} Karten zur Auswahl, eine nehmen${(g.cfg.market || {}).allowRemove ? ' und eine aus dem Deck entfernen' : ''}. Nutzt du Markt oder Heiler, verschwinden beide.` });
-    if (g.healer && H.eq(g.healer.pos, h)) out.push({ cls: 'heal', icon: 'heal', title: 'Heiler',
-      text: `Stell dich drauf: heilt ${(g.cfg.healer || {}).percent || 30} % deiner Max-Leben. Nutzt du Heiler oder Markt, verschwinden beide.` });
+    const place = g.placeAt(h), pl = place && HB.PLACES[place];
+    if (pl) out.push({ cls: pl.infoCls, icon: pl.icon, title: pl.label, text: pl.info(g) });
     for (const m of g.strikeMarks()) if (H.eq(m.h, h)) out.push({ cls: 'aim', icon: 'sword', title: `Schlag von ${m.e.name}: ${m.amount}`,
       text: `Wer beim Schlag hier steht, wird getroffen${g.enemyFire() ? ' – auch andere Gegner' : ' (andere Gegner nicht)'}. Geh weg, dann geht er ins Leere.` });
     if (g.pendingWave && g.pendingWave.spots.some((s) => H.eq(s.pos, h))) out.push({ cls: 'spawn', icon: 'enemy', title: 'Gegner erscheint',
@@ -9151,6 +11529,156 @@ window.HB = window.HB || {};
 
   HB.ui = { cardFace, showKeywords, hideKeywords, tileInfo };
   HB.cardFace = cardFace; // für den Karten-Tab im Editor
+})(window.HB);
+
+</script>
+  <script>
+// Oberfläche: Hauptmenü, Online-Koop-Lobby (js/net.js) und Klassenwahl vor dem Kampf – Fenster über dem Spielfeld.
+// Aufgerufen aus main.js (HB.uiMenu.showMenu/showOnline/showClassPick); nutzt HB.app (app.me, app.renderAll, app.gameHooks).
+window.HB = window.HB || {};
+(function (HB) {
+  const I = HB.icons;
+  const $ = (s) => document.querySelector(s);
+  let app = HB.app;
+  // ---------- Hauptmenü: Titel, Kampf starten (mit Klassenwahl), Online, Aufbau & Editor ----------
+  function showMenu() {
+    if ($('#mainmenu')) return;
+    const ov = document.createElement('div'); ov.id = 'mainmenu';
+    let on = true; try { on = localStorage.getItem('hexdb.menu') !== 'off'; } catch (e) { /* egal */ }
+    const inCombat = app.mode === 'combat' && app.game;
+    ov.innerHTML = `<div class="mmbox"><div class="mmtitle">Unspoken Watch</div><div class="mmsub">Die Krypta wandert mit.</div>`
+      + `<div class="mmbtns">${inCombat ? '<button type="button" data-m="resume" class="primary">Weiterspielen</button>' : ''}`
+      + `<button type="button" data-m="start"${inCombat ? ' class="sec"' : ' class="primary"'}>${inCombat ? 'Neuer Kampf' : 'Kampf starten'}</button>`
+      + '<button type="button" data-m="online" class="sec">Online-Koop</button>'
+      + '<button type="button" data-m="setup" class="sec">Aufbau &amp; Editor</button></div>'
+      + `<label class="mmcheck"><input type="checkbox" id="mmshow"${on ? ' checked' : ''}> Beim Öffnen zeigen</label></div>`;
+    const close = () => ov.remove();
+    ov.querySelector('[data-m="resume"]')?.addEventListener('click', close);
+    ov.querySelector('[data-m="start"]').onclick = () => { close(); if (inCombat) app.toSetup(); app.startCombat(); };
+    ov.querySelector('[data-m="online"]').onclick = () => { close(); showOnline(); };
+    ov.querySelector('[data-m="setup"]').onclick = () => { close(); if (inCombat) app.toSetup(); };
+    ov.querySelector('#mmshow').onchange = (ev) => { try { localStorage.setItem('hexdb.menu', ev.target.checked ? 'on' : 'off'); } catch (e) { /* egal */ } };
+    document.body.appendChild(ov);
+  }
+  // ---------- Online-Koop mit Lobby (js/net.js) ----------
+  // Raum eröffnen → Code + Einladungslink (Kopieren-Knöpfe); Mitspieler treten mit Code bei (Einfügen-Knopf) oder über den Link
+  // (#join=CODE); in der Lobby wählt jeder seine Klasse; der Gastgeber startet den Kampf für alle.
+  const inviteLink = (code) => location.href.split('#')[0] + '#join=' + code;
+  async function copyText(txt, btn) {
+    let ok = false;
+    try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) { ok = false; }
+    if (btn) { const t = btn.textContent; btn.textContent = ok ? 'Kopiert ✓' : 'Bitte markieren + Strg+C'; setTimeout(() => { btn.textContent = t; }, 1600); }
+  }
+  function showOnline(autoCode) {
+    $('#classpick')?.remove();
+    const ov = document.createElement('div'); ov.id = 'classpick';
+    const cfg = app.config, classesOn = HB.moduleOn(cfg, 'classes') && (cfg.classes || []).length;
+    const clsName = (id) => (id ? ((cfg.classes || []).find((k) => k.id === id) || {}).name || id : 'Ohne Klasse');
+    const clsButtons = (cur, attr) => !classesOn ? '' : '<div class="cpopts">' + [['', 'Ohne Klasse'], ...cfg.classes.map((k) => [k.id, k.name])]
+      .map(([id, n]) => `<button type="button" class="cpopt${cur === id ? ' on' : ''}" ${attr}="${HB.esc(id)}">${HB.esc(n)}</button>`).join('') + '</div>';
+    const seatList = (seats, mine) => '<div class="lobbylist">' + seats.map((s, i) => `<div class="lobbyseat${s.id === mine ? ' me' : ''}"><b>Spieler ${i + 1}</b>`
+      + `<span>${s.host ? 'Gastgeber' : 'Mitspieler'}${s.id === mine ? ' (du)' : ''}</span>${classesOn ? `<span class="muted">${HB.esc(clsName(s.cls))}</span>` : ''}</div>`).join('') + '</div>';
+    const close = () => ov.remove();
+    const draw = () => {
+      const net = app.net || {}, ok = HB.net.available();
+      let h = `<div class="modalbox cpbox"><div class="mtitle">${I.icon('player')} Online-Koop</div>`;
+      if (!ok) h += '<p class="cphint">Online geht hier nicht: Das Claude-Artefakt sperrt Verbindungen zu anderen Rechnern. Spiel stattdessen über die Webseite: <b>yokutube.github.io/unspokenwatch-play</b></p>';
+      else if (net.room) {
+        const r = net.room, mine = r.seats.find((s) => s.host) || {};
+        h += r.error ? `<p class="cphint">Keine Verbindung (${HB.esc(r.error)}).</p>` : !r.ready ? '<p class="cphint">Raum wird geöffnet …</p>'
+          : `<div class="netrow"><span>Code</span><b class="netcode">${r.code}</b><button type="button" class="sec" data-a="copycode">Code kopieren</button><button type="button" class="sec" data-a="copylink">Einladungslink kopieren</button></div>`;
+        h += seatList(r.seats, 'player');
+        if (!r.host) h += (classesOn ? '<div class="cprow"><span class="cpwho">Deine Klasse</span>' + clsButtons(mine.cls || '', 'data-hcls') + '</div>' : '')
+          + `<div class="cpbtns"><button type="button" class="sec" data-a="closeroom">Raum schließen</button><button type="button" class="primary" data-a="start">Kampf starten (${r.seats.length} ${r.seats.length > 1 ? 'Spieler' : 'Spieler'})</button></div>`;
+        else h += '<p class="cphint">Der Kampf läuft. Wer jetzt noch beitritt, steigt mitten im Kampf ein.</p><div class="cpbtns"><button type="button" class="sec" data-a="closeroom">Raum schließen</button></div>';
+      } else if (net.join) {
+        const lob = net.lobby;
+        h += `<p class="cphint">${HB.esc(net.status || 'Verbinde …')}</p>`;
+        if (lob && !lob.started) {
+          const me = lob.seats.find((s) => s.id === lob.you) || {};
+          h += seatList(lob.seats, lob.you) + (classesOn ? '<div class="cprow"><span class="cpwho">Deine Klasse</span>' + clsButtons(me.cls || '', 'data-jcls') + '</div>' : '')
+            + '<p class="cphint">Warte, bis der Gastgeber den Kampf startet …</p>';
+        }
+        h += '<div class="cpbtns"><button type="button" class="sec" data-a="leave">Verlassen</button></div>';
+      } else {
+        h += '<div class="cprow"><span class="cpwho">Raum eröffnen</span><span class="cphint">Du bist Gastgeber: Freunde treten mit Code oder Link bei, dann startest du den Kampf für alle.</span>'
+          + '<div class="cpbtns" style="justify-content:flex-start"><button type="button" class="primary" data-a="host">Raum eröffnen</button></div></div>'
+          + `<div class="cprow"><span class="cpwho">Beitreten</span><div class="netrow"><input id="netcode" maxlength="5" placeholder="Code" autocomplete="off" value="${HB.esc(autoCode || '')}">`
+          + '<button type="button" class="sec" data-a="paste">Einfügen</button><button type="button" class="primary" data-a="join">Beitreten</button></div></div>';
+      }
+      h += '<div class="cpbtns"><button type="button" class="cpcancel">Schließen</button></div></div>';
+      ov.innerHTML = h;
+      const on = (a, fn) => ov.querySelector(`[data-a="${a}"]`)?.addEventListener('click', fn);
+      ov.querySelector('.cpcancel').onclick = close;
+      on('copycode', (ev) => copyText(app.net.room.code, ev.currentTarget));
+      on('copylink', (ev) => copyText(inviteLink(app.net.room.code), ev.currentTarget));
+      on('host', () => {
+        const room = HB.net.openRoom({
+          hostClass: (cfg.playerClasses || [])[0] || '',
+          seatFor: async (id) => { while (app.game.players.length < 4 && !app.game.players.some((p) => p.id === id)) await app.game.apply({ type: 'join', player: app.me().id }); app.renderAll(); return app.game.players.some((p) => p.id === id) ? id : null; },
+          onUpdate: () => { if (ov.isConnected) draw(); },
+        });
+        app.net = { room }; draw();
+      });
+      ov.querySelectorAll('[data-hcls]').forEach((b) => { b.onclick = () => app.net.room.setClass('player', b.dataset.hcls); });
+      on('start', () => {
+        const r = app.net.room;
+        close(); if (app.mode === 'combat') app.toSetup();
+        app.startCombat(r.seats.map((s) => s.cls || ''), r.seats.length);
+        if (app.game) r.startGame(app.game);
+      });
+      on('closeroom', () => { app.net.room.close(); app.net = null; draw(); });
+      on('paste', async () => {
+        const inp = ov.querySelector('#netcode');
+        try { const t = (await navigator.clipboard.readText()) || ''; const m = t.match(/join=([A-Z0-9]{5})/i) || t.match(/\b([A-Z0-9]{5})\b/i); if (m) inp.value = m[1].toUpperCase(); } catch (e) { inp.focus(); app.toast('Einfügen nicht erlaubt – Strg+V ins Feld.'); }
+      });
+      on('join', () => {
+        const code = (ov.querySelector('#netcode').value || '').trim().toUpperCase(); if (code.length < 5) return;
+        const hooks2 = { ...app.gameHooks,
+          lobby: (msg) => { if (app.net) { app.net.lobby = msg; app.net.status = msg.started ? 'Der Kampf läuft, du steigst ein …' : `Verbunden mit Raum ${msg.code}.`; } if (ov.isConnected) draw(); },
+          state: (cl) => {
+            const first = app.netSeat == null;
+            app.game = cl.game; app.netSeat = cl.me; app.mode = 'combat'; app.tool = 'inspect';
+            if (app.net) app.net.status = 'Im Kampf – du bist ' + (cl.game.unitName(cl.game.players.find((p) => p.id === cl.me) || cl.game.player)) + '.';
+            app.renderAll(); if (first && ov.isConnected) close();
+          } };
+        const join = HB.net.joinRoom(code, hooks2, (st) => {
+          if (!app.net) return;
+          app.net.status = st.error ? `Keine Verbindung (${st.error}). Stimmt der Code?` : st.closed ? 'Verbindung beendet.' : 'Verbunden …';
+          if (st.closed || st.error) app.netSeat = null;
+          if (ov.isConnected) draw();
+        });
+        app.net = { join }; draw();
+      });
+      ov.querySelectorAll('[data-jcls]').forEach((b) => { b.onclick = () => app.net.join.pick(b.dataset.jcls); });
+      on('leave', () => { app.net.join.close(); app.net = null; app.netSeat = null; if (app.mode === 'combat') app.toSetup(); draw(); });
+    };
+    draw(); document.body.appendChild(ov);
+    if (autoCode && !app.net) ov.querySelector('[data-a="join"]')?.click();
+  }
+  // Klassenwahl vor dem Kampf: je Spieler eine Klasse oder „Ohne Klasse“ (dann alle Karten). Vorauswahl = Editor → Klassen.
+  function showClassPick(done) {
+    const cfg = app.config, n = Math.max(1, Math.min(4, cfg.playerCount || 1));
+    const pick = Array.from({ length: n }, (_, i) => (cfg.playerClasses || [])[i] || '');
+    const ov = document.createElement('div'); ov.id = 'classpick';
+    const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = (ev) => { if (ev.key === 'Escape') close(); };
+    const draw = () => {
+      const opts = [['', 'Ohne Klasse', 'alle Karten'], ...cfg.classes.map((k) => [k.id, k.name, k.ownDeck ? 'eigenes Startdeck' : ''])];
+      ov.innerHTML = `<div class="modalbox cpbox"><div class="mtitle">${I.icon('deck')} Klasse wählen</div>`
+        + pick.map((v, i) => `<div class="cprow"><span class="cpwho">${n > 1 ? 'Spieler ' + (i + 1) : 'Deine Klasse'}</span><div class="cpopts">`
+          + opts.map(([id, name, sub]) => `<button type="button" class="cpopt${v === id ? ' on' : ''}" data-p="${i}" data-id="${HB.esc(id)}">${HB.esc(name)}${sub ? `<small>${sub}</small>` : ''}</button>`).join('')
+          + '</div></div>').join('')
+        + `<p class="cphint">Mit Klasse bietet der Kartendraft nur ihre Karten an. Vorauswahl und Startdecks: Editor → Klassen.</p>`
+        + `<div class="cpbtns"><button type="button" class="cpcancel">Abbrechen</button><button type="button" class="primary cpgo">Kampf starten</button></div></div>`;
+      ov.querySelectorAll('.cpopt').forEach((b) => { b.onclick = () => { pick[+b.dataset.p] = b.dataset.id; draw(); }; });
+      ov.querySelector('.cpcancel').onclick = close;
+      ov.querySelector('.cpgo').onclick = () => { close(); done(pick.slice()); };
+    };
+    draw(); document.body.appendChild(ov); document.addEventListener('keydown', onKey);
+  }
+  const use = (fn) => (...a) => { app = HB.app; return fn(...a); };
+  HB.uiMenu = { showMenu: use(showMenu), showOnline: use(showOnline), showClassPick: use(showClassPick) };
 })(window.HB);
 
 </script>
@@ -10609,7 +13137,7 @@ window.HB = window.HB || {};
       const ok = (gr) => (gr.count || 0) > 0 && (gr.type === 'mixed' ? ts.some((t) => !t.boss && !t.disabled) : !!ts.find((t) => t.id === gr.type && !t.disabled));
       if (!w1 || !(w1.groups || []).some(ok)) { app.toast('Welle 1 hat keine aktiven Gegner: unter Werte → Wellen Gegner eintragen.'); return; }
       const cfg = app.config;
-      if (!classes && HB.moduleOn(cfg, 'classes') && (cfg.classes || []).length && cfg.classChoice !== false) { showClassPick((ch) => app.startCombat(ch)); return; }
+      if (!classes && HB.moduleOn(cfg, 'classes') && (cfg.classes || []).length && cfg.classChoice !== false) { HB.uiMenu.showClassPick((ch) => app.startCombat(ch)); return; }
       app.mode = 'combat'; app.tool = 'inspect'; app.inspect = null; app.pick = null;
       $('#log').innerHTML = '';
       app.viewIdx = 0;
@@ -10686,6 +13214,7 @@ window.HB = window.HB || {};
     notice: (msg, kind) => { app.toast(msg); if (kind === 'discard') app.pulseDiscard = Date.now(); },
     wait: (ms) => new Promise((r) => setTimeout(r, ms)),
   };
+  app.gameHooks = hooks; app.renderAll = () => renderAll(); // für ui-menu.js (Online-Lobby)
 
   // ---------- Vorschau beim Überfahren einer Karte (ohne Ziehen) ----------
   // Karte mit nur Bewegung (z. B. Ausweichsprung): schon beim Hovern sieht man auf dem Spielfeld, wohin sie dich bringt.
@@ -11050,151 +13579,15 @@ window.HB = window.HB || {};
       : `<b>${I.icon(k.icon)} Weiter: ${k.label}?</b>${live.length > 1 ? `<span>${yes}/${live.length} sind dafür</span>` : ''}<button type="button" class="primary">Weitergehen</button>`;
     box.querySelector('button')?.addEventListener('click', () => g.apply({ type: 'routeVote', player: p.id, exit: i }).then(() => renderAll()));
   }
-  // ---------- Hauptmenü: Titel, Kampf starten (mit Klassenwahl), Online, Aufbau & Editor ----------
-  function showMenu() {
-    if ($('#mainmenu')) return;
-    const ov = document.createElement('div'); ov.id = 'mainmenu';
-    let on = true; try { on = localStorage.getItem('hexdb.menu') !== 'off'; } catch (e) { /* egal */ }
-    const inCombat = app.mode === 'combat' && app.game;
-    ov.innerHTML = `<div class="mmbox"><div class="mmtitle">Unspoken Watch</div><div class="mmsub">Die Krypta wandert mit.</div>`
-      + `<div class="mmbtns">${inCombat ? '<button type="button" data-m="resume" class="primary">Weiterspielen</button>' : ''}`
-      + `<button type="button" data-m="start"${inCombat ? ' class="sec"' : ' class="primary"'}>${inCombat ? 'Neuer Kampf' : 'Kampf starten'}</button>`
-      + '<button type="button" data-m="online" class="sec">Online-Koop</button>'
-      + '<button type="button" data-m="setup" class="sec">Aufbau &amp; Editor</button></div>'
-      + `<label class="mmcheck"><input type="checkbox" id="mmshow"${on ? ' checked' : ''}> Beim Öffnen zeigen</label></div>`;
-    const close = () => ov.remove();
-    ov.querySelector('[data-m="resume"]')?.addEventListener('click', close);
-    ov.querySelector('[data-m="start"]').onclick = () => { close(); if (inCombat) app.toSetup(); app.startCombat(); };
-    ov.querySelector('[data-m="online"]').onclick = () => { close(); showOnline(); };
-    ov.querySelector('[data-m="setup"]').onclick = () => { close(); if (inCombat) app.toSetup(); };
-    ov.querySelector('#mmshow').onchange = (ev) => { try { localStorage.setItem('hexdb.menu', ev.target.checked ? 'on' : 'off'); } catch (e) { /* egal */ } };
-    document.body.appendChild(ov);
-  }
-  // ---------- Online-Koop mit Lobby (js/net.js) ----------
-  // Raum eröffnen → Code + Einladungslink (Kopieren-Knöpfe); Mitspieler treten mit Code bei (Einfügen-Knopf) oder über den Link
-  // (#join=CODE); in der Lobby wählt jeder seine Klasse; der Gastgeber startet den Kampf für alle.
-  const inviteLink = (code) => location.href.split('#')[0] + '#join=' + code;
-  async function copyText(txt, btn) {
-    let ok = false;
-    try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) { ok = false; }
-    if (btn) { const t = btn.textContent; btn.textContent = ok ? 'Kopiert ✓' : 'Bitte markieren + Strg+C'; setTimeout(() => { btn.textContent = t; }, 1600); }
-  }
-  function showOnline(autoCode) {
-    $('#classpick')?.remove();
-    const ov = document.createElement('div'); ov.id = 'classpick';
-    const cfg = app.config, classesOn = HB.moduleOn(cfg, 'classes') && (cfg.classes || []).length;
-    const clsName = (id) => (id ? ((cfg.classes || []).find((k) => k.id === id) || {}).name || id : 'Ohne Klasse');
-    const clsButtons = (cur, attr) => !classesOn ? '' : '<div class="cpopts">' + [['', 'Ohne Klasse'], ...cfg.classes.map((k) => [k.id, k.name])]
-      .map(([id, n]) => `<button type="button" class="cpopt${cur === id ? ' on' : ''}" ${attr}="${HB.esc(id)}">${HB.esc(n)}</button>`).join('') + '</div>';
-    const seatList = (seats, mine) => '<div class="lobbylist">' + seats.map((s, i) => `<div class="lobbyseat${s.id === mine ? ' me' : ''}"><b>Spieler ${i + 1}</b>`
-      + `<span>${s.host ? 'Gastgeber' : 'Mitspieler'}${s.id === mine ? ' (du)' : ''}</span>${classesOn ? `<span class="muted">${HB.esc(clsName(s.cls))}</span>` : ''}</div>`).join('') + '</div>';
-    const close = () => ov.remove();
-    const draw = () => {
-      const net = app.net || {}, ok = HB.net.available();
-      let h = `<div class="modalbox cpbox"><div class="mtitle">${I.icon('player')} Online-Koop</div>`;
-      if (!ok) h += '<p class="cphint">Online geht hier nicht: Das Claude-Artefakt sperrt Verbindungen zu anderen Rechnern. Spiel stattdessen über die Webseite: <b>yokutube.github.io/unspokenwatch-play</b></p>';
-      else if (net.room) {
-        const r = net.room, mine = r.seats.find((s) => s.host) || {};
-        h += r.error ? `<p class="cphint">Keine Verbindung (${HB.esc(r.error)}).</p>` : !r.ready ? '<p class="cphint">Raum wird geöffnet …</p>'
-          : `<div class="netrow"><span>Code</span><b class="netcode">${r.code}</b><button type="button" class="sec" data-a="copycode">Code kopieren</button><button type="button" class="sec" data-a="copylink">Einladungslink kopieren</button></div>`;
-        h += seatList(r.seats, 'player');
-        if (!r.host) h += (classesOn ? '<div class="cprow"><span class="cpwho">Deine Klasse</span>' + clsButtons(mine.cls || '', 'data-hcls') + '</div>' : '')
-          + `<div class="cpbtns"><button type="button" class="sec" data-a="closeroom">Raum schließen</button><button type="button" class="primary" data-a="start">Kampf starten (${r.seats.length} ${r.seats.length > 1 ? 'Spieler' : 'Spieler'})</button></div>`;
-        else h += '<p class="cphint">Der Kampf läuft. Wer jetzt noch beitritt, steigt mitten im Kampf ein.</p><div class="cpbtns"><button type="button" class="sec" data-a="closeroom">Raum schließen</button></div>';
-      } else if (net.join) {
-        const lob = net.lobby;
-        h += `<p class="cphint">${HB.esc(net.status || 'Verbinde …')}</p>`;
-        if (lob && !lob.started) {
-          const me = lob.seats.find((s) => s.id === lob.you) || {};
-          h += seatList(lob.seats, lob.you) + (classesOn ? '<div class="cprow"><span class="cpwho">Deine Klasse</span>' + clsButtons(me.cls || '', 'data-jcls') + '</div>' : '')
-            + '<p class="cphint">Warte, bis der Gastgeber den Kampf startet …</p>';
-        }
-        h += '<div class="cpbtns"><button type="button" class="sec" data-a="leave">Verlassen</button></div>';
-      } else {
-        h += '<div class="cprow"><span class="cpwho">Raum eröffnen</span><span class="cphint">Du bist Gastgeber: Freunde treten mit Code oder Link bei, dann startest du den Kampf für alle.</span>'
-          + '<div class="cpbtns" style="justify-content:flex-start"><button type="button" class="primary" data-a="host">Raum eröffnen</button></div></div>'
-          + `<div class="cprow"><span class="cpwho">Beitreten</span><div class="netrow"><input id="netcode" maxlength="5" placeholder="Code" autocomplete="off" value="${HB.esc(autoCode || '')}">`
-          + '<button type="button" class="sec" data-a="paste">Einfügen</button><button type="button" class="primary" data-a="join">Beitreten</button></div></div>';
-      }
-      h += '<div class="cpbtns"><button type="button" class="cpcancel">Schließen</button></div></div>';
-      ov.innerHTML = h;
-      const on = (a, fn) => ov.querySelector(`[data-a="${a}"]`)?.addEventListener('click', fn);
-      ov.querySelector('.cpcancel').onclick = close;
-      on('copycode', (ev) => copyText(app.net.room.code, ev.currentTarget));
-      on('copylink', (ev) => copyText(inviteLink(app.net.room.code), ev.currentTarget));
-      on('host', () => {
-        const room = HB.net.openRoom({
-          hostClass: (cfg.playerClasses || [])[0] || '',
-          seatFor: async (id) => { while (app.game.players.length < 4 && !app.game.players.some((p) => p.id === id)) await app.game.apply({ type: 'join', player: me().id }); renderAll(); return app.game.players.some((p) => p.id === id) ? id : null; },
-          onUpdate: () => { if (ov.isConnected) draw(); },
-        });
-        app.net = { room }; draw();
-      });
-      ov.querySelectorAll('[data-hcls]').forEach((b) => { b.onclick = () => app.net.room.setClass('player', b.dataset.hcls); });
-      on('start', () => {
-        const r = app.net.room;
-        close(); if (app.mode === 'combat') app.toSetup();
-        app.startCombat(r.seats.map((s) => s.cls || ''), r.seats.length);
-        if (app.game) r.startGame(app.game);
-      });
-      on('closeroom', () => { app.net.room.close(); app.net = null; draw(); });
-      on('paste', async () => {
-        const inp = ov.querySelector('#netcode');
-        try { const t = (await navigator.clipboard.readText()) || ''; const m = t.match(/join=([A-Z0-9]{5})/i) || t.match(/\b([A-Z0-9]{5})\b/i); if (m) inp.value = m[1].toUpperCase(); } catch (e) { inp.focus(); app.toast('Einfügen nicht erlaubt – Strg+V ins Feld.'); }
-      });
-      on('join', () => {
-        const code = (ov.querySelector('#netcode').value || '').trim().toUpperCase(); if (code.length < 5) return;
-        const hooks2 = { ...hooks,
-          lobby: (msg) => { if (app.net) { app.net.lobby = msg; app.net.status = msg.started ? 'Der Kampf läuft, du steigst ein …' : `Verbunden mit Raum ${msg.code}.`; } if (ov.isConnected) draw(); },
-          state: (cl) => {
-            const first = app.netSeat == null;
-            app.game = cl.game; app.netSeat = cl.me; app.mode = 'combat'; app.tool = 'inspect';
-            if (app.net) app.net.status = 'Im Kampf – du bist ' + (cl.game.unitName(cl.game.players.find((p) => p.id === cl.me) || cl.game.player)) + '.';
-            renderAll(); if (first && ov.isConnected) close();
-          } };
-        const join = HB.net.joinRoom(code, hooks2, (st) => {
-          if (!app.net) return;
-          app.net.status = st.error ? `Keine Verbindung (${st.error}). Stimmt der Code?` : st.closed ? 'Verbindung beendet.' : 'Verbunden …';
-          if (st.closed || st.error) app.netSeat = null;
-          if (ov.isConnected) draw();
-        });
-        app.net = { join }; draw();
-      });
-      ov.querySelectorAll('[data-jcls]').forEach((b) => { b.onclick = () => app.net.join.pick(b.dataset.jcls); });
-      on('leave', () => { app.net.join.close(); app.net = null; app.netSeat = null; if (app.mode === 'combat') app.toSetup(); draw(); });
-    };
-    draw(); document.body.appendChild(ov);
-    if (autoCode && !app.net) ov.querySelector('[data-a="join"]')?.click();
-  }
-  // Klassenwahl vor dem Kampf: je Spieler eine Klasse oder „Ohne Klasse“ (dann alle Karten). Vorauswahl = Editor → Klassen.
-  function showClassPick(done) {
-    const cfg = app.config, n = Math.max(1, Math.min(4, cfg.playerCount || 1));
-    const pick = Array.from({ length: n }, (_, i) => (cfg.playerClasses || [])[i] || '');
-    const ov = document.createElement('div'); ov.id = 'classpick';
-    const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
-    const onKey = (ev) => { if (ev.key === 'Escape') close(); };
-    const draw = () => {
-      const opts = [['', 'Ohne Klasse', 'alle Karten'], ...cfg.classes.map((k) => [k.id, k.name, k.ownDeck ? 'eigenes Startdeck' : ''])];
-      ov.innerHTML = `<div class="modalbox cpbox"><div class="mtitle">${I.icon('deck')} Klasse wählen</div>`
-        + pick.map((v, i) => `<div class="cprow"><span class="cpwho">${n > 1 ? 'Spieler ' + (i + 1) : 'Deine Klasse'}</span><div class="cpopts">`
-          + opts.map(([id, name, sub]) => `<button type="button" class="cpopt${v === id ? ' on' : ''}" data-p="${i}" data-id="${HB.esc(id)}">${HB.esc(name)}${sub ? `<small>${sub}</small>` : ''}</button>`).join('')
-          + '</div></div>').join('')
-        + `<p class="cphint">Mit Klasse bietet der Kartendraft nur ihre Karten an. Vorauswahl und Startdecks: Editor → Klassen.</p>`
-        + `<div class="cpbtns"><button type="button" class="cpcancel">Abbrechen</button><button type="button" class="primary cpgo">Kampf starten</button></div></div>`;
-      ov.querySelectorAll('.cpopt').forEach((b) => { b.onclick = () => { pick[+b.dataset.p] = b.dataset.id; draw(); }; });
-      ov.querySelector('.cpcancel').onclick = close;
-      ov.querySelector('.cpgo').onclick = () => { close(); done(pick.slice()); };
-    };
-    draw(); document.body.appendChild(ov); document.addEventListener('keydown', onKey);
-  }
   // Fenster für Kartendraft und Markt (über dem Spielfeld)
   function renderMarket(g) {
     const m = $('#modal');
     const ch = myChoice(), stackChoice = ch && HB.CHOICES[ch.type].from !== 'hand' ? ch : null;
-    const kind = g && app.mode === 'combat' ? (stackChoice ? 'choice' : g.relicOffer ? 'relic' : g.draftOffer ? 'draft' : g.marketOffer ? 'market' : null) : null;
+    const mm = g && app.mode === 'combat' && !stackChoice ? HB.moduleModal(g, me()) : null; // Fenster eines Moduls (z. B. Krypta-Ereignis)
+    const kind = g && app.mode === 'combat' ? (stackChoice ? 'choice' : mm ? 'module' : g.relicOffer ? 'relic' : g.draftOffer ? 'draft' : g.marketOffer ? 'market' : null) : null;
     if (!kind) { m.hidden = true; m.innerHTML = ''; m.dataset.sig = ''; return; }
     // nur neu zeichnen, wenn sich etwas geändert hat (sonst flackert es bei jedem Neuzeichnen)
-    const sig = kind + ':' + (kind === 'choice' ? `${ch.type}|${ch.left}|${asMe(() => g.choiceCards(ch)).map((c) => c.uid).join(',')}`
+    const sig = kind + ':' + (kind === 'module' ? mm.sig : kind === 'choice' ? `${ch.type}|${ch.left}|${asMe(() => g.choiceCards(ch)).map((c) => c.uid).join(',')}`
       : kind === 'relic' ? g.relicOffer.join(',') : kind === 'market' ? `${g.marketPicked}|${g.marketRemoved}|${g.marketExtraTaken}|${g.ownedCards().length}|${(g.marketBanished || []).length}` : g.draftOffer.length);
     if (!m.hidden && m.dataset.sig === sig) return;
     m.dataset.sig = sig;
@@ -11212,7 +13605,13 @@ window.HB = window.HB || {};
     };
     const button = (txt, cls, fn) => { const b = document.createElement('button'); b.className = cls; b.textContent = txt; b.onclick = fn; return b; };
     const box = document.createElement('div'); box.className = 'modalbox';
-    if (kind === 'choice') {
+    if (kind === 'module') {
+      box.innerHTML = `<div class="mtitle">${I.icon(mm.icon || 'flag')} ${HB.esc(mm.title)}</div>` + (mm.text ? `<p class="mtext">${HB.esc(mm.text)}</p>` : '')
+        + (mm.lines || []).map((l) => `<div class="msub">${HB.esc(l)}</div>`).join('');
+      const opts = document.createElement('div'); opts.className = 'mopts';
+      (mm.options || []).forEach((o) => opts.append(button(o.label + (o.sub ? ` (${o.sub})` : ''), o.primary ? 'primary' : 'sec', () => g.apply({ ...o.cmd, player: me().id }))));
+      box.appendChild(opts);
+    } else if (kind === 'choice') {
       // Karten aus Ablage/Nachziehstapel/obersten Karten wählen (Scry, Suchen, Zurückholen …)
       const C = HB.CHOICES[ch.type], cards = asMe(() => g.choiceCards(ch));
       if (C.from === 'top') cards.reverse(); // oberste (als Nächstes gezogene) Karte zuerst
@@ -11843,7 +14242,7 @@ window.HB = window.HB || {};
       app.inspect = null; R.clearOverlay(); renderAll();
     });
     $('#btn-start').onclick = () => app.startCombat();
-    $('#btn-online').onclick = () => showOnline();
+    $('#btn-online').onclick = () => HB.uiMenu.showOnline();
     $('#btn-setup').onclick = () => app.toSetup();
     // Editor ein-/ausblenden (gemerkt pro Browser)
     let editorHidden = false;
@@ -11912,8 +14311,8 @@ window.HB = window.HB || {};
     // Hauptmenü beim Öffnen (nicht, wenn ein Kampf weiterläuft; abschaltbar im Menü)
     let menuOn = true; try { menuOn = localStorage.getItem('hexdb.menu') !== 'off'; } catch (e) { /* egal */ }
     const jm = /#join=([A-Z0-9]{5})/i.exec(location.hash);
-    if (jm) { history.replaceState(null, '', location.href.split('#')[0]); showOnline(jm[1].toUpperCase()); } else if (!resumed && menuOn) showMenu();
-    $('#btn-menu').onclick = () => showMenu();
+    if (jm) { history.replaceState(null, '', location.href.split('#')[0]); HB.uiMenu.showOnline(jm[1].toUpperCase()); } else if (!resumed && menuOn) HB.uiMenu.showMenu();
+    $('#btn-menu').onclick = () => HB.uiMenu.showMenu();
   }
 })(window.HB);
 
