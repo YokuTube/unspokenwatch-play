@@ -4275,7 +4275,7 @@ window.HB = window.HB || {};
       g.floors = (data.floors || [{ mapId: 'main', name: '', start: g.cfg.player.start, board: g.cfg.board, obstacles: data.obstacles, objects: data.objects,
         tileEffects: data.tileEffects, traps: data.traps, corpses: data.corpses, enemies: data.enemies }]).map((f) => ({
         mapId: f.mapId, name: f.name, start: f.start, starts: f.starts, board: H.boardFrom(f.board || { cols: f.cols, rows: f.rows }), obstacles: f.obstacles || [], objects: f.objects || [], tileEffects: f.tileEffects || [],
-        traps: f.traps || [], corpses: f.corpses || [], enemies: (f.enemies || []).map(unit) }));
+        traps: f.traps || [], corpses: f.corpses || [], enemies: (f.enemies || []).map((x) => { const u = unit(x); u.name = u.name.replace(/^(.+) [A-Z]$/, (m, base) => ((g.cfg.enemyTypes || []).some((t) => t.name === base) ? base : m)); return u; }) })); // alte Namen „Kämpfer A“ → „Kämpfer“
       g.players.forEach((p) => { p.floor = p.floor | 0; });
       [...g.floors.flatMap((f) => f.enemies), ...g.players.flatMap((p) => [...p.hand, ...p.drawPile, ...p.discard, ...p.exhausted])].forEach((x) => bumpUid(x.uid));
       if (data.resumeEnemyPhase) { g.phase = 'player'; g.log('Spiel aktualisiert – der Rest des Gegnerzugs wurde übersprungen.'); g.rollIntent(); g.startPlayerTurn(); }
@@ -4497,7 +4497,7 @@ window.HB = window.HB || {};
       const firstGroups = this.firstWaveFromGroups();
       const typeOff = (id) => { const t = (c.enemyTypes || []).find((x) => x.id === id); return !!(t && t.disabled); };
       this.enemies = (firstGroups ? [] : c.enemies.filter((e) => !typeOff(e.type))).map((e, i) => ({
-        uid: uid(), name: `${typeName(e.type)} ${String.fromCharCode(65 + (i % 26))}`, type: e.type, hp: e.hp, maxHp: e.hp, pos: { ...e.pos }, poison: 0, alive: true, order: i + 1,
+        uid: uid(), name: typeName(e.type), type: e.type, hp: e.hp, maxHp: e.hp, pos: { ...e.pos }, poison: 0, alive: true, order: i + 1,
       }));
       // Hindernisse, Fallen, Bodenfelder, Objekte kamen schon aus der Karte (buildFloors); zufällige Hindernisse nur auf der Hauptkarte
       this.rollRandomObstacles();
@@ -4560,7 +4560,7 @@ window.HB = window.HB || {};
     notice(msg, kind) { this.hooks.notice && this.hooks.notice(msg, kind); }
     // Wartezeiten gehören nur der Darstellung: ohne hooks.wait (Selbsttest, Host) oder mit hooks.instant läuft alles sofort durch
     wait(ms) { return this.hooks.wait && !this.hooks.instant ? this.hooks.wait(ms) : Promise.resolve(); }
-    unitName(u) { return u.isPlayer ? (this.players.length > 1 ? `Spieler ${u.num || u.idx + 1}` : 'Du') : u.name; }
+    unitName(u) { return u.isPlayer ? (this.players.length > 1 ? `Spieler ${u.num || u.idx + 1}` : 'Du') : (u.order && !u.boss ? `${u.name} ${u.order}` : u.name); } // Gegner: Zugnummer statt A/B/C
     get alive() { return this.enemies.filter((e) => e.alive); }
 
     obstacleAt(h) { return this.obstacles.find((o) => H.eq(o.pos, h)); }
@@ -5676,7 +5676,7 @@ window.HB = window.HB || {};
     newEnemy(typeId, pos, name, hp) {
       const t = (this.cfg.enemyTypes || []).find((x) => x.id === typeId) || (this.cfg.enemyTypes || [])[0] || { id: null, name: 'Gegner', hp: 20 };
       const n = this.enemies.length;
-      const e = { uid: uid(), name: t.boss ? t.name : (name || `${t.name} ${String.fromCharCode(65 + (n % 26))}`), type: t.id, hp: hp ?? t.hp, maxHp: hp ?? t.hp, pos: { ...pos }, poison: 0, alive: true };
+      const e = { uid: uid(), name: t.boss ? t.name : (name || t.name), type: t.id, hp: hp ?? t.hp, maxHp: hp ?? t.hp, pos: { ...pos }, poison: 0, alive: true };
       if (t.boss) e.boss = true;
       // Gegnertyp „Startet mit“: Wirkungen aus HB.UNIT_EFFECTS (Kraft, Block, Gift …) gleich beim Erscheinen
       for (const fx of t.startEffects || []) HB.applyUnitEffect(this, e, fx);
@@ -8857,8 +8857,10 @@ window.HB = window.HB || {};
         await this.wait(110 / (this.cfg.speed || 1));
       }
     }
-    playerMoveRange(card) {
-      const fx = this.moveFx(card.def);
+    // plain = reines Laufen mit der Karte (Bewegen-Knopf, leeres Feld): Kosten + 1, auch bei „Bewegen 1, dann Schlag“-Karten.
+    // Ohne plain: Weite der Bewegung IN der Karte (Bewegen-Effekt), z. B. beim Laufen und Zuschlagen
+    playerMoveRange(card, plain) {
+      const fx = plain ? null : this.moveFx(card.def);
       return Math.max(0, (fx ? (fx.amount || 0) : (card.def.cost || 0) + 1) + HB.moveBonus(this, this.player)); // Eile/Verlangsamt
     }
     // Karte „Bewegen + Angriff“ auf einen Gegner: so weit hinlaufen wie nötig (höchstens Bewegung), dann zuschlagen.
@@ -8950,7 +8952,7 @@ window.HB = window.HB || {};
       if (this.groundCard(card)) return 'play';
       if (!h || this.enemyAt(h) || this.isPlayerAt(h)) return 'play';
       // Selbst-Karten (z. B. Block): auf ein blaues Feld (Bewegungsbereich) = laufen, überall sonst auf dem Feld = auf dich spielen
-      if (card.def.target === 'self' || card.def.target === 'any') return this.playerReach(this.playerMoveRange(card)).dist.has(H.key(h)) ? 'move' : 'play';
+      if (card.def.target === 'self' || card.def.target === 'any') return this.playerReach(this.playerMoveRange(card, true)).dist.has(H.key(h)) ? 'move' : 'play';
       return 'move';
     }
     toggleMoveArmed(card) { card.moveArmed = !card.moveArmed; this.changed(); }
@@ -8994,7 +8996,7 @@ window.HB = window.HB || {};
       const canPlay = !forceMove;
       const moveTiles = [];
       if (canMove && this.player.energy >= this.moveCost(card)) {
-        const reach = this.playerReach(this.playerMoveRange(card));
+        const reach = this.playerReach(this.playerMoveRange(card, true));
         for (const [k, dist] of reach.dist) { const h = H.parse(k); if (dist > 0) moveTiles.push({ h, dist, threat: this.predictThreat(h) }); }
       }
       const mf = this.moveFx(d);
@@ -9047,7 +9049,7 @@ window.HB = window.HB || {};
       }
       if (mode === 'move') {
         if (HB.cardFlag(d, 'noMove')) return { ok: false, text: `${HB.cardCategory(d).label}: nicht als Bewegung nutzbar` };
-        const mv = this.playerMoveRange(card);
+        const mv = this.playerMoveRange(card, true);
         if (this.isPlayerAt(h)) return { ok: false, text: 'Auf ein freies Feld ziehen' };
         if (this.obstacleAt(h)) return { ok: false, text: 'Hindernis' };
         if (this.enemyAt(h)) return { ok: false, text: 'Feld besetzt' };
@@ -15959,9 +15961,9 @@ window.HB = window.HB || {};
     el.className = 'card t-' + d.target + (playable ? '' : ' noenergy') + (card.moveArmed ? ' armed' : '') + (hc ? ' pick' : '') + (noMove ? ' nomove' : '') + ' ' + HB.cardClasses(d);
     // Bodenkarten (Ziel Feld) und Karten mit führender Bewegung: Bewegen-Symbol oben rechts – von dort ziehen = laufen statt Effekt
     const moveBtn = (ground || (g.moveFx(d) && d.target === 'enemy')) && !noMove; // auch „Bewegen, dann Schlagen“-Karten: sonst ließen sie sich nie nur zum Laufen nutzen
-    el.innerHTML = cardParts(d, moveBtn ? `<div class="movebtn${moveOk ? '' : ' noenergy'}">${I.icon('move')}<b>${g.playerMoveRange(card)}</b></div>` : '')
+    el.innerHTML = cardParts(d, moveBtn ? `<div class="movebtn${moveOk ? '' : ' noenergy'}">${I.icon('move')}<b>${g.playerMoveRange(card, true)}</b></div>` : '')
       // Bewegungs-Ansicht: erscheint, wenn die Maus über dem Bewegen-Symbol ist (dann zieht man die Karte als Bewegung)
-      + (!moveBtn ? '' : `<div class="moveface${moveOk ? '' : ' noenergy'}">${I.icon('move')}<b>Bewegen ${g.playerMoveRange(card)}</b>`
+      + (!moveBtn ? '' : `<div class="moveface${moveOk ? '' : ' noenergy'}">${I.icon('move')}<b>Bewegen ${g.playerMoveRange(card, true)}</b>`
         + `<span>${moveCost ? `kostet ${moveCost} Energie` : 'kostenlos'} · nur Laufen, kein Effekt</span></div>`)
       + (hc ? `<div class="discard-tag">${I.icon(HB.CHOICES[hc.type].icon)} ${HB.CHOICES[hc.type].verb}</div>` : '');
     cardFill(el, d);
@@ -15978,7 +15980,7 @@ window.HB = window.HB || {};
     // Andere Karten laufen, wenn man sie auf ein freies Feld zieht.
     const mb = el.querySelector('.movebtn');
     if (mb) {
-      mb.title = `Von hier ziehen = ${g.playerMoveRange(card)} Felder laufen statt ${d.name}`;
+      mb.title = `Von hier ziehen = ${g.playerMoveRange(card, true)} Felder laufen statt ${d.name}`;
       mb.addEventListener('pointerenter', () => { if (!drag) { el.classList.add('as-movecard'); previewMove(card, true); } });
       mb.addEventListener('pointerleave', () => { if (!drag) { el.classList.remove('as-movecard'); endPreview(); previewMove(card, false); } });
     }
@@ -16658,7 +16660,7 @@ window.HB = window.HB || {};
     if (g.blocksMove(h) || g.enemyAt(h) || g.otherPlayerAt(h, me)) return;
     const idx = t.findIndex((x) => H.eq(x, h));
     if (idx >= 0) { drag.trail = t.slice(0, idx + 1); return; }
-    if (g.routeVia([...t, h], h, g.playerMoveRange(drag.card))) t.push({ q: h.q, r: h.r });
+    if (g.routeVia([...t, h], h, g.playerMoveRange(drag.card, drag.forceMove || drag.mode === 'move'))) t.push({ q: h.q, r: h.r });
   }
   function onDragMove(ev) {
     if (!drag) return;
@@ -16888,7 +16890,7 @@ window.HB = window.HB || {};
       else {
         clear();
         const act = c.enemyTypes.filter((x) => !x.disabled), t = act.find((x) => x.id === c.placeType) || act[0] || c.enemyTypes[0];
-        c.waiting.push({ name: `${t.name} ${String.fromCharCode(65 + (c.waiting.length % 26))}`, type: t.id, hp: t.hp, pos: h });
+        c.waiting.push({ name: t.name, type: t.id, hp: t.hp, pos: h });
       }
     } else if (t === 'rock' || t === 'fence') {
       const i = at(c.obstacles), sight = t === 'rock';
