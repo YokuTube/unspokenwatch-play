@@ -1644,6 +1644,17 @@ body[data-public="1"] #devwin, body[data-public="1"] #btn-dev { display: none !i
 #orderctl .oc-hint { font-size: 12px; }
 @media (max-height: 540px) { #orderctl:not([hidden]) { display: flex !important; top: 4px; left: 4px; } #orderctl { padding: 4px; gap: 3px; } #orderctl button { font-size: 12px; min-height: 26px; padding: 2px 6px; gap: 8px; } #orderctl button b { font-size: 10px; padding: 1px 6px; } #orderctl .oc-hint { display: none; } }
 
+/* Karte wünschen (js/wishes.js, nur Testfassung) */
+#wishwin { position: fixed; inset: 0; z-index: 96; background: rgba(8, 9, 12, .72); display: flex; align-items: center; justify-content: center; padding: 12px; }
+#wishwin .modalbox { max-width: min(520px, 100%); text-align: left; }
+#wishwin .mtitle { text-align: center; }
+#wishwin .fbrow { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+#wishwin .fbrow span { min-width: 78px; }
+#wishwin .fbrow select, #wishwin .fbrow input { flex: 1; }
+#wishwin textarea.wtext { width: 100%; font: 14px/1.4 var(--body, inherit); min-height: 100px; resize: vertical; }
+#wishwin .wstatus.bad { color: #ff9a7a; }
+#wishwin .mopts { flex-direction: row; justify-content: center; max-width: none; }
+
 </style>
 </head>
 <body data-mode="setup" data-public="1">
@@ -13927,6 +13938,141 @@ window.HB = window.HB || {};
     $('#btn-feedback')?.addEventListener('click', () => open());
   }
   HB.feedback = { playerId, code, resetPlayer, embedded, open, decorate, clean, build, moment, online, init, testOnline: null, testNoRate: false };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})(window.HB);
+
+</script>
+  <script>
+// Kartenwünsche (nur Testfassung, im Claude-Artefakt): wie „Karte wünschen“ im alten UW. Der Nutzer diktiert eine Karte, sie landet als Dokument
+// in der Sammlung „kartenwuensche“ des Online-Speichers (Fähigkeit db). Eine wartende Claude-Sitzung baut sie (.claude/skills/kartenwuensche)
+// und schreibt `card` + `status: 'fertig'`; das Spiel beobachtet seine Wünsche und legt die Karte ohne Neuladen in Hand/Deck/Pool.
+// Status: offen → gebaut (Sitzung arbeitet) → fertig (Karte da) → geliefert (Spiel hat sie übernommen) | fehler. Doku: docs/mechaniken.md „Kartenwünsche“.
+window.HB = window.HB || {};
+(function (HB) {
+  const COLL = 'kartenwuensche', KEY = 'hexdb.wishes', TEXT_MAX = 1000;
+  const $ = (s) => document.querySelector(s);
+  const clean = (s, max) => HB.feedback ? HB.feedback.clean(s, max) : String(s == null ? '' : s).slice(0, max);
+  const TARGETS = [['hand', 'Auf die Hand'], ['deck', 'Ins Deck'], ['pool', 'In den Pool (Markt/Draft)']];
+  const dbOf = async () => { try { return window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { return null; } };
+  const mine = { get() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } },
+    set(a) { try { localStorage.setItem(KEY, JSON.stringify(a.slice(-50))); } catch (e) { /* egal */ } } };
+  const done = new Set(), told = new Set();
+  const toast = (m) => { try { HB.app.toast(m); } catch (e) { /* egal */ } };
+
+  // Karte aus dem Dokument prüfen und säubern; Fehler als Text
+  function validate(card, wish) {
+    if (!card || typeof card !== 'object' || Array.isArray(card)) throw new Error('keine Karte');
+    const d = HB.migrateCard(HB.util.clone(card));
+    d.name = clean(d.name, 60); if (!d.name) throw new Error('Karte ohne Namen');
+    if (!Array.isArray(d.effects) || !d.effects.length || d.effects.length > 8) throw new Error('Karte ohne (oder mit zu vielen) Wirkungen');
+    for (const fx of d.effects) {
+      if (!fx || typeof fx !== 'object' || !HB.CARD_EFFECTS[fx.type]) throw new Error('unbekannter Effekt: ' + clean(fx && fx.type, 40));
+      for (const k of Object.keys(fx)) if (typeof fx[k] === 'number' && !(Math.abs(fx[k]) <= 99)) throw new Error('Zahl außer Rahmen bei ' + fx.type);
+    }
+    d.cost = Number.isFinite(+d.cost) ? Math.max(0, Math.min(9, Math.round(+d.cost))) : 1;
+    d.range = Number.isFinite(+d.range) ? Math.max(0, Math.min(12, Math.round(+d.range))) : 0;
+    d.target = ['enemy', 'tile', 'self', 'any'].includes(d.target) ? d.target : 'self';
+    // Angaben aus dem Fenster gelten immer
+    if (wish) {
+      if (wish.name) d.name = clean(wish.name, 60);
+      if (wish.kosten !== '' && wish.kosten != null && Number.isFinite(+wish.kosten)) d.cost = Math.max(0, Math.min(9, Math.round(+wish.kosten)));
+      if (HB.CARD_RARITIES[wish.seltenheit]) d.rarity = wish.seltenheit;
+      if (HB.CARD_CATEGORIES[wish.kategorie]) d.category = wish.kategorie;
+    }
+    if (!HB.CARD_CATEGORIES[d.category]) d.category = HB.cardCategoryKey(d);
+    d.cid = 'w' + Math.random().toString(36).slice(2, 9);
+    d.count = 0; d.startHand = 0; d.inPool = false; d.inDraft = false; d.exhaust = !!d.exhaust;
+    return d;
+  }
+
+  // Fertige Karte übernehmen: Sicherung, Einstellung, Speichern, je nach Ziel Hand/Deck/Pool
+  function deliver(wish, card) {
+    const app = HB.app, d = validate(card, wish), ziel = wish.ziel || 'pool';
+    app.pushBackup(JSON.stringify(app.config), 'Vor Kartenwunsch');
+    if (ziel === 'pool') { d.inPool = true; d.inDraft = true; }
+    else d.count = 1;
+    app.config.deck.push(d);
+    app.save();
+    if (app.mode === 'combat' && app.game && ziel !== 'pool') {
+      const g = app.game; g.as(app.me(), () => g.giveCard(HB.util.clone(d), ziel === 'hand' ? 'hand' : 'discard'));
+    }
+    try { HB.editor.render(); app.renderAll(); } catch (e) { /* egal */ }
+    toast(`Karte „${d.name}“ ist da (${(TARGETS.find((t) => t[0] === ziel) || TARGETS[2])[1].toLowerCase()}).`);
+    return d;
+  }
+
+  // Ein Dokument aus der Beobachtung bearbeiten
+  async function handle(id, data, db) {
+    if (!data || !mine.get().includes(id) || done.has(id)) return;
+    const set = (v) => db.collection(COLL).doc(id).update(v);
+    if (data.status === 'gebaut' && !told.has(id)) { told.add(id); toast('Kartenwunsch wird gebaut …'); }
+    if (data.status !== 'fertig') return;
+    done.add(id);
+    try { deliver(data, data.card); await set({ status: 'geliefert' }); }
+    catch (e) { const m = String(e.message || e).slice(0, 120); toast('Kartenwunsch fehlerhaft: ' + m); try { await set({ status: 'fehler', fehler: m }); } catch (e2) { /* egal */ } }
+    mine.set(mine.get().filter((x) => x !== id));
+  }
+
+  let unsub = null;
+  async function watch() {
+    if (unsub || HB.isPublic()) return !!unsub;
+    const db = await dbOf(); if (!db) return false;
+    unsub = db.collection(COLL).onSnapshot((snap) => snap.docs.forEach((s) => handle(s.id, s.data(), db)), () => { unsub = null; });
+    return true;
+  }
+
+  async function save(wish) {
+    const db = await dbOf(); if (!db) throw new Error('kein Online-Speicher (nur im Artefakt)');
+    const id = 'w_' + Date.now().toString(36) + '_' + HB.feedback.code();
+    await db.collection(COLL).doc(id).set({ ...wish, status: 'offen', at: new Date().toISOString(), moment: HB.feedback.moment() });
+    mine.set([...mine.get(), id]); watch();
+    return id;
+  }
+
+  const sticky = { get: (k, d) => { try { return localStorage.getItem('hexdb.wish.' + k) || d; } catch (e) { return d; } }, set: (k, v) => { try { localStorage.setItem('hexdb.wish.' + k, v); } catch (e) { /* egal */ } } };
+  function open() {
+    if (HB.isPublic()) return;
+    $('#wishwin')?.remove();
+    const ov = document.createElement('div'); ov.id = 'wishwin';
+    const sel = (cls, opts, cur) => `<select class="${cls}">` + opts.map(([v, l]) => `<option value="${v}"${v === cur ? ' selected' : ''}>${l}</option>`).join('') + '</select>';
+    ov.innerHTML = '<div class="modalbox"><div class="mtitle">Karte wünschen</div><p class="cphint">Beschreibe die Karte in deinen Worten. Eine wartende Claude-Sitzung baut sie; sie erscheint ohne Neuladen.</p>'
+      + `<textarea class="wtext" rows="5" maxlength="${TEXT_MAX}" placeholder="z. B. Schlage einen Gegner für 8 Schaden und gib ihm 3 Gift"></textarea>`
+      + '<label class="fbrow"><span>Ziel:</span>' + sel('wziel', TARGETS, sticky.get('ziel', 'hand')) + '</label>'
+      + '<label class="fbrow"><span>Kosten:</span><input class="wcost" type="number" min="0" max="9" placeholder="aus dem Text"></label>'
+      + '<label class="fbrow"><span>Name:</span><input class="wname" maxlength="60" placeholder="leer = die KI denkt sich einen aus"></label>'
+      + '<label class="fbrow"><span>Seltenheit:</span>' + sel('wrar', [['', 'aus dem Text'], ...Object.entries(HB.CARD_RARITIES).map(([k, v]) => [k, v.label])], sticky.get('rar', '')) + '</label>'
+      + '<label class="fbrow"><span>Art:</span>' + sel('wcat', [['', 'aus dem Text'], ...Object.entries(HB.CARD_CATEGORIES).filter(([k]) => k !== 'curse').map(([k, v]) => [k, v.label])], sticky.get('cat', '')) + '</label>'
+      + '<p class="cphint wstatus" role="status"></p>'
+      + '<div class="mopts"><button type="button" class="primary" data-m="send">Wünschen</button><button type="button" data-m="close">Schließen</button></div></div>';
+    document.body.appendChild(ov);
+    const q = (s) => ov.querySelector(s), st = q('.wstatus');
+    const say = (m, bad) => { st.textContent = m; st.classList.toggle('bad', !!bad); };
+    q('[data-m="close"]').onclick = () => ov.remove();
+    let busy = false;
+    q('[data-m="send"]').onclick = async () => {
+      if (busy) return;
+      const text = clean(q('.wtext').value, TEXT_MAX);
+      if (!text) { say('Bitte zuerst etwas schreiben.', true); return; }
+      const wish = { text, ziel: q('.wziel').value, kosten: q('.wcost').value === '' ? '' : Math.max(0, Math.min(9, Math.round(+q('.wcost').value || 0))), name: clean(q('.wname').value, 60), seltenheit: q('.wrar').value, kategorie: q('.wcat').value };
+      sticky.set('ziel', wish.ziel); sticky.set('rar', wish.seltenheit); sticky.set('cat', wish.kategorie);
+      busy = true; say('Wird gespeichert …');
+      try { await save(wish); say('Gespeichert – die Karte wird gebaut und kommt von selbst.'); q('.wtext').value = ''; }
+      catch (e) { say('Nicht gespeichert: ' + String(e.message || e).slice(0, 120), true); }
+      busy = false;
+    };
+    q('.wtext').focus();
+  }
+
+  function init() {
+    if (HB.isPublic()) return;
+    const host = $('#devwin .hbtns');
+    if (host && !$('#btn-wish')) {
+      const b = document.createElement('button'); b.id = 'btn-wish'; b.type = 'button'; b.className = 'sec'; b.textContent = 'Karte wünschen';
+      b.title = 'Eine Karte diktieren – eine wartende Claude-Sitzung baut sie'; b.onclick = open; host.appendChild(b);
+    }
+    setTimeout(() => { if (mine.get().length) watch(); }, 1500); // offene Wünsche aus der letzten Sitzung weiter beobachten
+  }
+  HB.wishes = { open, save, watch, handle, validate, deliver, init };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })(window.HB);
 
