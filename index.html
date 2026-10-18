@@ -4548,6 +4548,11 @@ window.HB = window.HB || {};
       if (type === 'move_step' && data.from && data.to && data.kind !== 'push' && data.kind !== 'pull' && !H.eq(data.from, data.to)) {
         const u = this.unitById(data.unit); if (u) u.facing = H.dirTo(data.from, data.to);
       }
+      // Karte auf einen Gegner oder ein Feld gespielt: der Spieler wendet sich dem Ziel zu (nicht bei Karten auf sich selbst)
+      if (type === 'card_played' && this.player) {
+        const p = this.player, e = data.target != null ? this.enemies.find((x) => x.uid === data.target) : null, to = e ? e.pos : data.hex;
+        if (to && p.pos && !H.eq(p.pos, to)) p.facing = H.dirTo(p.pos, to);
+      }
       const ev = { n: ++this.eventSeq, turn: this.turn, type, ...data };
       this.events.push(ev);
       if (this.events.length > 500) this.events.shift();
@@ -9042,10 +9047,9 @@ window.HB = window.HB || {};
           const n = def.warn.sum ? hits.reduce((m, f) => m + def.warn.sum(f), 0) : 0;
           return def.warn.sum && !n ? '' : def.warn.text(n);
         }).join('');
-        const costTxt = cost ? ` (−${cost} Energie)` : '';
-        const used = custom ? custom.cost : reach.dist.get(H.key(h));
-        const corpseTxt = path.slice(1).some((p) => this.corpseAt(p)) ? ' · über Leiche (+1)' : '';
-        return { ok: true, action: 'move', path, customRoute: !!custom, threat: t, traps: traps.length, text: `Bewegen ${used}/${mv}${custom ? ' · eigener Weg' : ''}${costTxt}${corpseTxt}${trapWarn}${fieldWarn}${warn}` };
+        // Hinweis beim Laufen nur, wenn er dem Spieler etwas sagt (Falle, Bodenfeld, Treffer) – keine Zähler/Energie-Technik
+        const text = `${trapWarn}${fieldWarn}${warn}`.replace(/^ · /, '');
+        return { ok: true, action: 'move', path, customRoute: !!custom, threat: t, traps: traps.length, text };
       }
       const energyOk = this.player.energy >= (d.cost || 0);
       if (this.jumpCard(card)) {
