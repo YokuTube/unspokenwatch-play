@@ -1711,6 +1711,14 @@ body[data-editorfull="1"] #editor .tabbody { max-width: none; }
 #editor .clssearch { width: 100%; margin: 4px 0 6px; }
 .classtbl tr[hidden] { display: none; }
 
+/* Relikte: nur der Name, rechts neben den Stapeln (Ablage/Erschöpft); Maus drüber = Wirkung */
+#hud .hud-piles .relicbar { grid-column: auto; border-top: 0; padding: 0; flex-direction: column; align-items: flex-start; gap: 3px; max-width: 210px; align-self: center; }
+#hud .hud-piles .relic { font-size: 12px; font-family: var(--display); padding: 2px 8px; white-space: nowrap; }
+/* Mit Relikten rechts neben den Stapeln braucht die rechte Gruppe mehr Platz: an den rechten Rand */
+@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) {
+  #hud .hud-right:has(.relicbar) { left: auto !important; right: 10px; }
+}
+
 </style>
 </head>
 <body data-mode="setup" data-public="1">
@@ -5211,12 +5219,20 @@ window.HB = window.HB || {};
     "status.reach.label": "Reichweite",
     "status.reach.info": "Alle Angriffe +{n} Reichweite (Einzelschläge, Länge und Radius von Flächenangriffen), bis Kampfende.",
     "status.reach.fx": "+{n} Reichweite",
+    "card.poison.radius": "{n} Gift an alle Gegner im Radius {r}",
+    "relic.venomchill.text": "Vergiftest du einen Gegner, wird er um genauso viele Stapel verlangsamt ({t} Züge).",
+    "relic.venomchill.fixed": "Vergiftest du einen Gegner, wird er um {s} Stapel verlangsamt ({t} Züge).",
+    "name:Lähmendes Gift": "Lähmendes Gift",
     "stall.spawn": "Flaute: Ein {name} stößt dazu.",
   });
   HB.addStrings('en', {
     "status.reach.label": "Reach",
     "status.reach.info": "All attacks gain +{n} range (single strikes, length and radius of area attacks) until the end of combat.",
     "status.reach.fx": "+{n} Reach",
+    "card.poison.radius": "{n} poison to all enemies within radius {r}",
+    "relic.venomchill.text": "When you poison an enemy, it is slowed by the same number of stacks ({t} turns).",
+    "relic.venomchill.fixed": "When you poison an enemy, it is slowed by {s} stacks ({t} turns).",
+    "name:Lähmendes Gift": "Paralytic Venom",
     "stall.spawn": "Lull: A {name} joins the fight.",
   });
 })(window.HB);
@@ -7335,7 +7351,10 @@ window.HB = window.HB || {};
   HB.CARD_EFFECTS = {
     damage: { label: 'Schaden', icon: 'sword', preview: (g, sim, e) => { if (sim.enemy) sim.hp -= HB.attackDamage(g, g.player, e.amount) * (e.hits || 1); }, params: [['amount', 'Schaden', 6], ['hits', 'Treffer', 1]],
       badge: (e) => ((e.hits || 1) > 1 ? `${e.amount}×${e.hits}` : e.amount), text: (e) => HB.dmgText(e.amount, e.hits) },
-    poison: { label: 'Gift', icon: 'poison', params: [['amount', 'Gift', 4]], text: (e) => t('card.poison', { n: e.amount }) },
+    // radius > 0: alle Feinde im Umkreis um das Ziel (auf dich gespielt: um dich) – „Giftnova“; Wirkung: unitCardEffect (handlers.js, UNIT_EFFECTS.poison.radius)
+    poison: { label: 'Gift', icon: 'poison', params: [['amount', 'Gift', 4], ['radius', 'Radius (0 = nur Ziel)', 0]],
+      area: (g, e, tt) => (e.radius > 0 ? radiusTiles(g, tt, e.radius) : []),
+      text: (e) => (e.radius > 0 ? t('card.poison.radius', { n: e.amount, r: e.radius }) : t('card.poison', { n: e.amount })) },
     // Richtung immer selbst wählen (Wunsch des Nutzers): auf/über den Gegner ziehen, dann eine der Richtungen weg von dir anklicken (Game.evaluateGrab)
     push: { label: 'Push', icon: 'push', preview: forcePreview(true), grab: () => 'push',
       params: [['amount', 'Felder', 1]],
@@ -11887,6 +11906,14 @@ window.HB = window.HB || {};
     amulet: { label: 'Schutzamulett', icon: 'block', params: [['amount', 'Block', 3]],
       text: (v) => HB.t('relic.amulet.text', { n: v.amount }),
       onTurnStart(g, p, v) { HB.addStatus(g, p, 'block', v.amount); } },
+    // Lähmendes Gift: vergiftest du einen Gegner, bekommt er genauso viele Stapel Verlangsamung (−Bewegung) für einige Züge (Haken onPoison, handlers.js poison.add)
+    venomchill: { label: 'Lähmendes Gift', icon: 'slow', params: [['stacks', 'Stapel je Vergiftung (0 = so viele wie Gift)', 0], ['turns', 'Züge', 2]],
+      text: (v) => (v.stacks > 0 ? HB.t('relic.venomchill.fixed', { s: v.stacks, t: v.turns }) : HB.t('relic.venomchill.text', { t: v.turns })),
+      onPoison(g, p, v, ctx) {
+        const e = ctx.enemy, had = e.slow, n = v.stacks > 0 ? v.stacks : ctx.amount;
+        if (!e || !(n > 0) || (had && had.root)) return;
+        HB.addStatus(g, e, 'slow', { amount: Math.max(n, had ? had.amount : 0), turns: Math.max(v.turns, had ? had.turns : 0) });
+      } },
     fang: { label: 'Blutdurst', icon: 'skull', params: [['amount', 'Heilung', 3]],
       text: (v) => HB.t('relic.fang.text', { n: v.amount }),
       onKill(g, p, v) { const before = p.hp; p.hp = Math.min(p.maxHp, p.hp + v.amount); if (p.hp > before) { g.fx(p.pos, `+${p.hp - before}`, 'heal'); g.log(HB.t('relic.fang.log', { unit: g.unitName(p), n: p.hp - before, label: HB.RELICS.fang.label })); } } },
@@ -12765,7 +12792,11 @@ window.HB = window.HB || {};
       value: (u) => (u.poison > 0 ? u.poison : null),
       info: (u, g) => HB.t('status.poison.info', { n: u.poison, d: rule(g, 'poisonDecay', 1), swamp: g.swampAt && g.swampAt(u.pos) ? HB.t('status.poison.swamp') : '' }),
       // p.fx = Art der Zahl-Einblendung (Standard 'poison'; Seuche: 'plague')
-      add(g, u, n, p = {}) { u.poison = (u.poison || 0) + n; g.fx(u.pos, `+${n}`, p.fx || 'poison'); },
+      add(g, u, n, p = {}) {
+        u.poison = (u.poison || 0) + n; g.fx(u.pos, `+${n}`, p.fx || 'poison');
+        // Relikte des Spielers („wenn du einen Gegner vergiftest …“); Seuchen-Sprung zählt nicht als neues Vergiften
+        if (!u.isPlayer && g.player && p.fx !== 'plague') HB.relicHook(g, g.player, 'onPoison', { enemy: u, amount: n });
+      },
       bad: (u) => (u.poison > 0 ? 1 + u.poison / 10 : 0), gone: (u) => HB.t('status.poison.gone', { n: u.poison }), clear(u) { u.poison = 0; },
       onTurnStart(g, u) { return HB.STATUSES.poison.tick(g, u); },
       // Gift tickt einmal: Schaden (außer Schonfrist), dann Abbau. Ist der Träger seuchenkrank, springt die Seuche dabei weiter.
@@ -13110,7 +13141,7 @@ window.HB = window.HB || {};
       apply(g, u, e, src) { if (HB.attackMisses(src)) { src.missedAttack = true; g.fx(u.pos, HB.t('eff.damage.miss'), 'miss'); return HB.t('eff.damage.missDisarmed'); } const n = HB.attackDamage(g, src, e.amount); g.strike(u, n, e.hits, src); return HB.dmgText(n, e.hits); },
       // trifft auch zerstörbare Objekte (HB.OBJECT_TYPES)
       object(g, o, e, src) { const n = HB.attackDamage(g, src, e.amount); for (let k = 0; k < (e.hits || 1) && g.objects.includes(o); k++) g.hitObject(o, n, src); return HB.t('eff.damage.object', { dmg: HB.dmgText(n, e.hits), obj: (HB.OBJECT_TYPES[o.type] || {}).label || HB.t('obj.default') }); } },
-    poison: { status: 'poison', label: HB.t('eff.poison.label'), icon: 'poison', params: [['amount', 'Gift', 4]], text: (e) => HB.t('eff.poison.text', { n: e.amount }),
+    poison: { status: 'poison', label: HB.t('eff.poison.label'), icon: 'poison', radius: true, params: [['amount', 'Gift', 4]], text: (e) => HB.t('eff.poison.text', { n: e.amount }),
       apply(g, u, e) { HB.addStatus(g, u, 'poison', e.amount); return HB.t('eff.poison.text', { n: e.amount }); } },
     slow: { status: 'slow', label: HB.t('eff.slow.label'), icon: 'slow', params: [['amount', '−Bewegung', 1], ['duration', 'Züge', 2]], text: (e) => HB.t('eff.slow.text', { a: e.amount, d: e.duration }),
       apply(g, u, e) { HB.addStatus(g, u, 'slow', { amount: e.amount, turns: e.duration }); return HB.t('eff.slow.apply', { a: e.amount, d: e.duration }); } },
@@ -19520,10 +19551,9 @@ window.HB = window.HB || {};
         + `<span class="stat hand" title="${HB.t('hud.hand')}">${I.icon('deck')}${g.hand.length}/${g.handLimit()}</span>`
         + pileHtml('drawPile', HB.t('pile.draw'), g.drawPile.length)
         + `<span class="stat turn">${HB.t('hud.round', { n: g.turn })}</span>`
-        + relicBarHtml(p)
         + (handChoice() ? `<span class="stat pickhint">${I.icon(HB.CHOICES[handChoice().type].icon)} ${HB.CHOICES[handChoice().type].prompt(handChoice())}</span>` : '')
         + `</div><span class="grow"></span>`
-        + `<div class="hud-right"><button id="btn-end" ${g.phase !== 'player' || g.busy || p.ended || p.hp <= 0 ? 'disabled' : ''}>${p.ended && g.phase === 'player' && p.hp > 0 ? HB.t('hud.waiting') : HB.t('hud.endturn') + ' <kbd>E</kbd>'}</button><div class="hud-piles">${pileHtml('discard', HB.t('pile.discard'), g.discard.length, Date.now() - (app.pulseDiscard || 0) < 1500)}${pileHtml('exhausted', HB.t('pile.exhausted'), g.exhausted.length)}</div></div>`;
+        + `<div class="hud-right"><button id="btn-end" ${g.phase !== 'player' || g.busy || p.ended || p.hp <= 0 ? 'disabled' : ''}>${p.ended && g.phase === 'player' && p.hp > 0 ? HB.t('hud.waiting') : HB.t('hud.endturn') + ' <kbd>E</kbd>'}</button><div class="hud-piles">${pileHtml('discard', HB.t('pile.discard'), g.discard.length, Date.now() - (app.pulseDiscard || 0) < 1500)}${pileHtml('exhausted', HB.t('pile.exhausted'), g.exhausted.length)}${relicBarHtml(p)}</div></div>`;
       $('#btn-end').onclick = () => g.apply({ type: 'endTurn', player: p.id });
       if (hud.querySelector('.hudtools')) {
         const live = (fn) => () => { if (!app.canEditLive()) return; fn(); g.changed(); };
@@ -19641,8 +19671,9 @@ window.HB = window.HB || {};
   function relicBarHtml(p) {
     const counts = new Map();
     (p.relics || []).forEach((id) => counts.set(id, (counts.get(id) || 0) + 1));
-    const chips = [...counts].map(([id, n]) => `<span class="relic" data-relic="${HB.esc(id)}">${I.icon((HB.RELICS[id] || {}).icon || 'relic')}${n > 1 ? `<b>×${n}</b>` : ''}</span>`).join('');
-    return `<div class="relicbar" title="${HB.t('relic.bar')}"><span class="rlbl">${I.icon('relic')} ${HB.t('relic.label')}</span>${chips || `<span class="rnone">${HB.t('relic.none')}</span>`}</div>`;
+    // nur der Name (Maus drüber = Wirkung, Klick = festhalten); steht rechts neben den Stapeln
+    const chips = [...counts].map(([id, n]) => `<span class="relic" data-relic="${HB.esc(id)}">${HB.esc(HB.tn((HB.RELICS[id] || {}).label || id))}${n > 1 ? `<b>×${n}</b>` : ''}</span>`).join('');
+    return chips ? `<div class="relicbar" title="${HB.t('relic.bar')}">${chips}</div>` : '';
   }
   let relicTip = null;
   function hideRelicTip() { if (relicTip) { relicTip.remove(); relicTip = null; } }
