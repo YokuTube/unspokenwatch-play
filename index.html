@@ -1775,6 +1775,128 @@ body[data-kill="1"] #board { cursor: crosshair; }
   <script src="https://cdn.jsdelivr.net/npm/pixi.js@8.6.6/dist/pixi.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script>
+// Übersetzung: alles, was der Spieler liest, steht in Tabellen (Schlüssel -> Text je Sprache). Neue Texte NUR über HB.t.
+// Tabellen liegen in js/lang-*.js (je Bereich eine Datei, beide Sprachen nebeneinander) und füllen sich mit HB.addStrings(sprache, {...}).
+// Text mit Platzhaltern: 'Fängt {n} Schaden ab' -> HB.t('status.block.info', { n: 3 }).
+// Plural: Wert als Objekt { one, other } (optional zero, few …) -> Zahl aus params.n (oder drittes Argument count).
+// Ein Wert kann auch eine Funktion (params) => Text sein, wenn ein Satz sich nicht als Vorlage schreiben lässt.
+// Fehlt ein Schlüssel in der Sprache: Rückfall auf Deutsch, dann auf den Schlüssel selbst (sichtbar als Lücke).
+window.HB = window.HB || {};
+(function (HB) {
+  const LANGS = { de: 'Deutsch', en: 'English' };
+  const tables = { de: {}, en: {} };
+  const KEY = 'hexdb.lang';
+  let lang = 'de';
+  try {
+    const saved = localStorage.getItem(KEY);
+    if (saved && LANGS[saved]) lang = saved;
+    else lang = /^de/i.test(navigator.language || 'de') ? 'de' : 'en';
+  } catch (e) { /* ohne Speicher: Deutsch */ }
+  const pick = (v, params, count) => {
+    if (typeof v === 'function') return v(params || {});
+    if (v && typeof v === 'object') {
+      const n = count !== undefined ? count : params && params.n;
+      const form = n === 0 && v.zero !== undefined ? 'zero' : (n === 1 ? 'one' : 'other');
+      return v[form] !== undefined ? v[form] : v.other;
+    }
+    return v;
+  };
+  const fill = (s, params) => (params ? String(s).replace(/\{(\w+)\}/g, (m, k) => (params[k] !== undefined ? params[k] : m)) : s);
+  HB.i18n = {
+    LANGS, tables,
+    get lang() { return lang; },
+    // Sprache wechseln: speichern + Seite neu laden (alle Texte werden beim Aufbau gesetzt)
+    setLang(l, reload = true) {
+      if (!LANGS[l]) return;
+      try { localStorage.setItem(KEY, l); } catch (e) { /* egal */ }
+      lang = l;
+      if (reload && typeof location !== 'undefined') location.reload();
+    },
+    has: (key, l = lang) => tables[l] && tables[l][key] !== undefined,
+    // Schlüssel, die in einer Sprache fehlen (für den Prüftest)
+    missing(l = 'en') { return Object.keys(tables.de).filter((k) => tables[l][k] === undefined); },
+  };
+  HB.addStrings = (l, obj) => { tables[l] = Object.assign(tables[l] || {}, obj); };
+  HB.t = (key, params, count) => {
+    let v = tables[lang][key];
+    if (v === undefined) v = tables.de[key];
+    if (v === undefined) return key;
+    return fill(pick(v, params, count), params);
+  };
+  // Name aus den Standardinhalten (Gegner, Karten, Relikte …) übersetzen. Eigene Namen des Nutzers haben keinen Eintrag und bleiben, wie eingegeben.
+  HB.tn = (name) => {
+    if (name === undefined || name === null) return name;
+    const k = 'name:' + name;
+    const v = tables[lang][k];
+    return v !== undefined ? v : name;
+  };
+  // Statisches HTML: data-i18n="schluessel" (Text), data-i18n-title / data-i18n-placeholder (Attribute)
+  HB.applyI18n = (root) => {
+    (root || document).querySelectorAll('[data-i18n],[data-i18n-title],[data-i18n-placeholder]').forEach((el) => {
+      if (el.dataset.i18n) el.textContent = HB.t(el.dataset.i18n);
+      if (el.dataset.i18nTitle) el.title = HB.t(el.dataset.i18nTitle);
+      if (el.dataset.i18nPlaceholder) el.placeholder = HB.t(el.dataset.i18nPlaceholder);
+    });
+  };
+})(window.HB);
+
+</script>
+  <script>
+// Übersetzungstabelle (ui): Schlüssel -> Text, deutsch + englisch. Mechanismus: js/i18n.js
+window.HB = window.HB || {};
+(function (HB) {
+  HB.addStrings('de', {
+  });
+  HB.addStrings('en', {
+  });
+})(window.HB);
+
+</script>
+  <script>
+// Übersetzungstabelle (cards): Schlüssel -> Text, deutsch + englisch. Mechanismus: js/i18n.js
+window.HB = window.HB || {};
+(function (HB) {
+  HB.addStrings('de', {
+  });
+  HB.addStrings('en', {
+  });
+})(window.HB);
+
+</script>
+  <script>
+// Übersetzungstabelle (game): Schlüssel -> Text, deutsch + englisch. Mechanismus: js/i18n.js
+window.HB = window.HB || {};
+(function (HB) {
+  HB.addStrings('de', {
+  });
+  HB.addStrings('en', {
+  });
+})(window.HB);
+
+</script>
+  <script>
+// Übersetzungstabelle (world): Schlüssel -> Text, deutsch + englisch. Mechanismus: js/i18n.js
+window.HB = window.HB || {};
+(function (HB) {
+  HB.addStrings('de', {
+  });
+  HB.addStrings('en', {
+  });
+})(window.HB);
+
+</script>
+  <script>
+// Übersetzungstabelle (crypt): Schlüssel -> Text, deutsch + englisch. Mechanismus: js/i18n.js
+window.HB = window.HB || {};
+(function (HB) {
+  HB.addStrings('de', {
+  });
+  HB.addStrings('en', {
+  });
+})(window.HB);
+
+</script>
+  <script>
 // Hex-Mathematik: pointy-top, Axial-Koordinaten {q, r}. Brett als "odd-r"-Offsetraster.
 window.HB = window.HB || {};
 (function (HB) {
@@ -2875,22 +2997,22 @@ window.HB = window.HB || {};
   const marketRange = (g) => (g.cfg.market || {}).spawnRange || 0;
   HB.PLACES = {
     market: {
-      label: 'Markt', appear: 'Ein Markt ist erschienen!', icon: 'market', cls: 'market', infoCls: 'market', hint: 'Markt: hinlaufen und eine Karte wählen',
-      info: (g) => `Stell dich drauf: ${(g.cfg.market || {}).offer || 6} Karten zur Auswahl, eine nehmen${(g.cfg.market || {}).allowRemove ? ' und eine aus dem Deck entfernen' : ''}. Nutzt du Markt oder Heiler, verschwinden beide.`,
+      label: HB.t('place.market.label'), appear: HB.t('place.market.appear'), icon: 'market', cls: 'market', infoCls: 'market', hint: HB.t('place.market.hint'),
+      info: (g) => HB.t((g.cfg.market || {}).allowRemove ? 'place.market.info.remove' : 'place.market.info', { n: (g.cfg.market || {}).offer || 6 }),
       module: 'market', chance: (g) => (g.cfg.market || {}).chance ?? 100, range: marketRange, exclusive: true, event: 'market_open',
       use(g) {
         const n = (g.cfg.market && g.cfg.market.offer) || 6;
         const offer = g.poolOffer(n, 'market');
         g.marketOffer = offer; g.marketPicked = false; g.marketRemoved = false; g.marketExtraTaken = false;
-        g.log('Markt: eine Karte nehmen und/oder eine Karte aus dem Deck verbannen.');
-        if (!offer.length) g.notice('Markt: keine Karten im Pool (im Karteneditor „Markt“ anhaken)', 'wave');
+        g.log(HB.t('place.market.log'));
+        if (!offer.length) g.notice(HB.t('place.market.nopool'), 'wave');
       },
       // verbannte Karten bleiben, bis alle Marktfenster zu sind (closeMarket)
       onGone(g) { if (!g.players.some((q) => q.marketOffer)) g.marketBanished = []; },
     },
     healer: {
-      label: 'Heiler', appear: 'Ein Heiler ist erschienen!', icon: 'heal', cls: 'healer', infoCls: 'heal', hint: 'Heiler: hinlaufen und Leben auffüllen',
-      info: (g) => `Stell dich drauf: heilt ${(g.cfg.healer || {}).percent || 30} % deiner Max-Leben. Nutzt du Heiler oder Markt, verschwinden beide.`,
+      label: HB.t('place.healer.label'), appear: HB.t('place.healer.appear'), icon: 'heal', cls: 'healer', infoCls: 'heal', hint: HB.t('place.healer.hint'),
+      info: (g) => HB.t('place.healer.info', { n: (g.cfg.healer || {}).percent || 30 }),
       module: 'healer', chance: (g) => (g.cfg.healer || {}).chance ?? 50, range: marketRange, exclusive: true, event: 'healer_used',
       use(g, p) {
         const multi = g.players.length > 1;
@@ -2899,8 +3021,8 @@ window.HB = window.HB || {};
         const before = p.hp;
         p.hp = Math.min(p.maxHp, p.hp + amount);
         g.fx(p.pos, `+${p.hp - before}`, 'heal');
-        g.notice(multi ? `Heiler: ${g.unitName(p)} +${p.hp - before} Leben` : `Heiler: +${p.hp - before} Leben`, 'heal');
-        g.log(multi ? `Heiler: ${g.unitName(p)} heilt ${p.hp - before} Leben.` : `Heiler: du heilst ${p.hp - before} Leben.`);
+        g.notice(HB.t(multi ? 'place.healer.notice.multi' : 'place.healer.notice', { name: g.unitName(p), n: p.hp - before }), 'heal');
+        g.log(HB.t(multi ? 'place.healer.log.multi' : 'place.healer.log', { name: g.unitName(p), n: p.hp - before }));
         g.endFreeMove(p);
       },
     },
@@ -6423,7 +6545,7 @@ window.HB = window.HB || {};
   HB.goldPay = (g, p, n) => {
     if (!n) return true;
     const have = HB.goldOf(g, p);
-    if (have < n) { g.notice(`Zu wenig Gold (${have}/${n})`, 'wave'); return false; }
+    if (have < n) { g.notice(HB.t('gold.toolittle', { have, n }), 'wave'); return false; }
     HB.goldAdd(g, p, -n);
     return true;
   };
@@ -6431,7 +6553,7 @@ window.HB = window.HB || {};
     if (!n) return;
     p.gold = Math.max(0, HB.goldOf(g, p) + n);
     g.emit('gold_changed', { unit: p.id, amount: n, gold: p.gold });
-    if (n > 0) g.fx(p.pos, `+${n} Gold`, 'gold');
+    if (n > 0) g.fx(p.pos, HB.t('gold.fx', { n }), 'gold');
   };
 
   HB.moduleHooks('gold', {
@@ -6440,7 +6562,7 @@ window.HB = window.HB || {};
       if (ev.type === 'wave_cleared' || ev.type === 'route_open') {
         const n = HB.goldCfg(g.cfg).win;
         for (const p of g.livePlayers) HB.goldAdd(g, p, n);
-        if (n) g.log(`Gold: +${n} für jeden Spieler.`);
+        if (n) g.log(HB.t('gold.log', { n }));
       }
     },
   });
@@ -6471,8 +6593,8 @@ window.HB = window.HB || {};
       g.calmTurns = 0;
       const s = rule(g, 'stallStrength', 1), r = rule(g, 'stallRush', 1);
       for (const e of foes) { if (s > 0) HB.addStatus(g, e, 'strength', s); if (r > 0) HB.addStatus(g, e, 'rush', r); }
-      g.log(`Flaute: ${rule(g, 'stallRounds', 3)} Runden ohne Schaden an Gegnern – alle Gegner bekommen +${s} Kraft und +${r} Hast.`);
-      g.notice('Die Gegner werden stärker und schneller', 'stun');
+      g.log(HB.t('stall.log', { n: rule(g, 'stallRounds', 3), s, r }));
+      g.notice(HB.t('stall.notice'), 'stun');
     },
   });
 })(window.HB);
@@ -8370,31 +8492,35 @@ window.HB = window.HB || {};
   HB.CRYPT_EFFECTS = {
     nothing: { apply() {} },
     say: { apply() {} }, // UW-Textschlüssel (Stimme, Meister) – die Texte gibt es hier noch nicht
-    damage: { ok: (e) => e.n > 0, apply(g, p, e, ctx) { const b = p.hp; p.hp = Math.max(1, p.hp - e.n); g.fx(p.pos, `-${b - p.hp}`, 'hit'); ctx.lines.push(`−${b - p.hp} Leben`); } },
-    heal: { ok: (e) => e.n > 0, apply(g, p, e, ctx) { const b = p.hp; p.hp = Math.min(p.maxHp, p.hp + e.n); g.fx(p.pos, `+${p.hp - b}`, 'heal'); ctx.lines.push(`+${p.hp - b} Leben`); } },
+    damage: { ok: (e) => e.n > 0, apply(g, p, e, ctx) { const b = p.hp; p.hp = Math.max(1, p.hp - e.n); g.fx(p.pos, `-${b - p.hp}`, 'hit'); ctx.lines.push(HB.t('crypt.fx.damage', { n: b - p.hp })); } },
+    heal: { ok: (e) => e.n > 0, apply(g, p, e, ctx) { const b = p.hp; p.hp = Math.min(p.maxHp, p.hp + e.n); g.fx(p.pos, `+${p.hp - b}`, 'heal'); ctx.lines.push(HB.t('crypt.fx.heal', { n: p.hp - b })); } },
     max_hp: { ok: (e) => e.n !== 0, apply(g, p, e, ctx) {
       p.maxHp = Math.max(1, p.maxHp + e.n); if (e.n > 0) p.hp += e.n; p.hp = Math.min(p.hp, p.maxHp);
-      ctx.lines.push(`Max-Leben ${e.n > 0 ? '+' : '−'}${Math.abs(e.n)}`);
+      ctx.lines.push(HB.t('crypt.fx.maxhp', { sign: e.n > 0 ? '+' : '−', n: Math.abs(e.n) }));
     } },
     // Kartenwahl aus dem Draft-Pool (Neigung lenkt mit, falls an); Zusätze wie :rare/:mark gibt es hier nicht → normale Wahl
     card_draft: { apply(g, p, e, ctx) {
       const offer = g.as(p, () => g.poolOffer(Math.max(1, e.n || 3), 'draft'));
-      if (offer.length) { p.draftOffer = offer; ctx.lines.push(`Kartenwahl: ${offer.length} Karten`); }
+      if (offer.length) { p.draftOffer = offer; ctx.lines.push(HB.t('crypt.fx.draft', { n: offer.length })); }
     } },
     combat: { ok: (e) => !!COMBAT_STATUS[e.arg] && e.n > 0, apply(g, p, e, ctx) {
       (p.cryptEventNext = p.cryptEventNext || []).push({ status: COMBAT_STATUS[e.arg], n: e.n });
-      ctx.lines.push(`Nächster Kampf: ${statusLabel(COMBAT_STATUS[e.arg])} +${e.n}`);
+      ctx.lines.push(HB.t('crypt.fx.combat', { status: statusLabel(COMBAT_STATUS[e.arg]), n: e.n }));
     } },
     next: { ok: (e, seen, cfg) => usable(e.arg, cfg, seen), apply(g, p, e, ctx) { ctx.next = e.arg; } },
     // Gold (nur mit Modul Gold): Abgeben braucht genug Gold
     gold: { ok: (e, seen, cfg) => HB.goldOn(cfg) && e.n !== 0, can: (g, p, e) => e.n > 0 || HB.goldOf(g, p) >= -e.n,
-      apply(g, p, e, ctx) { HB.goldAdd(g, p, e.n); ctx.lines.push(`${e.n > 0 ? '+' : '−'}${Math.abs(e.n)} Gold`); } },
+      apply(g, p, e, ctx) { HB.goldAdd(g, p, e.n); ctx.lines.push(HB.t('crypt.fx.gold', { sign: e.n > 0 ? '+' : '−', n: Math.abs(e.n) })); } },
     // Karten aus dem eigenen Deck wählen (Kartenwahl HB.CHOICES 'bury' / 'copy' / 'transform', handlers.js); Zusätze wie :mark gibt es hier nicht
-    card_bury: { apply(g, p, e, ctx) { const k = g.as(p, () => g.addChoice('bury', Math.max(1, e.n || 1))); if (k) ctx.lines.push(`${k} ${k === 1 ? 'Karte' : 'Karten'} begraben`); } },
-    card_copy: { apply(g, p, e, ctx) { if (g.as(p, () => g.addChoice('copy', 1))) ctx.lines.push('Eine Karte kopieren'); } },
-    card_transform: { apply(g, p, e, ctx) { if (g.as(p, () => g.addChoice('transform', 1))) ctx.lines.push('Eine Karte umwandeln'); } },
+    card_bury: { apply(g, p, e, ctx) { const k = g.as(p, () => g.addChoice('bury', Math.max(1, e.n || 1))); if (k) ctx.lines.push(HB.t('crypt.fx.bury', { n: k })); } },
+    card_copy: { apply(g, p, e, ctx) { if (g.as(p, () => g.addChoice('copy', 1))) ctx.lines.push(HB.t('crypt.fx.copy')); } },
+    card_transform: { apply(g, p, e, ctx) { if (g.as(p, () => g.addChoice('transform', 1))) ctx.lines.push(HB.t('crypt.fx.transform')); } },
   };
 
+  // Texte eines Ereignisses aus der Übersetzungstabelle (js/lang-crypt.js); ohne Eintrag (z. B. Test-Ereignisse) der Text im Ereignis selbst
+  const evTitle = (ev) => (HB.i18n.has('crypt.' + ev.id + '.title', 'de') ? HB.t('crypt.' + ev.id + '.title') : ev.title);
+  const evText = (ev) => (HB.i18n.has('crypt.' + ev.id + '.text', 'de') ? HB.t('crypt.' + ev.id + '.text') : ev.text);
+  const optText = (ev, i) => (HB.i18n.has('crypt.' + ev.id + '.o' + i, 'de') ? HB.t('crypt.' + ev.id + '.o' + i) : ev.opts[i].text);
   const byId = (id) => (HB.CRYPT_EVENTS || []).find((x) => x.id === id);
   function effOk(str, seen, cfg) {
     return parts(str).every((e) => { const d = HB.CRYPT_EFFECTS[e.word]; return !!d && (!d.ok || d.ok(e, seen, cfg)); });
@@ -8421,13 +8547,13 @@ window.HB = window.HB || {};
     const ev = byId(id);
     p.cryptEvent = { id, result: null };
     if (ev.auto) { const ctx = { lines: [] }; runEffects(g, p, ev.auto, ctx); p.cryptEvent.auto = ctx.lines; }
-    g.log(`Krypta: ${ev.title}.`);
+    g.log(HB.t('crypt.log.enter', { title: evTitle(ev) }));
   }
   // Ort betreten: zufälliges Start-Ereignis (Gewicht), das in diesem Lauf noch nicht kam (außer „wiederholbar“)
   function begin(g, p) {
     const seen = g.cryptSeen || [];
     const list = HB.cryptStartEvents(g.cfg).filter((ev) => ev.repeat || !seen.includes(ev.id));
-    if (!list.length) { g.notice('Die Krypta schweigt.', 'wave'); g.log('Krypta: kein Ereignis mehr übrig.'); g.endFreeMove(p); return; }
+    if (!list.length) { g.notice(HB.t('crypt.silent'), 'wave'); g.log(HB.t('crypt.log.none')); g.endFreeMove(p); return; }
     const sum = list.reduce((a, ev) => a + (ev.weight || 1), 0);
     let r = Math.random() * sum, ev = list[list.length - 1];
     for (const x of list) { r -= x.weight || 1; if (r < 0) { ev = x; break; } }
@@ -8443,8 +8569,8 @@ window.HB = window.HB || {};
     const ctx = { lines: [] };
     runEffects(g, p, okRoll ? opt.o.ok : opt.o.fail, ctx);
     g.emit('crypt_choice', { event: ev.id, option: i, ok: okRoll, by: p.id });
-    g.log(`Krypta: ${opt.o.text} – ${okRoll ? 'gelingt' : 'misslingt'}${ctx.lines.length ? ` (${ctx.lines.join(', ')})` : ''}.`);
-    p.cryptEvent.result = { choice: opt.o.text, ok: okRoll, chance: opt.o.chance, lines: ctx.lines, next: ctx.next || null };
+    g.log(HB.t('crypt.log.pick', { text: optText(ev, i), res: HB.t(okRoll ? 'crypt.ok' : 'crypt.fail'), lines: ctx.lines.length ? ` (${ctx.lines.join(', ')})` : '' }));
+    p.cryptEvent.result = { choice: optText(ev, i), ok: okRoll, chance: opt.o.chance, lines: ctx.lines, next: ctx.next || null };
   }
   function done(g, p) {
     const c = p.cryptEvent, ev = c && byId(c.id);
@@ -8456,8 +8582,8 @@ window.HB = window.HB || {};
   }
 
   HB.PLACES.crypt = {
-    label: 'Krypta', appear: 'Eine Krypta hat sich geöffnet!', icon: 'skull', cls: 'crypt', infoCls: 'crypt', hint: 'Krypta: hinlaufen, ein Ereignis erwartet dich',
-    info: () => 'Stell dich drauf: ein Krypta-Ereignis mit einer Wahl. Jeder Spieler erlebt sein eigenes.',
+    label: HB.t('crypt.place.label'), appear: HB.t('crypt.place.appear'), icon: 'skull', cls: 'crypt', infoCls: 'crypt', hint: HB.t('crypt.place.hint'),
+    info: () => HB.t('crypt.place.info'),
     module: 'crypt', chance: (g) => cryptCfg(g.cfg).chance, event: 'crypt_open',
     use(g, p) { begin(g, p); },
   };
@@ -8488,13 +8614,13 @@ window.HB = window.HB || {};
       const intro = (c.auto && c.auto.length) ? [c.auto.join(', ')] : [];
       if (c.result) {
         const r = c.result;
-        return { sig: `crypt:${c.id}:res`, icon: 'skull', title: ev.title,
-          text: `${r.choice}${r.chance < 100 ? (r.ok ? ' – gelingt.' : ' – misslingt.') : '.'}`, lines: r.lines.length ? r.lines : ['Nichts geschieht.'],
-          options: [{ label: 'Weiter', cmd: { type: 'cryptDone' }, primary: true }] };
+        return { sig: `crypt:${c.id}:res`, icon: 'skull', title: evTitle(ev),
+          text: `${r.choice}${r.chance < 100 ? HB.t(r.ok ? 'crypt.res.ok' : 'crypt.res.fail') : '.'}`, lines: r.lines.length ? r.lines : [HB.t('crypt.nothing')],
+          options: [{ label: HB.t('crypt.next'), cmd: { type: 'cryptDone' }, primary: true }] };
       }
-      return { sig: `crypt:${c.id}:${HB.goldOf(g, p)}`, icon: 'skull', title: ev.title, text: ev.text, lines: intro,
+      return { sig: `crypt:${c.id}:${HB.goldOf(g, p)}`, icon: 'skull', title: evTitle(ev), text: evText(ev), lines: intro,
         options: HB.cryptOptions(ev, g.cfg).map(({ o, i }) => { const can = HB.cryptCan(g, p, o);
-          return { label: o.text, sub: !can ? 'zu wenig Gold' : o.chance < 100 ? `${o.chance} %` : '', disabled: !can, cmd: { type: 'cryptPick', option: i } }; }) };
+          return { label: optText(ev, i), sub: !can ? HB.t('crypt.nogold') : o.chance < 100 ? `${o.chance} %` : '', disabled: !can, cmd: { type: 'cryptPick', option: i } }; }) };
     },
   });
 })(window.HB);
@@ -13225,6 +13351,18 @@ window.HB = window.HB || {};
 
   HB.editor = { render, stairsTarget, linkStairs, goto(id) { tab = id; try { localStorage.setItem('hexdb.tab', id); } catch (e) { /* egal */ } render(); },
     // Karte direkt bearbeiten (Stift-Knopf an jeder Karte): Editor einblenden, Tab „Karten“/„Störkarten“, Filter weg, Karte aufklappen und hinscrollen
+    // Rechtsklick auf einen Gegner im Kampf (nur Testfassung): sein Typ im Gegner-/Boss-Tab, aufgeklappt
+    editEnemyType(typeId) {
+      const t = ((HB.app.config && HB.app.config.enemyTypes) || []).find((x) => x.id === typeId);
+      if (!t) { HB.app.toast('Dieser Gegnertyp steht nicht im Editor.'); return false; }
+      if (document.body.dataset.editor === 'hidden') document.querySelector('#btn-editor')?.click();
+      if (document.body.dataset.dev === 'closed') document.querySelector('#btn-dev')?.click();
+      Object.assign(enemyView, { q: '', f: 'all' });
+      openType = t.id;
+      HB.editor.goto(t.boss ? 'bosses' : 'enemies');
+      requestAnimationFrame(() => document.querySelector('#editor .etrow.open')?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
+      return true;
+    },
     editCard(ref) {
       const deck = (HB.app.config && HB.app.config.deck) || [];
       const i = deck.findIndex((d) => ref && ((ref.cid && d.cid === ref.cid) || (!ref.cid && d.name === ref.name)));
@@ -17040,6 +17178,11 @@ window.HB = window.HB || {};
       if (app.mode === 'setup') { if (PUBLIC || Date.now() - paintEnd < 400) return; const h = hexUnder(ev.clientX, ev.clientY); if (h) setupClick(h, 'erase'); return; } // Aufbau: Rechtsklick löscht (beim Malen schon erledigt)
       if (app.pick) { endPick(); return; }
       if (app.game && me().pendingMove) { app.game.apply({ type: 'cancelMove', player: me().id }); return; }
+      // Testfassung: Rechtsklick mit der Maus auf einen Gegner öffnet seinen Typ im Editor (nicht bei Touch-Langdruck)
+      if (!PUBLIC && app.game && ev.pointerType !== 'touch' && !drag) {
+        const hh = hexUnder(ev.clientX, ev.clientY), foe = hh && asMe(() => app.game.enemyAt(hh));
+        if (foe) { HB.editor.editEnemyType(foe.type); return; }
+      }
       // Rechtsklick auf ein eigenes Objekt (Wand, Puppe …): abreißen
       const h = hexUnder(ev.clientX, ev.clientY), o = h && app.game && asMe(() => app.game.objectAt(h));
       if (o && o.owner === me().id) app.game.apply({ type: 'destroyObject', player: me().id, hex: h });
