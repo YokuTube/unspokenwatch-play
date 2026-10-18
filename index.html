@@ -1378,25 +1378,25 @@ html { scrollbar-color: var(--iron-deep) var(--ink1); }
 * { scrollbar-color: var(--iron-deep) var(--ink1); }
 
 /* ---------- Knöpfe: kleine Steintafeln (9-Kachel), Zustände nur über das Licht auf derselben Kachel ---------- */
-.topbar button, #hud button, #hand button, #editor button, #orderctl button, #routebox button, #coopctl button, #toast button,
+.topbar button, #devwin button, #uwtools button, #hud button, #hand button, #editor button, #orderctl button, #routebox button, #coopctl button, #toast button,
 #classpick button, #fbwin button, .banner button, #relictip button, #pileview button {
   background: none; color: var(--text); font-weight: 700; border-radius: 0;
   border: solid transparent; border-width: 5px 6px 6px 6px; border-image: var(--stone) 7 8 8 8 fill / 5px 6px 6px 6px stretch;
   image-rendering: pixelated; text-shadow: 0 1px 0 rgba(0, 0, 0, .55); }
-.topbar button:hover:not(:disabled), #hud button:hover:not(:disabled), #hand button:hover:not(:disabled), #editor button:hover:not(:disabled),
+.topbar button:hover:not(:disabled), #devwin button:hover:not(:disabled), #uwtools button:hover:not(:disabled), #hud button:hover:not(:disabled), #hand button:hover:not(:disabled), #editor button:hover:not(:disabled),
 #orderctl button:hover:not(:disabled), #routebox button:hover:not(:disabled), #coopctl button:hover:not(:disabled), #classpick button:hover:not(:disabled),
 #fbwin button:hover:not(:disabled), .banner button:hover:not(:disabled), #relictip button:hover:not(:disabled) {
   filter: brightness(1.16) sepia(.25) saturate(1.3); color: var(--gold-pale); }
 .topbar button:active:not(:disabled), #hud button:active:not(:disabled), #editor button:active:not(:disabled), #routebox button:active:not(:disabled) { filter: brightness(.76); }
-.topbar button:disabled, #hud button:disabled, #hand button:disabled, #editor button:disabled, #routebox button:disabled {
+.topbar button:disabled, #devwin button:disabled, #hud button:disabled, #hand button:disabled, #editor button:disabled, #routebox button:disabled {
   opacity: 1; filter: brightness(.5) saturate(.6); color: var(--muted); }
 /* Leistenknöpfe brechen nicht um; die Leiste darf stattdessen in zwei Zeilen laufen */
-.topbar button { white-space: nowrap; }
-.topbar .hbtns { flex-wrap: wrap; justify-content: flex-end; }
+.topbar button, #devwin button { white-space: nowrap; }
+#devwin .hbtns { flex-wrap: wrap; justify-content: flex-end; }
 /* Hauptaktionen: Tafel mit Runenband, Text Cinzel */
 #btn-start, .topbar button.primary, #editor button.primary, .banner button:first-child, #routebox button.primary {
   border-image-source: var(--stone-main); color: #f2d173; font-family: var(--display); letter-spacing: .02em; }
-#editor button.mini, .hudtools .mini, .topbar .mini, #hud .mini, #pileview .mini {
+#editor button.mini, .hudtools .mini, .topbar .mini, #devwin .mini, #hud .mini, #pileview .mini {
   border-width: 3px 4px 4px 4px; border-image-width: 3px 4px 4px 4px; padding: 1px 5px; font-weight: 600; }
 #editor button.mini.kill, #editor button.del, #editor button.mini.del { color: #ffb0a8; }
 /* Reiter des Editors: dieselbe Kachel, ruhig = abgedunkelt, gewählt = hell mit goldenem Text */
@@ -1408,14 +1408,14 @@ html { scrollbar-color: var(--iron-deep) var(--ink1); }
 #editor .tool.on, #editor .spawnbtn.on, #editor .floorbtn.on { filter: brightness(1.15) saturate(1.2); color: var(--gold-pale); box-shadow: 0 0 0 1px var(--rune-soft); }
 
 /* ---------- Tafeln: Steinrahmen um dunkle Tinte ---------- */
-.topbar, .side > div, #editor, #routebox, #orderctl, #stairsprompt {
+.topbar, #devwin, .side > div, #editor, #routebox, #orderctl, #stairsprompt {
   border: solid transparent; border-width: 6px 7px 7px 7px; border-radius: 4px;
   border-image: var(--stone) 7 8 8 8 / 6px 7px 7px 7px stretch; image-rendering: pixelated;
   background: rgba(18, 21, 29, .94); box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
 .side > div { background: rgba(18, 21, 29, .88); }
 #editor { background: var(--ink2); }
 #editor .tabs { background: var(--ink2); border-bottom: 2px solid var(--iron-deep); }
-.topbar > * { image-rendering: auto; }
+.topbar > *, #devwin > * { image-rendering: auto; }
 #editor > * { image-rendering: auto; }
 #editor h4 { font-family: var(--display); color: var(--gold-title); text-shadow: 0 1px 0 rgba(30, 60, 130, .45), 0 0 6px var(--ink0); letter-spacing: .02em; }
 #editor h4 { font-size: 14px; }
@@ -1577,6 +1577,32 @@ kbd { border: 1px solid var(--iron); border-radius: 2px; background: var(--ink1)
   #hud .hud-piles { gap: 12px; margin-top: 4px; }
 }
 
+/* ---------- DEV-Fenster + Werkzeugleiste oben rechts (wie UW: Zahnrad, DEV) ---------- */
+#uwtools { position: absolute; top: 8px; right: 8px; z-index: 8; display: flex; gap: 6px; align-items: center; }
+#uwtools button { font-family: var(--display); font-size: 14px; padding: 6px 12px; min-height: 40px; }
+#uwtools #btn-gear { width: 46px; padding: 6px; background: none; border-image-source: var(--stone-main); }
+#uwtools #btn-gear::after { content: ""; display: block; width: 26px; height: 26px; margin: 0 auto; image-rendering: pixelated; background: center / contain no-repeat url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABzElEQVR4nMVXC6qEMAxs1QXBcwmi4KJ4/4uI9tFqS4xJY+vCGwhIP5NpN0mzWuXBMOM6lajIFHCoMMbZGxQcN7C3cDzDMDzmMoQFnETOPCJiLzx934sijLdlWSgRlzFCgLNpmgzHJYkwnoAj99eJAW+GEolEyTcAobV2BoVx8ELseohHcdW2Lan+LSBn13XxOOiOBeQp8CmhjeNIrq2qKikIPUgBJ0HUsJDclDY4GC2x5JwSIQWfZpwfH6DKaX1f6seoahjZq6lKaLDKaZrCou/3SzrY990ZJQDugVyUL5P4O4ZxGyOxgvQwfpSY33BD0zSsMzv3NI19JhXqn1CWZfg21j6fj8tZKvfhqeq6zr4B68NbSHXFpEcsA/wczgJuHTXnUXBdzDzP4Xscx8scdMw5H4YhmkWBSr2oA3Vdq23b1Lqu2XXgBljxcishfK5hJUzuijQKSO7N55zDWvH4LegyX0OqScHZIr6GHXAuFZIUYKHi1SuiI7I1gnvzIewa30FxIkQBy7JwG9nr5oKUmc/qig1HLq1jOmxZhELBw8UI1fPh/jIpE5QcuZyAC7Dgn/yZPOHIiDKczKdTN0ABv+DL6gf6vr+NwccnBX+f5Geup6riMwAAAABJRU5ErkJggg==); }
+body[data-dev="open"] #btn-dev, body[data-mode="setup"] #btn-dev { filter: brightness(1.2) saturate(1.2); color: var(--gold-pale); }
+#devwin { position: absolute; top: 56px; right: 8px; z-index: 9; width: 330px; max-width: calc(100% - 16px); display: none; }
+body[data-dev="open"] #devwin, body[data-mode="setup"] #devwin { display: block; }
+#devwin .devhead { display: flex; align-items: center; gap: 8px; margin: -2px 0 6px; cursor: move; user-select: none; touch-action: none; }
+#devwin .devhead b { font-family: var(--display); color: var(--gold-title); flex: 1; letter-spacing: .08em; }
+#devwin .devgrip { color: var(--muted); }
+#devwin .hbtns { flex-wrap: wrap; gap: 6px; justify-content: flex-start; margin: 0; }
+#devwin .hbtns button { font-size: 14px; padding: 4px 10px; }
+.topbar { right: 112px !important; }
+body[data-mode="setup"] #btn-devclose { display: none; }
+@media (max-height: 540px) {
+  #uwtools { top: 3px; right: 4px; gap: 4px; }
+  #uwtools button { min-height: 26px; font-size: 12px; padding: 1px 8px; }
+  #uwtools #btn-gear { width: 32px; }
+  #uwtools #btn-gear::after { width: 18px; height: 18px; }
+  .topbar { right: 100px !important; }
+  #devwin { top: 34px; right: 4px; width: 300px; }
+  #devwin .hbtns button { font-size: 12px; padding: 1px 7px; }
+}
+.play { position: relative; }
+
 </style>
 </head>
 <body data-mode="setup">
@@ -1586,20 +1612,28 @@ kbd { border: 1px solid var(--iron); border-radius: 2px; background: var(--ink1)
     <section class="play">
       <div class="topbar">
         <div id="intent"></div>
-        <div class="hbtns">
-          <span id="coopctl" hidden></span>
-          <button id="btn-start">Kampf starten</button>
-          <button id="btn-setup" class="sec" hidden>Zum Aufbau</button>
-          <button id="btn-menu" class="sec" type="button" title="Hauptmenü">Menü</button>
-          <button id="btn-feedback" class="sec" type="button" title="Rückmeldung senden (F8) – Fehler, Balance, Ideen; mit der Maus über einer Karte: Karte kommentieren">Feedback</button>
-          <button id="btn-online" class="sec" type="button" title="Online-Koop: Raum öffnen oder mit Code beitreten">Online</button>
-          <span class="vol" title="Lautstärke">
-            <button id="btn-mute" class="sec mini" type="button" title="Ton an/aus"></button>
-            <input id="vol" type="range" min="0" max="100" step="1" aria-label="Lautstärke">
-          </span>
-          <button id="btn-full" class="sec" title="Vollbild an/aus">Vollbild</button>
-          <button id="btn-editor" class="sec" title="Editor ein-/ausblenden – ausgeblendet wird das Spielfeld größer">Editor</button>
-        </div>
+      </div>
+      <!-- Werkzeuge oben rechts wie UW: Zahnrad (Optionen) und DEV (klappt das DEV-Fenster mit allen Test-/Leistenknöpfen auf) -->
+      <div id="uwtools">
+        <button id="btn-dev" class="sec" type="button" title="DEV-Fenster ein-/ausklappen" aria-expanded="false">DEV</button>
+        <button id="btn-gear" class="sec" type="button" title="Optionen" aria-label="Optionen"></button>
+      </div>
+      <div id="devwin">
+        <div class="devhead"><span class="devgrip">⠿</span><b>DEV</b><button id="btn-devclose" class="sec mini" type="button" title="Einklappen">▾</button></div>
+          <div class="hbtns">
+            <span id="coopctl" hidden></span>
+            <button id="btn-start">Kampf starten</button>
+            <button id="btn-setup" class="sec" hidden>Zum Aufbau</button>
+            <button id="btn-menu" class="sec" type="button" title="Hauptmenü">Menü</button>
+            <button id="btn-feedback" class="sec" type="button" title="Rückmeldung senden (F8) – Fehler, Balance, Ideen; mit der Maus über einer Karte: Karte kommentieren">Feedback</button>
+            <button id="btn-online" class="sec" type="button" title="Online-Koop: Raum öffnen oder mit Code beitreten">Online</button>
+            <span class="vol" title="Lautstärke">
+              <button id="btn-mute" class="sec mini" type="button" title="Ton an/aus"></button>
+              <input id="vol" type="range" min="0" max="100" step="1" aria-label="Lautstärke">
+            </span>
+            <button id="btn-full" class="sec" title="Vollbild an/aus">Vollbild</button>
+            <button id="btn-editor" class="sec" title="Editor ein-/ausblenden – ausgeblendet wird das Spielfeld größer">Editor</button>
+          </div>
       </div>
       <div class="boardwrap">
         <svg id="board"></svg>
@@ -12621,7 +12655,7 @@ window.HB = window.HB || {};
 window.HB = window.HB || {};
 (function (HB) {
   const RELAY = 'https://script.google.com/macros/s/AKfycbyRIBmx-fGYtVH3HxwWeUDL6wuJASdLpfJTEc3Lp_Hdo6dC70PcgsoQPKvpgxKzZgFj/exec';
-  const TEXT_MAX = 2000, MOMENT_MAX = 2500, RATE_MS = 20000;
+  const TEXT_MAX = 2000, MOMENT_MAX = 4000, RATE_MS = 20000;
   const CATEGORIES = ['Fehler', 'Balance', 'UI / UX', 'Idee', 'Sonstiges']; // wie UW (feedback_overlay.gd)
   const $ = (s) => document.querySelector(s);
   const store = {
@@ -12654,9 +12688,21 @@ window.HB = window.HB || {};
       const open = [...document.querySelectorAll('#modal:not([hidden]), #mainmenu, #mmoptions, #classpick')].map((e) => e.id);
       if (open.length) m.offen = open;
       if (inFight) {
-        const p = g.player;
-        Object.assign(m, { welle: g.wave, etage: g.floor || 0, zug: g.turn, leben: p ? p.hp + '/' + p.maxHp : undefined, energie: p ? p.energy + '/' + p.maxEnergy : undefined,
-          hand: (g.hand || []).map((c) => c.def && c.def.name).filter(Boolean), gegner: (g.enemies || []).filter((e) => e.alive).slice(0, 12).map((e) => e.type + ' ' + e.hp + '/' + e.maxHp) });
+        // wie UW: wo im Kampf, welche Karten wo liegen, was gerade gespielt wurde, Gegner mit Absicht – für den Spieler, der meldet
+        const p = (app.me && app.me()) || g.player;
+        const names = (list) => (list || []).map((c) => c.def && c.def.name).filter(Boolean);
+        g.as(p, () => Object.assign(m, {
+          kampf: g.route ? 'Feld ' + g.route.stage + ' (' + ((HB.ROUTE_KINDS[g.route.kind] || {}).label || g.route.kind) + ')' : 'Welle ' + g.waveNo + '/' + g.waveCount,
+          etage: g.floor || 0, zug: g.turn, phase: g.phase, spieler: g.players.length > 1 ? g.unitName(p) + ' (von ' + g.players.length + ')' : undefined,
+          leben: p.hp + '/' + p.maxHp, energie: p.energy + '/' + p.maxEnergy,
+          zustaende: HB.STATUS_ORDER.map((k) => { const st = HB.STATUSES[k], v = st && st.value(p); return v == null ? null : st.label + (v !== '' ? ' ' + v : ''); }).filter(Boolean),
+          relikte: (p.relics || []).map((r) => (HB.RELICS && HB.RELICS[r.id || r] ? HB.RELICS[r.id || r].label : String(r.id || r))),
+          gold: HB.goldOn && HB.goldOn(g.cfg) ? HB.goldOf(g, p) : undefined,
+          hand: names(g.hand), ablage: names(g.discard), erschoepft: names(g.exhausted), nachziehstapel: g.drawPile.length + ' Karten',
+          gespielt: (g.events || []).filter((ev) => ev.type === 'card_played' && ev.turn === g.turn).map((ev) => ev.card),
+          gegner: (g.enemies || []).filter((e) => e.alive).slice(0, 12).map((e) => e.name + ' ' + e.hp + '/' + e.maxHp + (e.intent && e.intent.label ? ' – ' + e.intent.label : '')),
+        }));
+        Object.keys(m).forEach((k) => { if (m[k] === undefined || (Array.isArray(m[k]) && !m[k].length)) delete m[k]; });
       }
       if (app && app.config && app.config.deck) m.deckKarten = app.config.deck.reduce((n, d) => n + (d.count || 0), 0);
     } catch (e) { /* Kontext ist nur Beiwerk */ }
@@ -12665,7 +12711,8 @@ window.HB = window.HB || {};
       try { m.karte.text = clean(HB.cardText(def), 400); } catch (e) { /* egal */ }
       try { m.karte.effekte = (def.effects || []).map((fx) => fx.type); } catch (e) { /* egal */ }
     }
-    if (JSON.stringify(m).length > MOMENT_MAX) { delete m.gegner; delete m.hand; }
+    // zu groß: Unwichtigeres zuerst weglassen (Gegner, Ablage, Erschöpft), Hand und Gespieltes bleiben am längsten
+    for (const k of ['deckKarten', 'zustaende', 'gegner', 'ablage', 'erschoepft', 'relikte', 'hand']) if (JSON.stringify(m).length > MOMENT_MAX) delete m[k];
     return m;
   }
 
@@ -12686,7 +12733,19 @@ window.HB = window.HB || {};
   }
 
   // Senden: text/plain, damit der Browser keine Vorabfrage (Preflight) stellt, die Apps Script nicht beantwortet
+  // Im Claude-Artefakt sind Verbindungen nach außen gesperrt: dort landet die Notiz im Online-Speicher des Artefakts (Fähigkeit db,
+  // Sammlung „feedback“). Eine Claude-Sitzung (Nachtlauf) überträgt offene Einträge später über dieselbe Brücke als GitHub-Issue
+  // (tools/feedback_senden.py, docs/mechaniken.md „Feedback“). Rückgabe wie send: Kennung oder Fehler.
+  const artifactDb = async () => { try { return window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { return null; } };
+  async function park(payload) {
+    const db = await artifactDb();
+    if (!db) throw new Error('kein Online-Speicher');
+    const id = 'fb_' + Date.now().toString(36) + '_' + payload.player;
+    await db.collection('feedback').doc(id).set({ ...payload, at: new Date().toISOString(), status: 'offen' });
+    return null;
+  }
   async function send(payload) {
+    if (!online()) return park(payload);
     const res = await fetch(RELAY, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
     const doc = await res.json();
     if (doc && doc.number) return doc.number;
@@ -12703,7 +12762,7 @@ window.HB = window.HB || {};
   function open(def) {
     $('#fbwin')?.remove();
     const ov = document.createElement('div'); ov.id = 'fbwin';
-    const isCard = !!def, can = online();
+    const isCard = !!def, can = online() || !!(window.claude && window.claude.use); // Artefakt: über den Online-Speicher
     ov.innerHTML = '<div class="modalbox"><div class="mtitle"></div><p class="cphint fbwhat"></p>'
       + (isCard ? '' : '<label class="fbrow"><span>Art:</span><select class="fbcat"></select></label>')
       + `<textarea class="fbtext" rows="6" maxlength="${TEXT_MAX}"></textarea>`
@@ -12721,7 +12780,8 @@ window.HB = window.HB || {};
     ta.placeholder = isCard ? 'Was fällt dir an dieser Karte auf?' : 'Was ist passiert? Was hast du erwartet?';
     ok.checked = store.get('ok', '0') === '1';
     const say = (msg, bad) => { st.textContent = msg; st.classList.toggle('bad', !!bad); }; // nur textContent (Fremdtext nie als HTML)
-    if (!can) { say('Feedback senden geht nur in der Webfassung (yokutube.github.io/unspokenwatch-play). Hier kannst du den Text kopieren und dort oder auf Discord einfügen.', true); sendBtn.disabled = true; ok.disabled = true; }
+    if (!can) { say('Feedback senden geht nur in der Webfassung (yokutube.github.io/unspokenwatch-play). Hier kannst du den Text kopieren und dort oder auf Discord einfügen.', true); sendBtn.disabled = true; }
+    else if (!online()) say('Im Artefakt wird dein Text gespeichert und später automatisch als Meldung übertragen.');
     const textOut = () => (isCard ? '[Karte: ' + def.name + '] ' : '[' + (sel ? sel.value : '') + '] ') + clean(ta.value);
     let busy = false;
     sendBtn.onclick = async () => {
@@ -12729,12 +12789,12 @@ window.HB = window.HB || {};
       const text = clean(ta.value);
       if (!text) { say('Bitte zuerst etwas schreiben.', true); return; }
       if (!ok.checked) { say('Bitte zuerst dem Senden zustimmen.', true); return; }
-      const wait = RATE_MS - (Date.now() - lastSent);
+      const wait = HB.feedback.testNoRate ? 0 : RATE_MS - (Date.now() - lastSent); // Test darf die Sperre aufheben
       if (wait > 0) { say('Bitte noch ' + Math.ceil(wait / 1000) + ' Sekunden warten.', true); return; }
       store.set('ok', '1'); busy = true; sendBtn.disabled = true; say('Wird gesendet …');
       try {
         const issue = await send(build(text, sel ? sel.value : '', def));
-        lastSent = Date.now(); ta.value = ''; say('Danke, angekommen' + (issue ? ' (Nr. ' + issue + ')' : '') + '. Noch etwas?');
+        lastSent = Date.now(); ta.value = ''; say(online() ? 'Danke, angekommen' + (issue ? ' (Nr. ' + issue + ')' : '') + '. Noch etwas?' : 'Danke, gespeichert – wird beim nächsten Abgleich übertragen. Noch etwas?');
       } catch (e) { say('Senden hat nicht geklappt (' + clean(e && e.message, 80) + '). Dein Text steht noch hier – du kannst ihn kopieren oder es später noch einmal versuchen.', true); }
       busy = false; sendBtn.disabled = false;
     };
@@ -12789,7 +12849,7 @@ window.HB = window.HB || {};
     });
     $('#btn-feedback')?.addEventListener('click', () => open());
   }
-  HB.feedback = { open, decorate, clean, build, moment, online, init, testOnline: null };
+  HB.feedback = { open, decorate, clean, build, moment, online, init, testOnline: null, testNoRate: false };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })(window.HB);
 
@@ -15377,6 +15437,22 @@ window.HB = window.HB || {};
     };
     $('#btn-editor').onclick = () => { editorHidden = !editorHidden; try { localStorage.setItem('hexdb.editorHidden', editorHidden ? '1' : '0'); } catch (e) { /* egal */ } applyEditor(); };
     applyEditor();
+    // DEV-Fenster (wie UW): alle Leistenknöpfe liegen darin; Zahnrad = Optionen; Zustand pro Browser gemerkt (im Aufbau zeigt CSS es immer)
+    let devOpen = false;
+    try { devOpen = localStorage.getItem('hexdb.devOpen') === '1'; } catch (e) { /* egal */ }
+    const applyDev = () => { document.body.dataset.dev = devOpen ? 'open' : 'closed'; $('#btn-dev').setAttribute('aria-expanded', devOpen ? 'true' : 'false'); };
+    const toggleDev = () => { devOpen = !devOpen; try { localStorage.setItem('hexdb.devOpen', devOpen ? '1' : '0'); } catch (e) { /* egal */ } applyDev(); };
+    $('#btn-dev').onclick = toggleDev; $('#btn-devclose').onclick = toggleDev;
+    $('#btn-gear').onclick = () => HB.uiMenu.showOptions();
+    applyDev();
+    // Fenster am Kopf verschieben (nur bis zum Neuladen)
+    $('#devwin .devhead').addEventListener('pointerdown', (ev) => {
+      if (ev.target.closest('button')) return;
+      const w = $('#devwin'), r = w.getBoundingClientRect(), pr = w.offsetParent.getBoundingClientRect(), dx = ev.clientX - r.left, dy = ev.clientY - r.top;
+      const mv = (e) => { w.style.right = 'auto'; w.style.left = Math.max(0, Math.min(pr.width - 60, e.clientX - pr.left - dx)) + 'px'; w.style.top = Math.max(0, Math.min(pr.height - 30, e.clientY - pr.top - dy)) + 'px'; };
+      const up = () => { document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); };
+      document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up);
+    });
     document.body.dataset.side = app.side ? '1' : '0';
     // Anzeige-Schalter (oben links, je Browser gemerkt): Zugnummern, Absichten (immer / nur mit Alt), Lebensbalken bei vollem Leben.
     // Maus über den Schaltern oder Alt gedrückt halten zeigt alles (body.peek-orders).
