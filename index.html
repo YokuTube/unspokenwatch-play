@@ -1613,7 +1613,7 @@ body[data-mode="setup"] #btn-devclose { display: none; }
 #gearmenu .vol input[type=range] { display: block; width: 100px; }
 #gearmenu #btn-start { width: 100%; }
 #btn-start2 { display: none; }
-body[data-mode="setup"] #uwtools #btn-start2 { display: inline-block; }
+#uwtools #btn-start2:not([hidden]) { display: inline-block; }
 /* Leiste oben links nur noch für die Ebenen-Umschaltung (wenn mehrere Ebenen belegt sind), sonst weg */
 .topbar:not(.slim) { display: none; }
 .topbar.slim { right: auto !important; width: max-content; max-width: calc(100% - 260px); min-height: 0; padding: 4px 8px; opacity: .9; }
@@ -16017,7 +16017,7 @@ window.HB = window.HB || {};
     // Kopfzeile
     $('#btn-start').textContent = app.mode === 'setup' ? 'Kampf starten' : 'Kampf neu starten';
     const bSetup = $('#btn-setup'); if (bSetup) bSetup.hidden = app.mode === 'setup';
-    const bStart2 = $('#btn-start2'); if (bStart2) bStart2.textContent = app.mode === 'setup' ? 'Kampf starten' : 'Kampf neu starten';
+    const bStart2 = $('#btn-start2'); if (bStart2) { bStart2.textContent = app.mode === 'setup' ? 'Kampf starten' : 'Zum Aufbau'; bStart2.title = app.mode === 'setup' ? 'Kampf starten' : 'Zurück in den Aufbau (Editor)'; bStart2.hidden = PUBLIC && app.mode !== 'setup'; } // Kampf: Knopf führt zum Aufbau (nur Testfassung)
     renderCoopCtl(g);
 
     // Intention
@@ -16990,7 +16990,7 @@ window.HB = window.HB || {};
     $('#btn-start').onclick = () => app.startCombat();
     $('#btn-online').onclick = () => HB.uiMenu.showOnline();
     if ($('#btn-setup')) $('#btn-setup').onclick = () => app.toSetup();
-    if ($('#btn-start2')) $('#btn-start2').onclick = () => app.startCombat();
+    if ($('#btn-start2')) $('#btn-start2').onclick = () => (app.mode === 'setup' ? app.startCombat() : app.toSetup());
     // Editor ein-/ausblenden (gemerkt pro Browser)
     if (PUBLIC) { $('#devwin')?.remove(); $('#btn-dev')?.remove(); document.body.dataset.editor = 'hidden'; }
     else {
