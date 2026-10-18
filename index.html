@@ -9246,7 +9246,8 @@ window.HB = window.HB || {};
       // Kampfende der Welle: Bodeneffekte und Leichen weg – VOR dem Kartenwechsel, sonst verschwinden auch die gesetzten Felder der neuen Karte
       this.floors.forEach((f) => { f.tileEffects = []; f.corpses = []; });
       this.enterWaveMaps(def); // eigene Karte/Ebenen dieser Welle? dann neu aufbauen
-      this.pendingWave = { no: this.waveNo + 1, spawnAfterTurn: this.turn + ((this.cfg.rules || {}).spawnPauseTurns ?? 1), spots: [] };
+      // Fiel der letzte Gegner in der GEGNERPHASE (z. B. Gift), ist der freie Zug erst der nächste – sonst käme die Welle sofort und man könnte nicht zum Markt laufen
+      this.pendingWave = { no: this.waveNo + 1, spawnAfterTurn: this.turn + ((this.cfg.rules || {}).spawnPauseTurns ?? 1) + (this.phase === 'enemy' ? 1 : 0), spots: [] };
       // Liste der Typen dieser Welle (aus den Gruppen; alte Form: count + type)
       const groups = def.groups || [{ type: def.type, count: def.count, hp: def.hp }];
       const queue = [];
