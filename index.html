@@ -1748,7 +1748,9 @@ body[data-editorfull="1"] #editor .tabbody { max-width: none; }
 #modal .runeline { font-size: .85em; color: #e6dbc7; text-align: left; }
 
 /* Suchfeld vor langen Auswahllisten im Editor */
-.selsearch { width: 7em; margin-right: 4px; }
+.selwrap { display: inline-flex; flex-direction: column; vertical-align: middle; min-width: 9em; }
+.selwrap .selsearch { width: 100%; box-sizing: border-box; margin: 0; font-size: .8em; padding: 2px 6px; border-bottom: 0; }
+.selwrap select { width: 100%; }
 
 </style>
 </head>
@@ -5744,10 +5746,13 @@ window.HB = window.HB || {};
   HB.moduleSaveFields = () => HB.MODULES.flatMap((m) => m.saveFields || []);
   HB.moduleCommand = (g, type) => { for (const m of HB.MODULES) if (m.commands && m.commands[type] && HB.moduleOn(g.cfg, m.id)) return m.commands[type]; return null; };
   // Allgemeine Hörer (von Versuchen: V.on, js/versuch.js) – laufen zusätzlich zu den Modulen, immer
-  HB.HOOKS = HB.HOOKS || { event: [], turnStart: [] };
+  HB.HOOKS = HB.HOOKS || { event: [], turnStart: [], turnStartEarly: [] };
+  HB.HOOKS.turnStartEarly = HB.HOOKS.turnStartEarly || [];
   // Hörer aus Versuchen (V.on): ein Fehler darin darf den Kampf nie abbrechen – nur melden
   const hookCall = (h, g, x) => { try { h.fn(g, x); } catch (e) { console.error('V.on', h.id || '', e); } };
   HB.moduleTurnStart = (g, p) => { for (const m of HB.MODULES) if (m.onTurnStart && HB.moduleOn(g.cfg, m.id)) m.onTurnStart(g, p); for (const h of HB.HOOKS.turnStart.slice()) hookCall(h, g, p); };
+  // Allgemeiner Haken ganz am Anfang des Spielerzugs (vor Zustandsablauf/Gifttick); nur Hörer aus Versuchen (V.on('turnStartEarly'))
+  HB.moduleTurnStartEarly = (g, p) => { for (const h of HB.HOOKS.turnStartEarly.slice()) hookCall(h, g, p); };
   HB.moduleEvent = (g, ev) => { for (const m of HB.MODULES) if (m.onEvent && HB.moduleOn(g.cfg, m.id)) m.onEvent(g, ev); for (const h of HB.HOOKS.event.slice()) hookCall(h, g, ev); };
   HB.moduleSlots = (g, n, kind) => { for (const m of HB.MODULES) if (m.slots && HB.moduleOn(g.cfg, m.id)) return m.slots(g, n, kind); return null; };
   HB.moduleOffer = (g, pool, n, kind, slots) => { for (const m of HB.MODULES) if (m.offer && HB.moduleOn(g.cfg, m.id)) { const r = m.offer(g, pool, n, kind, slots); if (r !== undefined) return r; } return undefined; };
@@ -8341,7 +8346,7 @@ window.HB = window.HB || {};
       for (const p of this.players) {
         p.ended = false;
         if (p.hp <= 0) { p.ended = true; continue; }
-        this.as(p, () => { this.runStatuses(p, 'onTurnStartEarly'); this.tileTurnStart(p); this.runStatuses(p, 'onTurnStart'); HB.moduleTurnStart(this, p); });
+        this.as(p, () => { HB.moduleTurnStartEarly(this, p); this.runStatuses(p, 'onTurnStartEarly'); this.tileTurnStart(p); this.runStatuses(p, 'onTurnStart'); HB.moduleTurnStart(this, p); });
         if (this.checkEnd()) return this.changed();
         if (p.hp <= 0) { p.ended = true; continue; } // z. B. am Gift gestorben
         this.as(p, () => { p.energy = p.maxEnergy; this.draw(this.cfg.player.draw + HB.relicStat(this, p, 'draw')); HB.relicHook(this, p, 'onTurnStart'); });
@@ -15709,7 +15714,7 @@ window.HB = window.HB || {};
         oninput: (ev) => apply(ev.target.value),
         onkeydown: (ev) => { if (ev.key !== 'Enter') return; ev.preventDefault(); const o = [...s.options].find((x) => !x.hidden && !x.selected && x.textContent.toLowerCase().includes(ev.target.value.trim().toLowerCase())); if (o) { s.value = o.value; set(o.value); changed(rerender); } } });
     }
-    return el('label', { class: 'field' }, el('span', { class: 'flbl' }, label), search, s);
+    return el('label', { class: 'field' }, el('span', { class: 'flbl' }, label), search ? el('span', { class: 'selwrap' }, search, s) : s); // Suchfeld sitzt direkt über SEINER Liste
   }
   const btn =(label, fn, cls = '') => el('button', { class: cls, onclick: fn, html: label });
 
@@ -18649,7 +18654,7 @@ window.HB = window.HB || {};
 //   V.put(register, key, def)       → allgemein, für alles andere: 'tileEffectTypes' (Bodenfeld), 'TILE_COMBOS', 'PLACES' (Ort am Feld; HB.PLACE_KEYS wird neu abgeleitet),
 //                                     'OBJECT_TYPES' (Objekt am Feld), 'CHOICES' (Kartenwahl) und 'RULES' (Regelzahl; def = [Beschriftung, Standard, Erklärung]) – dazu alle Register der Kurzformen oben
 //   V.on('event', (game, ev) => …)  → hört auf jedes Ereignis (game.emit), wie onEvent eines Moduls (immer an, kein Schalter)
-//   V.on('turnStart', (game, spieler) => …) → Zugbeginn eines Spielers, wie onTurnStart eines Moduls
+//   V.on('turnStart', (game, spieler) => …) → Zugbeginn eines Spielers, wie onTurnStart eines Moduls; 'turnStartEarly' = ganz am Anfang des Zugbeginns (vor Zuständen/Gifttick)
 // Ort (PLACES) aus einem Versuch hat kein Speicherfeld (SAVE_FIELDS) und keinen Schalter (kein „module“): erscheint nicht von selbst – dafür ein Modul bauen.
 // Geht NICHT als Versuch: Module mit Schalter/Speicherfeldern/Befehlen/Fenstern (HB.MODULES – dafür ein eigenes Modul bauen), Fallen-Arten (HB.TRAP_TYPES entsteht aus cfg.trapTypes
 // der Einstellung), Änderungen an bestehender Kernlogik (Versuche fügen nur hinzu).
@@ -18694,7 +18699,7 @@ window.HB = window.HB || {};
       put(reg, key, def) { put(reg, key, def); done(); return def; },
       on(ereignis, fn) {
         const list = HB.HOOKS[ereignis];
-        if (!list) throw new Error('V.on: unbekanntes Ereignis ' + ereignis + ' (event | turnStart)');
+        if (!list) throw new Error('V.on: unbekanntes Ereignis ' + ereignis + ' (event | turnStart | turnStartEarly)');
         const n = ++hookCount; list.push({ n, fn, id: entry.id }); entry.keys.push(['HOOKS', ereignis + ':' + n]);
       },
       cardEffect(key, def, apply) { put('CARD_EFFECTS', key, def); if (apply) put('APPLY', key, apply); done(); return def; },
@@ -18763,7 +18768,7 @@ window.HB = window.HB || {};
   <!-- VERSUCHE:START -->
   <script>
 // VERSUCH Seuchenei: ein zerstörbares Ei (30 Leben), das alle Zustände von Gegnern UND Spielern im Umkreis in sich aufsaugt
-// (beim Zaubern und zu Beginn jedes Spielerzugs). Stirbt es, explodiert es: Schaden = Summe aller gesaugten Stacks an alle im Umkreis.
+// (beim Zaubern und zu Beginn jedes Spielerzugs). Stirbt es, explodiert es: Schaden = Summe aller gesaugten Stacks an alle GEGNER im Umkreis.
 // Alles hier; Kern-Anschluss nur das allgemeine Register 'OBJECT_TYPES' in js/versuch.js. Doku: docs/mechaniken.md „Versuche“.
 window.HB = window.HB || {};
 (function (HB) {
@@ -18772,27 +18777,28 @@ window.HB = window.HB || {};
   V.strings({
     de: {
       'obj.seuchenei.label': 'Seuchenei',
-      'obj.seuchenei.info': 'Zerstörbar ({hp} Leben). Saugt zu Beginn jeder Runde alle Zustände von Figuren im Umkreis {r} auf (gesammelt: {n}). Gift schadet dem Ei. Beim Zerstören explodiert es: {n} Schaden an alle im Umkreis {r}.',
+      'obj.seuchenei.info': 'Zerstörbar ({hp} Leben). Saugt zu Beginn jeder Runde (vor dem Gifttick) alle Zustände von Figuren im Umkreis {a} auf (gesammelt: {n}). Gift – auch vom Boden unter dem Ei – schadet dem Ei. Beim Zerstören explodiert es: {n} Schaden an alle Gegner im Umkreis {r}.',
       'obj.seuchenei.absorb': 'Das Seuchenei saugt {n} Stapel auf (gesamt {sum}): {list}.',
       'obj.seuchenei.fx': '+{n}',
       'obj.seuchenei.explode': 'Das Seuchenei platzt: {dmg} Schaden an {list}.',
       'obj.seuchenei.fizzle': 'Das Seuchenei platzt, aber es hatte nichts gesammelt.',
       'obj.seuchenei.nobody': 'niemanden',
-      'card.seuchenei': 'Seuchenei ({hp} Leben, Umkreis {r}): saugt alle Zustände im Umkreis auf, platzt beim Zerstören mit deren Summe als Schaden',
+      'card.seuchenei': 'Seuchenei ({hp} Leben): saugt alle Zustände im Umkreis {a} auf, platzt beim Zerstören mit deren Summe als Schaden an Gegnern im Umkreis {r}',
     },
     en: {
       'obj.seuchenei.label': 'Plague egg',
-      'obj.seuchenei.info': 'Destructible ({hp} HP). At the start of every round it sucks up all statuses of figures within {r} (collected: {n}). Poison hurts the egg. When destroyed it bursts: {n} damage to everyone within {r}.',
+      'obj.seuchenei.info': 'Destructible ({hp} HP). At the start of every round (before poison ticks) it sucks up all statuses of figures within {a} (collected: {n}). Poison - also from the ground under the egg - hurts the egg. When destroyed it bursts: {n} damage to all enemies within {r}.',
       'obj.seuchenei.absorb': 'The plague egg absorbs {n} stacks (total {sum}): {list}.',
       'obj.seuchenei.fx': '+{n}',
       'obj.seuchenei.explode': 'The plague egg bursts: {dmg} damage to {list}.',
       'obj.seuchenei.fizzle': 'The plague egg bursts, but it had collected nothing.',
       'obj.seuchenei.nobody': 'nobody',
-      'card.seuchenei': 'Plague egg ({hp} HP, radius {r}): sucks up all statuses within range, bursts when destroyed for their sum as damage',
+      'card.seuchenei': 'Plague egg ({hp} HP): sucks up all statuses within {a}, bursts when destroyed for their sum as damage to enemies within {r}',
     },
   });
 
-  const radiusOf = (o, t) => o.radius ?? t.radius ?? 2;
+  const radiusOf = (o, t) => o.radius ?? t.radius ?? 2; // Explosion
+  const absorbOf = (o, t) => o.absorbR ?? t.absorb ?? 1; // Einsaugen
   // Stapel einer Plakette: Zahl = Stapel, sonst (leer/Text) = 1, kein Wert = 0
   const stacksOf = (v) => (v == null || v === false ? 0 : typeof v === 'number' ? v : (parseInt(v, 10) || 1));
   // Zustand restlos von der Figur nehmen: eigener clear(), sonst das Feld des Zustands (field/Schlüssel) leeren
@@ -18804,10 +18810,15 @@ window.HB = window.HB || {};
   const near = (g, pos, r) => [...g.alive, ...g.floorPlayers.filter((p) => p.hp > 0)].filter((u) => u.pos && H.distance(u.pos, pos) <= r);
 
   // Saugt alle Zustände im Umkreis ein. Gift der Aufnahme schadet dem Ei (kann es töten → Explosion mit der neuen Summe).
-  function absorb(g, o) {
+  // floor = true: auch das Gift des Bodens UNTER dem Ei zählen (nur dieses Feld, wie bei einer Figur dort; der Boden bleibt, wie bei der Figur)
+  function absorb(g, o, floor = true) {
     const t = HB.OBJECT_TYPES.seuchenei;
     let got = 0, poison = 0; const names = [];
-    for (const u of near(g, o.pos, radiusOf(o, t))) {
+    if (floor) for (const fx of g.effectsAt(o.pos)) {
+      const n = ((HB.tileEffectTypes[fx.type] || {}).trapEffects ? HB.tileEffectTypes[fx.type].trapEffects(fx) : []).filter((e) => e.type === 'poison').reduce((a, e) => a + (e.amount || 0), 0);
+      if (n > 0) { got += n; poison += n; names.push(`${HB.tn(HB.tileEffectTypes[fx.type].label)} ${n}`); }
+    }
+    for (const u of near(g, o.pos, absorbOf(o, t))) {
       for (const key of HB.STATUS_ORDER) {
         const st = HB.STATUSES[key]; if (!st || !st.value) continue;
         const n = stacksOf(st.value(u)); if (n <= 0) continue;
@@ -18824,12 +18835,12 @@ window.HB = window.HB || {};
   }
 
   V.put('OBJECT_TYPES', 'seuchenei', {
-    label: HB.t('obj.seuchenei.label'), icon: 'nest', hp: 30, blocksMove: true, blocksSight: false, radius: 2,
-    info: (o, t) => HB.t('obj.seuchenei.info', { hp: o.hp, r: radiusOf(o, t), n: o.absorbed || 0 }),
+    label: HB.t('obj.seuchenei.label'), icon: 'nest', hp: 30, blocksMove: true, blocksSight: false, radius: 2, absorb: 1,
+    info: (o, t) => HB.t('obj.seuchenei.info', { hp: o.hp, r: radiusOf(o, t), a: absorbOf(o, t), n: o.absorbed || 0 }),
     onDestroy(g, o, t) {
       const sum = o.absorbed | 0, r = radiusOf(o, t);
       if (sum <= 0) { g.log(HB.t('obj.seuchenei.fizzle')); return; }
-      const victims = near(g, o.pos, r);
+      const victims = g.alive.filter((u) => u.pos && H.distance(u.pos, o.pos) <= r); // Explosion trifft nur Gegner
       g.emit('corpse_explode', { pos: { ...o.pos }, radius: r, damage: sum }); // Aussehen/Ton der Leichenexplosion
       g.log(HB.t('obj.seuchenei.explode', { dmg: sum, list: victims.map((v) => g.unitName(v)).join(', ') || HB.t('obj.seuchenei.nobody') }));
       for (const v of victims) if (g.isLive(v)) g.damage(v, sum);
@@ -18839,17 +18850,23 @@ window.HB = window.HB || {};
   V.cardEffect('seuchenei', {
     label: 'Seuchenei', icon: 'nest', onTile: true, keywords: ['summon'], iconOf: () => 'nest', badge: (e) => e.hp,
     area: (g, e, tile) => [tile],
-    params: [['hp', 'Leben', 30], ['radius', 'Umkreis (Einsaugen + Explosion)', 2]],
-    text: (e) => HB.t('card.seuchenei', { hp: e.hp ?? 30, r: e.radius ?? 2 }),
+    params: [['hp', 'Leben', 30], ['absorb', 'Umkreis Einsaugen', 1], ['radius', 'Umkreis Explosion', 2]],
+    text: (e) => HB.t('card.seuchenei', { hp: e.hp ?? 30, a: e.absorb ?? 1, r: e.radius ?? 2 }),
   }, async (g, fx, c) => {
     const before = new Set(g.objects);
     // Ei wie „Objekt erschaffen“ auf das Zielfeld legen (freies Feld, gehört dem Wirkenden)
     HB.CARD_EFFECT_APPLY.summon(g, { ...fx, object: 'seuchenei', shape: 'single', hp: fx.hp || 30, thorns: 0, duration: 0 }, c);
-    for (const o of g.objects.filter((x) => !before.has(x))) { if (fx.radius) o.radius = fx.radius; absorb(g, o); }
+    for (const o of g.objects.filter((x) => !before.has(x))) { if (fx.radius) o.radius = fx.radius; if (fx.absorb) o.absorbR = fx.absorb; absorb(g, o); }
   });
 
-  // Zu Beginn der Runde (jeder Spieler-Zugbeginn) saugt jedes Ei erneut
-  V.on('turnStart', (g) => { for (const o of g.objects.filter((x) => x.type === 'seuchenei')) if (g.objects.includes(o)) absorb(g, o); });
+  // Ganz am Anfang jedes Spielerzugs (vor Zustandsablauf/Gifttick) saugt jedes Ei erneut. Bodengift unter dem Ei nur einmal je Runde (Koop: kein Doppelzählen)
+  V.on('turnStartEarly', (g) => {
+    for (const o of g.objects.filter((x) => x.type === 'seuchenei')) {
+      if (!g.objects.includes(o)) continue;
+      const first = o.floorTurn !== g.turn; o.floorTurn = g.turn;
+      absorb(g, o, first);
+    }
+  });
 })(window.HB);
 
 </script>
