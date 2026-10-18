@@ -16718,7 +16718,7 @@ window.HB = window.HB || {};
       const c = app.cloud;
       try {
         const [db, user] = await Promise.all([api.use('db'), api.use('user')]);
-        c.user = user;
+        c.user = user; c.db = db;
         const id = db && user ? await user.id() : null;
         if (!db || !id) {
           // Ohne Kennung kein eigener Speicherbereich (nicht angemeldet oder Gast mit anderem Account): Grund möglichst genau nennen
@@ -16729,6 +16729,7 @@ window.HB = window.HB || {};
             + (own === false ? '. Wahrscheinlich mit einem anderen Account angemeldet als dem, dem das Artefakt gehört' : '');
           return;
         }
+        c.id = id;
         const ref = db.doc('data/users/' + id + '/settings');
         const snap = await ref.get();
         c.ref = ref; // erst nach dem Lesen: sonst könnte ein Speichern in der Wartezeit den neueren Online-Stand überschreiben
@@ -16737,19 +16738,12 @@ window.HB = window.HB || {};
         try { hasLocal = !!localStorage.getItem(STORE); } catch (e) { /* kein Speicher */ }
         const localAt = app.localSavedAt();
         if (remote && typeof remote.raw === 'string' && (!hasLocal || (remote.savedAt || 0) > localAt)) {
-          // Online-Stand ist neuer (oder hier gibt es noch nichts): übernehmen, bisherigen Stand vorher sichern
-          const parsed = JSON.parse(remote.raw);
-          const cfg = app.migrate(parsed);
-          if (hasLocal) { try { app.pushBackup(localStorage.getItem(STORE), 'Vor Online-Laden'); } catch (e) { /* egal */ } }
-          app.pushBackup(remote.raw, 'Online-Stand');
-          app.config = cfg;
-          try { localStorage.setItem(STORE, JSON.stringify(cfg)); localStorage.setItem(SAVED_AT, String(remote.savedAt || Date.now())); } catch (e) { /* egal */ }
-          c.state = 'ok'; c.at = Date.now();
-          HB.editor.render(); renderAll();
-          app.toast('Einstellung aus dem Online-Speicher geladen.' + (hasLocal ? ' Der bisherige Stand liegt unter „Daten“ → Sicherungen.' : ''));
+          app.cloudApply(remote, hasLocal, false);
+          if (!c.poll) c.poll = setInterval(app.cloudSync, 6000); // danach regelmäßig nachsehen (neue Einstellung / Briefkasten)
           return;
         }
         c.state = 'ok';
+        if (!c.poll) c.poll = setInterval(app.cloudSync, 6000);
         if (hasLocal && (!remote || localAt > (remote.savedAt || 0))) app.cloudPushSoon(0);
         // Nirgends etwas gespeichert, aber die gesicherte Einstellung wurde als Start geladen: jetzt speichern + online ablegen
         else if (!hasLocal && !remote && HB.USER_BACKUP) { app.save(); app.toast('Deine gesicherte Einstellung ist geladen und gespeichert.'); }
@@ -16758,14 +16752,69 @@ window.HB = window.HB || {};
         console.warn('Online-Speicher', e);
       } finally { if (document.querySelector('#editor .backups')) HB.editor.render(); }
     },
+    // Online-Stand übernehmen (beim Start und später live): bisherigen Stand sichern, Editor und Anzeige neu zeichnen, laufender Kampf bekommt die Werte (Live)
+    cloudApply(remote, hasLocal, live) {
+      const c = app.cloud, cfg = app.migrate(JSON.parse(remote.raw));
+      if (hasLocal) { try { app.pushBackup(localStorage.getItem(STORE), 'Vor Online-Laden'); } catch (e) { /* egal */ } }
+      app.pushBackup(remote.raw, 'Online-Stand');
+      app.config = cfg;
+      try { localStorage.setItem(STORE, JSON.stringify(cfg)); localStorage.setItem(SAVED_AT, String(remote.savedAt || Date.now())); } catch (e) { /* egal */ }
+      c.state = 'ok'; c.at = Date.now();
+      if (live) app.syncLive();
+      HB.editor.render(); renderAll();
+      app.toast(live ? 'Einstellung wurde online aktualisiert – gilt ab dem nächsten Kampf (neue Karten sofort im Editor).' : 'Einstellung aus dem Online-Speicher geladen.' + (hasLocal ? ' Der bisherige Stand liegt unter „Daten“ → Sicherungen.' : ''));
+    },
+    // Alle paar Sekunden: (1) liegt online eine neuere Einstellung (z. B. von Claude eingetragen)? → live übernehmen, ohne Neuladen.
+    // (2) Briefkasten data/users/<id>/inbox: Aufträge wie „Karte auf die Hand legen“ ausführen und aus dem Briefkasten löschen.
+    async cloudSync() {
+      const c = app.cloud;
+      if (!c.ref || c.readonly || c.busy || c.syncing || c.timerPending) return;
+      if (document.activeElement && document.activeElement.matches && document.activeElement.matches('#editor input, #editor textarea, #editor select')) return; // du tippst gerade
+      c.syncing = true;
+      try {
+        const snap = await c.ref.get(), remote = snap.exists ? snap.data() : null;
+        if (remote && typeof remote.raw === 'string' && (remote.savedAt || 0) > app.localSavedAt() && remote.raw !== JSON.stringify(app.config)) app.cloudApply(remote, true, true);
+        await app.cloudInbox();
+      } catch (e) { /* kurz weg: nächster Versuch in 6 s */ } finally { c.syncing = false; }
+    },
+    async cloudInbox() {
+      const c = app.cloud;
+      if (!c.id || !c.db) return;
+      const iref = c.db.doc('data/users/' + c.id + '/inbox'), snap = await iref.get();
+      const items = snap.exists && Array.isArray((snap.data() || {}).items) ? snap.data().items : [];
+      if (!items.length) return;
+      const keep = [];
+      for (const it of items) {
+        let done = false;
+        try { done = app.inboxRun(it); } catch (e) { console.warn('Briefkasten', e); done = true; } // kaputter Auftrag: nicht endlos wiederholen
+        if (!done) keep.push(it);
+      }
+      if (keep.length !== items.length) await iref.set({ items: keep });
+    },
+    // Ein Auftrag aus dem Briefkasten. true = erledigt (oder nicht mehr gültig), false = später nochmal (z. B. gerade kein eigener Zug)
+    // Typen: { type: 'handCard', card: <cid | Name | Kartenobjekt>, count }  → Karte(n) auf die Hand des Spielers (nur im Kampf, in seinem Zug)
+    inboxRun(it) {
+      if (!it || it.type !== 'handCard') return true;
+      const g = app.game;
+      if (app.mode !== 'combat' || !g) { if (Date.now() - (it.at || 0) > 36e5) return true; return false; } // wartet bis zum nächsten Kampf (max. 1 Std.)
+      if (g.phase !== 'player' || g.busy) return false;
+      const key = it.card, deck = app.config.deck || [];
+      const def = (typeof key === 'object' && key) ? key : deck.find((d) => d.cid === key || d.name === key);
+      if (!def) { app.toast('Briefkasten: Karte „' + (typeof key === 'string' ? key : '?') + '“ nicht gefunden.'); return true; }
+      const n = Math.max(1, Math.min(10, it.count | 0 || 1));
+      g.as(app.me(), () => { for (let i = 0; i < n; i++) g.addCardToHand(def); });
+      app.toast((n > 1 ? n + '× ' : '') + (def.name || 'Karte') + ' auf die Hand gelegt.');
+      return true;
+    },
     cloudPushSoon(delay = 1500) {
       const c = app.cloud;
       if (!c.ref || c.readonly) return;
-      clearTimeout(c.timer); c.timer = setTimeout(app.cloudPush, delay);
+      clearTimeout(c.timer); c.timerPending = true; c.timer = setTimeout(app.cloudPush, delay);
     },
     async cloudPush() {
       const c = app.cloud;
       if (!c.ref || c.readonly) return;
+      c.timerPending = false;
       if (c.busy) { c.again = true; return; }
       c.busy = true; c.state = 'saving';
       const doc = { raw: JSON.stringify(app.config), savedAt: app.localSavedAt() || Date.now(), version: app.config.version };
