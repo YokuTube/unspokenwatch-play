@@ -15824,7 +15824,8 @@ window.HB = window.HB || {};
     HB.ensureCardIds(cards); k.deck = k.deck || {};
     const tbl = el('table', { class: 'classtbl' }, el('tr', {}, el('th', {}, 'Karte'), el('th', {}, 'Anzahl im Startdeck')));
     const numCell = (d, key) => el('td', {}, el('input', { type: 'number', min: 0, max: 30, value: ((k.deck[d.cid] || {})[key]) || 0, class: 'qnum',
-      oninput: (ev) => { const v = Math.max(0, parseInt(ev.target.value, 10) || 0), e = k.deck[d.cid] = k.deck[d.cid] || { count: 0 }; e[key] = v; if (!e.count) delete k.deck[d.cid]; changed(); } }));
+      oninput: (ev) => { const v = Math.max(0, parseInt(ev.target.value, 10) || 0), e = k.deck[d.cid] = k.deck[d.cid] || { count: 0 }; e[key] = v; if (!e.count) delete k.deck[d.cid]; changed(); refreshList(); } }));
+    let refreshList = () => {}; // aktualisiert Kurzliste und Summe beim Tippen (unten gesetzt)
     // Karten im Startdeck stehen oben, der Rest alphabetisch; Suchfeld filtert die Zeilen (damit man nicht die ganze Liste durchsuchen muss)
     const inDeck = (d) => ((k.deck[d.cid] || {}).count || 0) > 0;
     const rows = cards.filter((d) => HB.cardForClass(d, k.id)).sort((x, y) => inDeck(y) - inDeck(x) || (x.name || '').localeCompare(y.name || '', 'de'));
@@ -15834,8 +15835,16 @@ window.HB = window.HB || {};
       tbl.querySelectorAll('tr[data-name]').forEach((tr) => { tr.hidden = !!q && !tr.dataset.name.includes(q); });
     } });
     const total = Object.values(k.deck).reduce((a, e) => a + (e.count || 0), 0);
-    const det = el('details', {}, el('summary', {}, `Startdeck: ${total} Karten`), search, tbl);
+    // Kurzliste des aktuellen Startdecks (zum Gegenprüfen); die Zahlen im Tab Karten („Deck“) gelten für diese Klasse NICHT
+    const listText = () => rows.filter(inDeck).map((d) => `${k.deck[d.cid].count}× ${d.name}`).join(', ') || 'leer';
+    const list = listText();
+    const det = el('details', {}, el('summary', {}, `Startdeck: ${total} Karten`), el('p', { class: 'hint' }, list),
+      el('p', { class: 'hint' }, 'Gilt nur für diese Klasse. Die Zahlen unter „Deck“ im Tab Karten gelten dann nicht für sie.'), search, tbl);
     det.open = true;
+    refreshList = () => {
+      const t = Object.values(k.deck).reduce((n, e) => n + (e.count || 0), 0);
+      det.querySelector('summary').textContent = `Startdeck: ${t} Karten`; det.querySelector('p.hint').textContent = listText();
+    };
     box.append(det);
     return box;
   }
