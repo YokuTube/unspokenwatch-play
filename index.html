@@ -1708,6 +1708,9 @@ body[data-editorfull="1"] #editor .cardgrid { grid-template-columns: repeat(auto
 body[data-editorfull="1"] #editor .tabbody { max-width: none; }
 #editor .tab.fullbtn { margin-left: auto; color: var(--gold-title); }
 
+#editor .clssearch { width: 100%; margin: 4px 0 6px; }
+.classtbl tr[hidden] { display: none; }
+
 </style>
 </head>
 <body data-mode="setup" data-public="1">
@@ -15822,9 +15825,18 @@ window.HB = window.HB || {};
     const tbl = el('table', { class: 'classtbl' }, el('tr', {}, el('th', {}, 'Karte'), el('th', {}, 'Anzahl im Startdeck')));
     const numCell = (d, key) => el('td', {}, el('input', { type: 'number', min: 0, max: 30, value: ((k.deck[d.cid] || {})[key]) || 0, class: 'qnum',
       oninput: (ev) => { const v = Math.max(0, parseInt(ev.target.value, 10) || 0), e = k.deck[d.cid] = k.deck[d.cid] || { count: 0 }; e[key] = v; if (!e.count) delete k.deck[d.cid]; changed(); } }));
-    cards.filter((d) => HB.cardForClass(d, k.id)).forEach((d) => tbl.append(el('tr', {}, cardCell(d), numCell(d, 'count'))));
+    // Karten im Startdeck stehen oben, der Rest alphabetisch; Suchfeld filtert die Zeilen (damit man nicht die ganze Liste durchsuchen muss)
+    const inDeck = (d) => ((k.deck[d.cid] || {}).count || 0) > 0;
+    const rows = cards.filter((d) => HB.cardForClass(d, k.id)).sort((x, y) => inDeck(y) - inDeck(x) || (x.name || '').localeCompare(y.name || '', 'de'));
+    rows.forEach((d) => { const tr = el('tr', {}, cardCell(d), numCell(d, 'count')); tr.dataset.name = (d.name || '').toLowerCase(); tbl.append(tr); });
+    const search = el('input', { type: 'search', placeholder: 'Karte suchen …', class: 'clssearch', oninput: (ev) => {
+      const q = ev.target.value.trim().toLowerCase();
+      tbl.querySelectorAll('tr[data-name]').forEach((tr) => { tr.hidden = !!q && !tr.dataset.name.includes(q); });
+    } });
     const total = Object.values(k.deck).reduce((a, e) => a + (e.count || 0), 0);
-    box.append(el('details', {}, el('summary', {}, `Startdeck: ${total} Karten`), tbl));
+    const det = el('details', {}, el('summary', {}, `Startdeck: ${total} Karten`), search, tbl);
+    det.open = true;
+    box.append(det);
     return box;
   }
   // Bildauswahl (PixiJS-Grafik): Raster aller Bilderbögen, „automatisch“ = auto. Gegnertyp: t.sprite; Klasse: k.sprite; Spieler: cfg.playerSprites[i]
