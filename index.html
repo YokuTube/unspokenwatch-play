@@ -1731,6 +1731,22 @@ body[data-editorfull="1"] #editor .tabbody { max-width: none; }
 .ctext .rng { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
 .ctext .rng .ic { width: 1em; height: 1em; }
 
+/* ---- Runentafel (Modul Runen, Schmiede-Fenster) ---- */
+#modal .runeforge { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; align-items: flex-start; margin: 8px 0; }
+#modal .runeboard { position: relative; flex: none; }
+#modal .runecell { position: absolute; width: 52px; height: 60px; padding: 0; border: 0; cursor: pointer; background: #424752; color: #ebe0c7;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); display: flex; align-items: center; justify-content: center; }
+#modal .runecell::before { content: ''; position: absolute; inset: 2px; background: #181c25; clip-path: inherit; z-index: 0; }
+#modal .runecell:hover::before { background: #232a38; }
+#modal .runecell.full::before { background: #1a2f55; }
+#modal .runecell span { position: relative; z-index: 1; display: flex; width: 26px; height: 26px; }
+#modal .runecell span svg { width: 100%; height: 100%; }
+#modal .runebag, #modal .runebook { flex: 1 1 180px; min-width: 160px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+#modal .runechip { background: #181c25; border: 2px solid #424752; color: #ebe0c7; padding: 4px 8px; cursor: pointer; display: flex; gap: 6px; align-items: center; font: inherit; }
+#modal .runechip svg { width: 16px; height: 16px; }
+#modal .runechip.sel, #modal .runechip:hover { border-color: #1a479e; }
+#modal .runeline { font-size: .85em; color: #e6dbc7; text-align: left; }
+
 </style>
 </head>
 <body data-mode="setup" data-public="1">
@@ -1900,9 +1916,9 @@ window.HB = window.HB || {};
     "card.movefree": "kostenlos",
     "card.moveonly": "nur Laufen, kein Effekt",
     "card.title": "{name} ({cost} Energie): {text}",
-    "chest.hint": "Relikte wirken dauerhaft. Du kannst sie später auf den Boden legen, damit andere sie aufheben.",
+    "chest.hint": "Runen wirken dauerhaft. Du kannst sie später auf den Boden legen, damit andere sie aufheben.",
     "chest.skip": "Nichts nehmen",
-    "chest.title": "Schatztruhe – wähle ein Relikt",
+    "chest.title": "Schatztruhe – wähle eine Rune",
     "choice.click": "Karte anklicken.",
     "choice.top": "Oberste Karte links = wird als Nächstes gezogen.",
     "class.allcards": "alle Karten",
@@ -2097,11 +2113,11 @@ window.HB = window.HB || {};
     "privacy.who.t": "Unspoken Watch wird von einer einzelnen Person entwickelt. Kontakt: über den Discord-Server von Unspoken Watch (Kanal #feedback).",
     "privacy.why.h": "Wozu",
     "privacy.why.t": "Fehler finden und das Spiel besser machen. Keine Werbung, kein Verkauf, keine Weitergabe an andere.",
-    "relic.bar": "Deine Relikte (dauerhafte Verbesserungen)",
+    "relic.bar": "Deine Runen (dauerhafte Verbesserungen)",
     "relic.clickhint": "Klick: festhalten, auf den Boden legen",
-    "relic.label": "Relikte",
+    "relic.label": "Runen",
     "relic.lay": "Auf den Boden legen",
-    "relic.layhint": "Andere Spieler können es dort aufheben. Dein Feld muss frei sein.",
+    "relic.layhint": "Andere Spieler können sie dort aufheben. Dein Feld muss frei sein.",
     "relic.none": "keine",
     "render.corpse": "Leiche: {name} (Max-Leben {hp}) – Betreten kostet +1 Bewegung",
     "render.exit": "Ausgang: {label} – hinlaufen und zustimmen",
@@ -2196,9 +2212,9 @@ window.HB = window.HB || {};
     "card.movefree": "free",
     "card.moveonly": "movement only, no effect",
     "card.title": "{name} ({cost} energy): {text}",
-    "chest.hint": "Relics last for good. You can put them on the ground later so others can pick them up.",
+    "chest.hint": "Runes last for good. You can put them on the ground later so others can pick them up.",
     "chest.skip": "Take nothing",
-    "chest.title": "Treasure chest – choose a relic",
+    "chest.title": "Treasure chest – choose a rune",
     "choice.click": "Click a card.",
     "choice.top": "Top card on the left = drawn next.",
     "class.allcards": "all cards",
@@ -2393,9 +2409,9 @@ window.HB = window.HB || {};
     "privacy.who.t": "Unspoken Watch is developed by a single person. Contact: via the Unspoken Watch Discord server (channel #feedback).",
     "privacy.why.h": "Purpose",
     "privacy.why.t": "Finding bugs and making the game better. No advertising, no selling, no sharing with others.",
-    "relic.bar": "Your relics (permanent upgrades)",
+    "relic.bar": "Your runes (permanent upgrades)",
     "relic.clickhint": "Click: pin, put on the ground",
-    "relic.label": "Relics",
+    "relic.label": "Runes",
     "relic.lay": "Put on the ground",
     "relic.layhint": "Other players can pick it up there. Your tile must be free.",
     "relic.none": "none",
@@ -2482,7 +2498,7 @@ window.HB = window.HB || {};
 </script>
   <script>
 // Übersetzungstabelle (cards): Schlüssel -> Text, deutsch + englisch. Mechanismus: js/i18n.js
-// Bereich: Karten-Texte (card.*), Anzeigenamen der Register (fx./cat./rar./trait.), Schlagwörter (kw.*), Erklär-Kästchen (kwi.*), Relikte (relic.*), Namen von Standardinhalten (name:*)
+// Bereich: Karten-Texte (card.*), Anzeigenamen der Register (fx./cat./rar./trait.), Schlagwörter (kw.*), Erklär-Kästchen (kwi.*), Runen (relic.*), Namen von Standardinhalten (name:*)
 window.HB = window.HB || {};
 (function (HB) {
   HB.addStrings('de', {
@@ -2775,7 +2791,7 @@ window.HB = window.HB || {};
     'kwi.push.title': 'Push',
     'kwi.push.text': 'Stößt das Ziel weg.',
     'kwi.push.impact': ' Aufprall: {n} Schaden.',
-    // relics.js: Relikte
+    // relics.js: Runen
     'relic.scope.text': '+{n} Reichweite auf alle deine Karten.',
     'relic.ring.text': 'Deine Angriffe machen +{n} Schaden (je Treffer).',
     'relic.heart.text': '+{n} maximales Leben (du wirst sofort um so viel geheilt).',
@@ -2785,13 +2801,13 @@ window.HB = window.HB || {};
     'relic.amulet.text': 'Zu Beginn jedes Zugs: {n} Block.',
     'relic.fang.text': 'Besiegst du einen Gegner, heilst du {n} Leben.',
     'relic.fang.log': '{unit} heilt {n} Leben ({label}).',
-    'relic.pickup.named': 'Relikt: {name}',
-    'relic.pickup.random': 'Relikt (zufällig)',
+    'relic.pickup.named': 'Rune: {name}',
+    'relic.pickup.random': 'Rune (zufällig)',
     'relic.pickup.info': '{name}: {text} Drüberlaufen = aufheben.',
-    'relic.pickup.infoRandom': 'Ein zufälliges Relikt. Drüberlaufen = aufheben.',
-    'relic.gain.you': '{unit} erhältst das Relikt {label}: {text}',
-    'relic.gain.other': '{unit} erhält das Relikt {label}: {text}',
-    'relic.notice': 'Relikt: {label}',
+    'relic.pickup.infoRandom': 'Eine zufällige Rune. Drüberlaufen = aufheben.',
+    'relic.gain.you': '{unit} erhältst die Rune {label}: {text}',
+    'relic.gain.other': '{unit} erhält die Rune {label}: {text}',
+    'relic.notice': 'Rune: {label}',
     'relic.occupied': 'Hier liegt schon etwas – such dir ein freies Feld.',
     'relic.lay': '{unit} legt {label} auf den Boden.',
     'name:Fernglas': 'Fernglas',
@@ -2802,7 +2818,7 @@ window.HB = window.HB || {};
     'name:Rucksack': 'Rucksack',
     'name:Schutzamulett': 'Schutzamulett',
     'name:Blutdurst': 'Blutdurst',
-    'name:Relikt': 'Relikt',
+    'name:Relikt': 'Rune',
     // defaults.js: Namen der Standardinhalte (Karten, Gegner, Aktionen, Fallen, Klassen)
     'name:Heuschreckenplage': 'Heuschreckenplage',
     'name:Giftpfütze': 'Giftpfütze',
@@ -3175,7 +3191,7 @@ window.HB = window.HB || {};
     'kwi.push.title': 'Push',
     'kwi.push.text': 'Pushes the target away.',
     'kwi.push.impact': ' Impact: {n} damage.',
-    // relics.js: Relikte
+    // relics.js: Runen
     'relic.scope.text': '+{n} Range on all your cards.',
     'relic.ring.text': 'Your attacks deal +{n} damage (per hit).',
     'relic.heart.text': '+{n} max health (you are healed by that much immediately).',
@@ -3185,13 +3201,13 @@ window.HB = window.HB || {};
     'relic.amulet.text': 'At the start of every turn: {n} Block.',
     'relic.fang.text': 'When you defeat an enemy, you heal {n} health.',
     'relic.fang.log': '{unit} heals {n} health ({label}).',
-    'relic.pickup.named': 'Relic: {name}',
-    'relic.pickup.random': 'Relic (random)',
+    'relic.pickup.named': 'Rune: {name}',
+    'relic.pickup.random': 'Rune (random)',
     'relic.pickup.info': '{name}: {text} Walk over it to pick it up.',
-    'relic.pickup.infoRandom': 'A random relic. Walk over it to pick it up.',
-    'relic.gain.you': '{unit} receive the relic {label}: {text}',
-    'relic.gain.other': '{unit} receives the relic {label}: {text}',
-    'relic.notice': 'Relic: {label}',
+    'relic.pickup.infoRandom': 'A random rune. Walk over it to pick it up.',
+    'relic.gain.you': '{unit} receive the rune {label}: {text}',
+    'relic.gain.other': '{unit} receives the rune {label}: {text}',
+    'relic.notice': 'Rune: {label}',
     'relic.occupied': 'There is already something here – find a free tile.',
     'relic.lay': '{unit} puts {label} on the ground.',
     'name:Fernglas': 'Spyglass',
@@ -3202,7 +3218,7 @@ window.HB = window.HB || {};
     'name:Rucksack': 'Satchel',
     'name:Schutzamulett': 'Warding Amulet',
     'name:Blutdurst': 'Bloodlust',
-    'name:Relikt': 'Relic',
+    'name:Relikt': 'Rune',
     // defaults.js: Namen der Standardinhalte (Karten, Gegner, Aktionen, Fallen, Klassen)
     'name:Heuschreckenplage': 'Locust Plague',
     'name:Giftpfütze': 'Poison Puddle',
@@ -3571,7 +3587,7 @@ window.HB = window.HB || {};
     "module.healer.label": "Heiler nach jeder Welle",
     "module.market.label": "Markt nach jeder Welle",
     "module.rarity.label": "Seltenheit je Angebotsplatz (Bänder, Glückszähler, Anlauf wie in Unspoken Watch)",
-    "module.relics.label": "Relikte (Start-Relikte, Schatztruhen)",
+    "module.relics.label": "Runen (Start-Runen, Schatztruhen)",
     "module.route.label": "Weiterziehen statt neuer Wellen (Ausgänge am Rand, Boss nach N Feldern)",
     "module.stall.label": "Flaute (3 Runden ohne Schaden an Gegnern: alle Gegner dauerhaft +1 Kraft und +1 Hast; Zahlen im Tab Regeln)",
     "module.telemetry.label": "Telemetrie (Spieldaten wie im alten Unspoken Watch; nur Webfassung, nur mit Zustimmung; js/telemetry.js)",
@@ -3817,7 +3833,7 @@ window.HB = window.HB || {};
     "waves.boss": "Der Boss {name} erscheint! Du bist zuerst dran.",
     "waves.chest.empty": "Die Truhe ist leer.",
     "waves.chest.find": "Schatztruhe: wähle ein Fundstück.",
-    "waves.chest.relic": "Schatztruhe: wähle ein Relikt.",
+    "waves.chest.relic": "Schatztruhe: wähle eine Rune.",
     "waves.cleared": "Welle {n} geschafft! Frei laufen: Feld anklicken. Welle {next} erscheint, wenn du den Zug beendest.",
     "waves.cleared.boss": "Welle {n} geschafft! Frei laufen: Feld anklicken. Der Boss erscheint, wenn du den Zug beendest.",
     "waves.draft": "Kartendraft: wähle eine Karte.",
@@ -4116,7 +4132,7 @@ window.HB = window.HB || {};
     "module.healer.label": "Healer after every wave",
     "module.market.label": "Market after every wave",
     "module.rarity.label": "Rarity per offer slot (bands, luck counter, ramp-up as in Unspoken Watch)",
-    "module.relics.label": "Relics (starting relics, treasure chests)",
+    "module.relics.label": "Runes (starting runes, treasure chests)",
     "module.route.label": "Move on instead of new waves (exits at the edge, boss after N tiles)",
     "module.stall.label": "Lull (3 rounds without damage to enemies: all enemies gain +1 Strength and +1 Haste permanently; numbers in the Rules tab)",
     "module.telemetry.label": "Telemetry (game data as in the old Unspoken Watch; web version only, only with consent; js/telemetry.js)",
@@ -4362,7 +4378,7 @@ window.HB = window.HB || {};
     "waves.boss": "The boss {name} appears! You go first.",
     "waves.chest.empty": "The chest is empty.",
     "waves.chest.find": "Treasure chest: choose a find.",
-    "waves.chest.relic": "Treasure chest: choose a relic.",
+    "waves.chest.relic": "Treasure chest: choose a rune.",
     "waves.cleared": "Wave {n} cleared! Walk freely: click a tile. Wave {next} appears when you end your turn.",
     "waves.cleared.boss": "Wave {n} cleared! Walk freely: click a tile. The boss appears when you end your turn.",
     "waves.draft": "Card draft: choose a card.",
@@ -5253,6 +5269,139 @@ window.HB = window.HB || {};
 
 </script>
   <script>
+// Übersetzungstabelle (Modul Runen: Schmiede, Runenwörter, Hinweise). Mechanismus: js/i18n.js
+window.HB = window.HB || {};
+(function (HB) {
+  HB.addStrings('de', {
+    "module.runes.label": "Runen (Runentafel, Runenschmiede, Runenwörter)",
+    "rune.forge.label": "Runenschmiede",
+    "rune.forge.appear": "Eine Runenschmiede erscheint.",
+    "rune.forge.hint": "Runenschmiede: hier gravierst du Runen in deine Tafel.",
+    "rune.forge.info": "Runenschmiede: Runen in die Tafel gravieren oder wieder herausnehmen. Nur eingravierte Runen wirken.",
+    "rune.forge.title": "Runenschmiede",
+    "rune.forge.text": "Wähle eine Rune aus dem Beutel und klicke einen freien Platz. Klick auf eine eingravierte Rune nimmt sie heraus. Runen, die nebeneinander liegen, können ein Runenwort bilden.",
+    "rune.forge.close": "Fertig",
+    "rune.cell.empty": "Freier Platz",
+    "rune.bag": "Runenbeutel",
+    "rune.bag.empty": "Keine freien Runen.",
+    "rune.book": "Runenbuch",
+    "rune.hint.scroll": "Schriftrolle: „{text}“ Ein Stein davon: {rune}.",
+    "rune.hint.grave": "Grab von {name}: {lines}",
+    "rune.scroll.found": "{who}: Der Gegner hinterlässt eine Schriftrolle.",
+    "rune.scroll.notice": "Schriftrolle gefunden – sie steht im Runenbuch.",
+    "rune.word.found": "Runenwort: {name}",
+    "rune.word.found.text": "Deine Runen {runes} liegen nebeneinander. Die Karte gehört dir, wenn du willst.",
+    "rune.word.take": "Karte nehmen",
+    "rune.word.decline": "Ablehnen",
+    "rune.graves.label": "Gräber",
+    "rune.graves.appear": "Drei Gräber erscheinen.",
+    "rune.graves.hint": "Gräber: berühre eines, um einen Stein und einen Hinweis zu finden.",
+    "rune.graves.info": "Drei Grabsteine. Jeder trägt einen Namen und Sätze über die Runen seines Wortes. Eines berühren.",
+    "rune.graves.none": "Hier ruht niemand mehr, dessen Wort du nicht kennst.",
+    "rune.graves.title": "Gräber",
+    "rune.graves.text": "Eines berühren.",
+    "rune.graves.after": "{name} steht jetzt in deinem Runenbuch. Du findest einen Stein: {rune}.",
+    "rune.graves.next": "Weiter",
+    "rune.word.fieberbiss.scroll": "Er legte Fieber in jeden Schlag, bis der Feind daran zerbrach.",
+    "rune.word.eisenwacht.scroll": "Hinter seinem Wall wuchs er stärker, als er hineingegangen war.",
+    "rune.word.kriegsklang.scroll": "Wenn die Trommeln gingen, trug ihn mehr Kraft, als er besaß.",
+    "rune.word.lesefieber.scroll": "Er blätterte durch Seiten, schneller als der Feind blinzelte.",
+    "rune.word.weitblick.scroll": "Er sah den Schlag, bevor er fiel.",
+    "rune.word.blutrausch.scroll": "Was er dem Feind nahm, nahm er für sich.",
+    "rune.word.seuchenernte.scroll": "Er säte Fieber und erntete, wo andere nur Staub fanden.",
+    "rune.grave.scope": "Er sah weiter als die anderen.",
+    "rune.grave.again.scope": "Und weiter noch, bis ans Ende der Welt.",
+    "rune.grave.ring": "Seine Schläge trugen Gewicht.",
+    "rune.grave.again.ring": "Und jeder Schlag fiel schwerer.",
+    "rune.grave.heart": "Er hielt mehr aus, als ein Mensch aushält.",
+    "rune.grave.again.heart": "Und stand wieder auf.",
+    "rune.grave.crystal": "Er trug eine unruhige Kraft in sich.",
+    "rune.grave.again.crystal": "Sie ließ ihn nie los.",
+    "rune.grave.lens": "Er las, was andere übersahen.",
+    "rune.grave.again.lens": "Und wusste schon, was kam.",
+    "rune.grave.satchel": "Er trug mehr bei sich, als sein Rücken ahnen ließ.",
+    "rune.grave.again.satchel": "Und nie war der Sack leer.",
+    "rune.grave.amulet": "Ein Wall stand zwischen ihm und allem.",
+    "rune.grave.again.amulet": "Und hinter dem Wall ein zweiter.",
+    "rune.grave.venomchill": "Fieber folgte ihm und lähmte, was es berührte.",
+    "rune.grave.again.venomchill": "Und das Fieber wurde dichter.",
+    "rune.grave.fang": "Er nahm sich, was er brauchte, vom Feind.",
+    "rune.grave.again.fang": "Und nahm immer mehr.",
+    "name:Fieberbiss": "Fieberbiss",
+    "name:Eiserne Wacht": "Eiserne Wacht",
+    "name:Kriegsklang": "Kriegsklang",
+    "name:Lesefieber": "Lesefieber",
+    "name:Weitblick": "Weitblick",
+    "name:Blutrausch": "Blutrausch",
+    "name:Seuchenernte": "Seuchenernte",
+  });
+  HB.addStrings('en', {
+    "module.runes.label": "Runes (rune board, rune forge, rune words)",
+    "rune.forge.label": "Rune forge",
+    "rune.forge.appear": "A rune forge appears.",
+    "rune.forge.hint": "Rune forge: engrave runes into your board here.",
+    "rune.forge.info": "Rune forge: engrave runes into the board or take them out again. Only engraved runes take effect.",
+    "rune.forge.title": "Rune forge",
+    "rune.forge.text": "Pick a rune from the bag and click a free slot. Clicking an engraved rune takes it out. Runes next to each other can form a rune word.",
+    "rune.forge.close": "Done",
+    "rune.cell.empty": "Free slot",
+    "rune.bag": "Rune bag",
+    "rune.bag.empty": "No free runes.",
+    "rune.book": "Rune book",
+    "rune.hint.scroll": "Scroll: \"{text}\" One stone of it: {rune}.",
+    "rune.hint.grave": "Grave of {name}: {lines}",
+    "rune.scroll.found": "{who}: The enemy leaves a scroll behind.",
+    "rune.scroll.notice": "Scroll found – it is in the rune book.",
+    "rune.word.found": "Rune word: {name}",
+    "rune.word.found.text": "Your runes {runes} lie next to each other. The card is yours if you want it.",
+    "rune.word.take": "Take card",
+    "rune.word.decline": "Decline",
+    "rune.graves.label": "Graves",
+    "rune.graves.appear": "Three graves appear.",
+    "rune.graves.hint": "Graves: touch one to find a stone and a hint.",
+    "rune.graves.info": "Three gravestones. Each bears a name and lines about the runes of its word. Touch one.",
+    "rune.graves.none": "No one rests here whose word you do not already know.",
+    "rune.graves.title": "Graves",
+    "rune.graves.text": "Touch one.",
+    "rune.graves.after": "{name} is now in your rune book. You find a stone: {rune}.",
+    "rune.graves.next": "Continue",
+    "rune.word.fieberbiss.scroll": "He put fever in every blow until the enemy broke from it.",
+    "rune.word.eisenwacht.scroll": "Behind his wall he grew stronger than when he went in.",
+    "rune.word.kriegsklang.scroll": "When the drums began, more strength carried him than he owned.",
+    "rune.word.lesefieber.scroll": "He leafed through pages faster than the enemy could blink.",
+    "rune.word.weitblick.scroll": "He saw the blow before it fell.",
+    "rune.word.blutrausch.scroll": "What he took from the enemy he took for himself.",
+    "rune.word.seuchenernte.scroll": "He sowed fever and reaped where others found only dust.",
+    "rune.grave.scope": "He saw farther than the others.",
+    "rune.grave.again.scope": "And farther still, to the end of the world.",
+    "rune.grave.ring": "His blows carried weight.",
+    "rune.grave.again.ring": "And every blow fell heavier.",
+    "rune.grave.heart": "He endured more than a person can endure.",
+    "rune.grave.again.heart": "And got back up.",
+    "rune.grave.crystal": "He carried a restless power inside.",
+    "rune.grave.again.crystal": "It never let him go.",
+    "rune.grave.lens": "He read what others overlooked.",
+    "rune.grave.again.lens": "And already knew what came next.",
+    "rune.grave.satchel": "He carried more than his back let on.",
+    "rune.grave.again.satchel": "And the sack was never empty.",
+    "rune.grave.amulet": "A wall stood between him and everything.",
+    "rune.grave.again.amulet": "And behind the wall, a second one.",
+    "rune.grave.venomchill": "Fever followed him and numbed whatever it touched.",
+    "rune.grave.again.venomchill": "And the fever grew thicker.",
+    "rune.grave.fang": "He took from the enemy what he needed.",
+    "rune.grave.again.fang": "And always took more.",
+    "name:Fieberbiss": "Fever Bite",
+    "name:Eiserne Wacht": "Iron Watch",
+    "name:Kriegsklang": "War Chime",
+    "name:Lesefieber": "Reading Fever",
+    "name:Weitblick": "Far Sight",
+    "name:Blutrausch": "Blood Frenzy",
+    "name:Seuchenernte": "Plague Harvest",
+  });
+})(window.HB);
+
+</script>
+  <script>
 // Hex-Mathematik: pointy-top, Axial-Koordinaten {q, r}. Brett als "odd-r"-Offsetraster.
 window.HB = window.HB || {};
 (function (HB) {
@@ -5542,6 +5691,8 @@ window.HB = window.HB || {};
     { id: 'crypt', label: HB.t('module.crypt.label'), get: (c) => !!(c.crypt && c.crypt.enabled), set: (c, v) => { c.crypt = { ...(HB.defaultCrypt ? HB.defaultCrypt() : {}), ...(c.crypt || {}), enabled: v }; } },
     { id: 'classes', label: HB.t('module.classes.label'), get: (c) => c.classesEnabled !== false, set: (c, v) => { c.classesEnabled = v; } },
     { id: 'relics', label: HB.t('module.relics.label'), get: (c) => c.relicsEnabled !== false, set: (c, v) => { c.relicsEnabled = v; } },
+    // Runen auf der Tafel (Schmiede, Wörter, Hinweise): AUS = jede Rune im Beutel wirkt sofort (js/runes.js)
+    { id: 'runes', label: HB.t('module.runes.label'), get: (c) => !!(c.runes && c.runes.enabled), set: (c, v) => { c.runes = { ...(HB.defaultRunes ? HB.defaultRunes() : {}), ...(c.runes || {}), enabled: v }; } },
     { id: 'corpses', label: HB.t('module.corpses.label'), get: (c) => !!c.corpsesEnabled, set: (c, v) => { c.corpsesEnabled = v; } },
     { id: 'telemetry', label: HB.t('module.telemetry.label'), get: (c) => c.telemetryEnabled !== false, set: (c, v) => { c.telemetryEnabled = v; } },
     { id: 'stall', label: HB.t('module.stall.label'), get: (c) => c.stallEnabled !== false, set: (c, v) => { c.stallEnabled = v; } },
@@ -9377,6 +9528,7 @@ window.HB = window.HB || {};
         const spot = near(anchor, pl.range ? pl.range(this) : 0);
         if (spot.length) { this[k] = { pos: { ...this.pickRandom(spot) } }; this.log(pl.appear); }
       }
+      this.emit('places_shown', { places: HB.PLACE_KEYS.filter((k) => this[k]) }); // allgemein für alle Orte (Telemetrie: was erschien)
     }
     // Ort für alle Lebenden benutzt → verschwindet
     placeDoneFor(k) {
@@ -9400,6 +9552,7 @@ window.HB = window.HB || {};
         this.placeDoneFor(k);
       }
       this.emit(pl.event, { pos: { ...p.pos }, by: p.id });
+      this.emit('place_used', { place: kind, by: p.id }); // allgemein für alle Orte (Telemetrie: wer ging wohin)
       pl.use(this, p);
       this.placeDoneFor(kind); // alle lebenden Spieler waren da: verschwindet
       this.changed();
@@ -9607,6 +9760,7 @@ window.HB = window.HB || {};
         if (reward === 'draft' || reward === 'elite') this.startDraft(reward === 'elite' ? 1 : 0);
         if (reward === 'chest' || (reward === 'elite' && Math.random() * 100 < rc.eliteRelic)) this.openChest(3);
       });
+      if (reward === 'elite' && HB.runeEliteReward) HB.runeEliteReward(this); // Modul Runen: Schriftrolle als Hinweis auf ein Runenwort
       for (const p of this.livePlayers) { p.freeMove = true; delete p.routeVote; }
       // Ausgänge: zufällige Seiten (ohne Eingang), Art zufällig nach Gewicht; vor dem Boss nur ein Ausgang „Boss“
       const n = this.routeSides().length, sides = [...Array(n).keys()].filter((s) => s !== r.entry);
@@ -11893,11 +12047,11 @@ window.HB = window.HB || {};
 
 </script>
   <script>
-// Relikte: dauerhafte Kampfverbesserungen. Jeder Spieler hat seine eigene Liste (player.relics = Relikt-Ids, auch doppelt möglich);
-// mehrere Spieler können dieselben Relikte haben. Relikte liegen als Objekt „Relikt“ auf dem Boden (aufheben beim Betreten) und
+// Runen: dauerhafte Kampfverbesserungen. Jeder Spieler hat seine eigene Liste (player.relics = Runen-Ids, auch doppelt möglich);
+// mehrere Spieler können dieselben Runen haben. Runen liegen als Objekt „Rune“ auf dem Boden (aufheben beim Betreten) und
 // kommen aus Schatztruhen; man kann sie auf den Boden legen, damit andere sie aufsammeln. (Karten gibt man über den Markt weiter: verbannen.)
-// Neues Relikt = ein Eintrag in HB.RELICS:
-//   label, icon, params [[Feld, Beschriftung, Standardwert], …] (im Editor-Tab „Relikte“ einstellbar), text(p) = Erklärung (p = Werte),
+// Neue Rune = ein Eintrag in HB.RELICS:
+//   label, icon, params [[Feld, Beschriftung, Standardwert], …] (im Editor-Tab „Runen“ einstellbar), text(p) = Erklärung (p = Werte),
 //   stat: { schluessel: 'paramname' | Zahl } → einfache Zuschläge, abgefragt mit HB.relicStat(game, spieler, schluessel):
 //         range (Reichweite der Karten), damage (Schaden deiner Angriffe), draw (Karten pro Zug), handLimit (Handkartenlimit)
 //   und/oder eigener Code: onGain(g, p, v) / onLose(g, p, v) beim Erhalten/Verlieren, onTurnStart(g, p, v), onKill(g, p, v, { enemy }) …
@@ -11937,24 +12091,26 @@ window.HB = window.HB || {};
   };
   // Anzeigename in der gewählten Sprache (Tabelle 'name:<deutscher Name>'); die Kennung bleibt deutsch
   Object.values(HB.RELICS).forEach((r) => { const de = r.label; Object.defineProperty(r, 'label', { get: () => HB.tn(de), enumerable: true, configurable: true }); });
-  // Werte eines Relikts: Standardwerte, überschrieben von cfg.relics[id] (Editor-Tab „Relikte“)
+  // Werte einer Rune: Standardwerte, überschrieben von cfg.relics[id] (Editor-Tab „Runen“)
   HB.relicParams = (g, id) => {
     const d = HB.RELICS[id] || { params: [] }, o = ((g && g.cfg && g.cfg.relics) || {})[id] || {}, v = {};
     (d.params || []).forEach(([k, , dflt]) => { v[k] = o[k] ?? dflt; });
     return v;
   };
   HB.relicText = (g, id) => { const d = HB.RELICS[id]; return d ? d.text(HB.relicParams(g, id)) : ''; };
-  HB.relicStat = (g, p, key) => ((p && p.relics) || []).reduce((n, id) => {
+  // Welche Runen wirken? Ohne Modul „Runen“ alle im Beutel (p.relics); mit Modul nur die auf der Tafel eingravierten (runes.js)
+  HB.activeRelics = (g, p) => (HB.runeActive ? HB.runeActive(g, p) : (p && p.relics) || []);
+  HB.relicStat = (g, p, key) => HB.activeRelics(g, p).reduce((n, id) => {
     const d = HB.RELICS[id];
     if (!d || !d.stat || d.stat[key] === undefined) return n;
     const s = d.stat[key];
     return n + (typeof s === 'string' ? Number(HB.relicParams(g, id)[s]) || 0 : s);
   }, 0);
-  HB.relicHook = (g, p, name, ctx) => { for (const id of (p && p.relics) || []) { const d = HB.RELICS[id]; if (d && d[name]) d[name](g, p, HB.relicParams(g, id), ctx || {}); } };
-  // Relikte, die gefunden werden können (im Editor abschaltbar)
+  HB.relicHook = (g, p, name, ctx) => { for (const id of HB.activeRelics(g, p)) { const d = HB.RELICS[id]; if (d && d[name]) d[name](g, p, HB.relicParams(g, id), ctx || {}); } };
+  // Runen, die gefunden werden können (im Editor abschaltbar)
   HB.relicPool = (g) => Object.keys(HB.RELICS).filter((id) => (((g.cfg.relics || {})[id] || {}).enabled) !== false);
 
-  // Relikt am Boden: Drüberlaufen hebt es auf. Feld `relic` = Relikt-Id (ohne: zufällig beim Aufheben)
+  // Rune am Boden: Drüberlaufen hebt sie auf. Feld `relic` = Runen-Id (ohne: zufällig beim Aufheben)
   HB.OBJECT_TYPES.relicPickup = {
     get label() { return HB.tn('Relikt'); }, icon: 'relic', pickup: true,
     iconOf: (o) => (HB.RELICS[o.relic] || {}).icon || 'relic',
@@ -11970,7 +12126,7 @@ window.HB = window.HB || {};
   };
 
   class GameRelics {
-    // Reichweite einer Karte des aktiven Spielers (mit Relikten); ∞ bleibt ∞
+    // Reichweite einer Karte des aktiven Spielers (mit Runen); ∞ bleibt ∞
     cardRange(d) { const r = d.range; return HB.util.isInf(r) ? r : HB.util.reach(r) + HB.relicStat(this, this.player, 'range'); }
     handLimit() { return (this.cfg.player.handLimit || 10) + HB.relicStat(this, this.player, 'handLimit'); }
     giveRelic(p, id, quiet) {
@@ -11978,7 +12134,7 @@ window.HB = window.HB || {};
       if (!d) return false;
       p.relics = p.relics || [];
       p.relics.push(id);
-      if (d.onGain) d.onGain(this, p, HB.relicParams(this, id));
+      if (d.onGain && !(HB.runesOn && HB.runesOn(this.cfg))) d.onGain(this, p, HB.relicParams(this, id)); // mit Modul „Runen“ wirkt sie erst beim Eingravieren
       this.emit('relic_gained', { unit: p.id, relic: id });
       if (!quiet) { this.log(HB.t(this.players.length === 1 ? 'relic.gain.you' : 'relic.gain.other', { unit: this.unitName(p), label: d.label, text: HB.relicText(this, id) })); this.notice(HB.t('relic.notice', { label: d.label }), 'wave'); }
       this.changed();
@@ -11987,11 +12143,12 @@ window.HB = window.HB || {};
     removeRelic(p, id) {
       const i = (p.relics || []).lastIndexOf(id), d = HB.RELICS[id];
       if (i < 0) return false;
+      if (HB.runesOn && HB.runesOn(this.cfg)) { HB.runeLoosen(this, p, id); p.relics.splice(i, 1); return true; } // eingravierte Kopie vorher von der Tafel nehmen
       p.relics.splice(i, 1);
       if (d && d.onLose) d.onLose(this, p, HB.relicParams(this, id));
       return true;
     }
-    // Relikt auf den Boden legen: eigenes Feld, dort darf noch nichts liegen
+    // Rune auf den Boden legen: eigenes Feld, dort darf noch nichts liegen
     canLayHere(p) { return this.withFloor(p.floor | 0, () => !this.objectAt(p.pos) && !this.trapAt(p.pos)); }
     layRelic(p, id) {
       if (this.phase !== 'player' || this.busy || !(p.relics || []).includes(id)) return false;
@@ -12002,7 +12159,7 @@ window.HB = window.HB || {};
       this.changed();
       return true;
     }
-    // Schatztruhe: Auswahl aus dem Relikt-Pool (gibt es keine Relikte mehr: Karten wie beim Kartendraft)
+    // Schatztruhe: Auswahl aus dem Runen-Pool (gibt es keine Runen mehr: Karten wie beim Kartendraft)
     offerRelics(n) {
       const pool = HB.relicPool(this).slice(), out = [];
       while (out.length < n && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
@@ -12016,6 +12173,293 @@ window.HB = window.HB || {};
     }
   }
   HB.extendGame(GameRelics);
+})(window.HB);
+
+</script>
+  <script>
+// Modul „Runen“ (HB.MODULES id 'runes', Einstellung cfg.runes, standardmäßig AUS). Runen sind die Relikte aus relics.js (HB.RELICS).
+// Ohne das Modul: nichts davon ist zu sehen, jede Rune im Beutel (player.relics = das Lager) wirkt sofort – wie immer.
+// Mit dem Modul: der Beutel ist nur das Lager; eine Rune wirkt nur, wenn sie in der Runenschmiede auf die Tafel (Hexfelder,
+// begrenzte Plätze) eingraviert ist (player.runeTafel = Rune-Id oder null je Platz). Eine Rune wirkt auch als Teil eines Wortes.
+// Runenwörter: liegen die Runen eines Rezepts (Reihenfolge egal, gleiche Runen zählen mehrfach) auf BENACHBARTEN Plätzen, bietet die
+// Schmiede die Wortkarte an (annehmen oder ablehnen). Hinweise auf Rezepte: Schriftrolle (Elite-Sieg) und Gräber (Ort am Feld).
+// Neigung: jede Rune hat eine (für den Spieler unsichtbare) Familie und lenkt das Runenangebot, wenn das Modul Neigung an ist.
+// Orte „Runenschmiede“ (HB.PLACES.forge) und „Gräber“ (HB.PLACES.graves) erscheinen nur mit cfg.runes.forgeChance / graveChance > 0.
+window.HB = window.HB || {};
+(function (HB) {
+  HB.defaultRunes = () => ({ enabled: false, slots: 7, forgeChance: 0, graveChance: 0, scrollChance: 50, ownPct: 75, pull: 6 });
+  const rc = (cfg) => ({ ...HB.defaultRunes(), ...((cfg && cfg.runes) || {}) });
+  HB.runesOn = (cfg) => HB.moduleOn(cfg, 'runes');
+  const label = (id) => (HB.RELICS[id] ? HB.RELICS[id].label : id);
+
+  // Familien (unsichtbar; leer = neutral, lenkt nie). Passt zu den Neigungs-Familien, wenn eine mit derselben Id existiert.
+  HB.RUNE_FAMILY = { scope: '', ring: 'wucht', heart: 'leben', crystal: 'energie', lens: 'ziehen', satchel: '', amulet: 'block', venomchill: 'gift', fang: 'blut' };
+  HB.runeFamily = (id) => HB.RUNE_FAMILY[id] || '';
+
+  // Plätze der Tafel: Spirale um die Mitte (axiale Koordinaten), die ersten n werden benutzt
+  const DIRS = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
+  const CELLS = (() => {
+    const out = [[0, 0]];
+    for (let k = 1; k <= 3; k++) {
+      let q = DIRS[4][0] * k, r = DIRS[4][1] * k;
+      for (let i = 0; i < 6; i++) for (let j = 0; j < k; j++) { out.push([q, r]); q += DIRS[i][0]; r += DIRS[i][1]; }
+    }
+    return out;
+  })();
+  HB.RUNE_CELLS = CELLS;
+  const slotCount = (cfg) => Math.max(1, Math.min(CELLS.length, rc(cfg).slots | 0));
+  const adj = (a, b) => DIRS.some(([dq, dr]) => CELLS[a][0] + dq === CELLS[b][0] && CELLS[a][1] + dr === CELLS[b][1]);
+
+  // Runenwörter: Rezept (Multimenge), Wortkarte, Name des Toten (für Gräber). Zweierwort = Tafel, Dreierwort = legendär;
+  // kein Dreierwort enthält ein Zweierwort (Test in tools/selftest.js).
+  HB.RUNE_WORDS = [
+    { id: 'fieberbiss', runes: ['venomchill', 'ring'], grave: 'MARN', card: { name: 'Fieberbiss', cost: 1, target: 'enemy', range: 3, category: 'power', effects: [{ type: 'poison', amount: 8 }, { type: 'damage', amount: 4 }] } },
+    { id: 'eisenwacht', runes: ['amulet', 'heart'], grave: 'VESSA', card: { name: 'Eiserne Wacht', cost: 1, target: 'self', range: 0, category: 'power', effects: [{ type: 'block', amount: 12 }, { type: 'heal', amount: 4 }] } },
+    { id: 'kriegsklang', runes: ['ring', 'crystal'], grave: 'TORR', card: { name: 'Kriegsklang', cost: 0, target: 'self', range: 0, category: 'power', effects: [{ type: 'energy', amount: 2 }, { type: 'strength', amount: 1 }] } },
+    { id: 'lesefieber', runes: ['lens', 'satchel'], grave: 'ILKA', card: { name: 'Lesefieber', cost: 1, target: 'self', range: 0, category: 'power', effects: [{ type: 'draw', amount: 3 }, { type: 'energy', amount: 1 }] } },
+    { id: 'weitblick', runes: ['scope', 'lens'], grave: 'BRANN', card: { name: 'Weitblick', cost: 0, target: 'self', range: 0, category: 'power', effects: [{ type: 'scry', amount: 3 }, { type: 'draw', amount: 1 }] } },
+    { id: 'blutrausch', runes: ['fang', 'ring'], grave: 'HULDER', card: { name: 'Blutrausch', cost: 1, target: 'self', range: 0, category: 'power', effects: [{ type: 'strength', amount: 2 }, { type: 'heal', amount: 3 }] } },
+    { id: 'seuchenernte', runes: ['venomchill', 'venomchill', 'fang'], grave: 'LEIF', card: { name: 'Seuchenernte', cost: 2, target: 'enemy', range: 3, category: 'skill', rarity: 'legendary', effects: [{ type: 'poison', amount: 12, radius: 2 }, { type: 'damage', amount: 6 }] } },
+  ];
+  const wordOf = (id) => HB.RUNE_WORDS.find((w) => w.id === id);
+  HB.runeWordCard = (w) => HB.migrateCard(HB.util.clone({ count: 0, cid: 'rw_' + w.id, ...w.card }));
+
+  // ---------- Zustand ----------
+  // Tafel des Spielers (Liste mit einem Eintrag je Platz); wächst/schrumpft mit der eingestellten Platzzahl
+  HB.runeTafel = (g, p) => {
+    const n = slotCount(g.cfg), t = (p.runeTafel = p.runeTafel || []);
+    while (t.length < n) t.push(null);
+    if (t.length > n) { for (let i = n; i < t.length; i++) if (t[i]) HB.runeUnengrave(g, p, i, true); t.length = n; }
+    return t;
+  };
+  const bagCount = (p, id) => (p.relics || []).filter((x) => x === id).length;
+  const engravedCount = (p, id) => (p.runeTafel || []).filter((x) => x === id).length;
+  HB.runeFree = (p, id) => bagCount(p, id) - engravedCount(p, id); // im Beutel, nicht eingraviert
+  HB.runeActive = (g, p) => (HB.runesOn(g.cfg) ? ((p && p.runeTafel) || []).filter(Boolean) : (p && p.relics) || []);
+
+  HB.runeEngrave = (g, p, slot, id) => {
+    const t = HB.runeTafel(g, p), d = HB.RELICS[id];
+    if (!d || slot < 0 || slot >= t.length || (t[slot] !== id && HB.runeFree(p, id) < 1)) return false;
+    if (t[slot] === id) return false;
+    if (t[slot]) HB.runeUnengrave(g, p, slot, true);
+    t[slot] = id;
+    if (d.onGain) d.onGain(g, p, HB.relicParams(g, id));
+    g.emit('rune_engraved', { unit: p.id, rune: id, slot });
+    record(g, p, id, 1);
+    checkWords(g, p);
+    return true;
+  };
+  HB.runeUnengrave = (g, p, slot, quiet) => {
+    const t = p.runeTafel || [], id = t[slot], d = HB.RELICS[id];
+    if (!id) return false;
+    t[slot] = null;
+    if (d && d.onLose) d.onLose(g, p, HB.relicParams(g, id));
+    if (!quiet) g.emit('rune_removed', { unit: p.id, rune: id, slot });
+    return true;
+  };
+  // Eine Rune verlässt den Beutel (auf den Boden gelegt): war sie eingraviert und ist keine freie Kopie da, kommt sie von der Tafel
+  HB.runeLoosen = (g, p, id) => {
+    if (engravedCount(p, id) <= bagCount(p, id) - 1) return;
+    const t = p.runeTafel || [], i = t.lastIndexOf(id);
+    if (i >= 0) HB.runeUnengrave(g, p, i, true);
+  };
+
+  // ---------- Wörter ----------
+  // Liegen die Runen des Rezepts zusammenhängend nebeneinander? (Teilmenge der belegten Plätze, Multimenge gleich, verbunden)
+  HB.runeWordFormed = (t, w) => {
+    const occ = t.map((id, i) => (id ? i : -1)).filter((i) => i >= 0), need = [...w.runes].sort().join('|');
+    const pick = (from, chosen) => {
+      if (chosen.length === w.runes.length) {
+        if (chosen.map((i) => t[i]).sort().join('|') !== need) return false;
+        const seen = new Set([chosen[0]]), stack = [chosen[0]];
+        while (stack.length) { const a = stack.pop(); for (const b of chosen) if (!seen.has(b) && adj(a, b)) { seen.add(b); stack.push(b); } }
+        return seen.size === chosen.length;
+      }
+      for (let k = from; k < occ.length; k++) if (pick(k + 1, [...chosen, occ[k]])) return true;
+      return false;
+    };
+    return pick(0, []);
+  };
+  function checkWords(g, p) {
+    const t = HB.runeTafel(g, p);
+    p.runeWordsDone = p.runeWordsDone || []; p.runeWordsKnown = p.runeWordsKnown || [];
+    for (const w of HB.RUNE_WORDS) {
+      if (p.runeWordsDone.includes(w.id) || !HB.runeWordFormed(t, w)) continue;
+      p.runeWordsDone.push(w.id);
+      if (!p.runeWordsKnown.includes(w.id)) p.runeWordsKnown.push(w.id);
+      (p.runeWordOffer = p.runeWordOffer || []).push(w.id);
+      p.runeHints = (p.runeHints || []).filter((h) => h.word !== w.id); // Spuren des Worts sind erledigt
+      g.emit('rune_word', { unit: p.id, word: w.id });
+    }
+  }
+
+  // ---------- Hinweise (Spuren im Runenbuch) ----------
+  // Rune, die die Schriftrolle nennt: je Wort fest (aus der Id), damit derselbe Tote immer denselben Stein nennt
+  const namedRune = (w) => w.runes[(w.id.length + w.id.charCodeAt(0)) % w.runes.length];
+  const unknownWords = (p) => HB.RUNE_WORDS.filter((w) => !(p.runeWordsKnown || []).includes(w.id));
+  function addHint(g, p, h) {
+    p.runeHints = p.runeHints || [];
+    if (p.runeHints.some((x) => x.kind === h.kind && x.word === h.word)) return false;
+    p.runeHints.push(h);
+    return true;
+  }
+  // Schriftrolle: verschlüsselte Wirkung + ein Stein; bevorzugt Wörter, von denen der Spieler schon eine Rune besitzt
+  HB.runeScroll = (g, p) => {
+    if (!HB.runesOn(g.cfg)) return false;
+    const have = unknownWords(p).filter((w) => !(p.runeHints || []).some((h) => h.kind === 'scroll' && h.word === w.id));
+    if (!have.length) return false;
+    const mine = have.filter((w) => w.runes.some((r) => (p.relics || []).includes(r)));
+    const list = mine.length && Math.random() * 100 < rc(g.cfg).ownPct ? mine : have;
+    const w = g.pickRandom(list);
+    addHint(g, p, { kind: 'scroll', word: w.id, rune: namedRune(w) });
+    g.log(HB.t('rune.scroll.found', { who: g.unitName(p) })); g.notice(HB.t('rune.scroll.notice'), 'wave');
+    return true;
+  };
+  // Sieg über einen Elite-Gegner (Weiterziehen-Belohnung): jeder lebende Spieler würfelt für eine Schriftrolle
+  HB.runeEliteReward = (g) => { if (HB.runesOn(g.cfg)) for (const p of g.livePlayers) if (Math.random() * 100 < rc(g.cfg).scrollChance) HB.runeScroll(g, p); };
+
+  // ---------- Neigung ----------
+  // Signal für die Neigung des Spielers (nur mit Modul Neigung und einer Familie gleicher Id)
+  function record(g, p, id, weight) {
+    const fam = HB.runeFamily(id);
+    if (!fam || !HB.moduleOn(g.cfg, 'affinity') || !(g.cfg.families || []).some((f) => f.id === fam)) return;
+    p.affinity = p.affinity || {};
+    p.affinity[fam] = (p.affinity[fam] || 0) + weight;
+  }
+  // Rune-Angebot (Schatztruhe): Runen aus Familien, die der Spieler spielt, kommen häufiger
+  const baseOffer = HB.Game.prototype.offerRelics;
+  HB.Game.prototype.offerRelics = function (n) {
+    if (!HB.runesOn(this.cfg) || !HB.moduleOn(this.cfg, 'affinity')) return baseOffer.call(this, n);
+    const shares = Object.fromEntries(HB.affinityShares(this.player).map((x) => [x.id, x.share])), pull = rc(this.cfg).pull;
+    const pool = HB.relicPool(this).slice(), out = [];
+    while (out.length < n && pool.length) {
+      const w = pool.map((id) => 1 + pull * (shares[HB.runeFamily(id)] || 0)), sum = w.reduce((a, x) => a + x, 0);
+      let r = Math.random() * sum, i = 0;
+      for (; i < pool.length - 1; i++) { r -= w[i]; if (r < 0) break; }
+      out.push(pool.splice(i, 1)[0]);
+    }
+    return out;
+  };
+
+  // ---------- Orte ----------
+  HB.PLACES.forge = {
+    label: HB.t('rune.forge.label'), appear: HB.t('rune.forge.appear'), icon: 'relic', cls: 'market', infoCls: 'market', hint: HB.t('rune.forge.hint'),
+    info: () => HB.t('rune.forge.info'), module: 'runes', chance: (g) => rc(g.cfg).forgeChance, event: 'forge_open',
+    use(g, p) { p.runeForge = {}; HB.runeTafel(g, p); },
+  };
+  HB.PLACES.graves = {
+    label: HB.t('rune.graves.label'), appear: HB.t('rune.graves.appear'), icon: 'skull', cls: 'crypt', infoCls: 'crypt', hint: HB.t('rune.graves.hint'),
+    info: () => HB.t('rune.graves.info'), module: 'runes', chance: (g) => rc(g.cfg).graveChance, event: 'graves_open',
+    use(g, p) {
+      const list = unknownWords(p).sort(() => Math.random() - 0.5).slice(0, 3);
+      if (!list.length) { g.notice(HB.t('rune.graves.none'), 'wave'); g.endFreeMove(p); return; }
+      p.runeGraves = { words: list.map((w) => w.id), picked: null };
+    },
+  };
+  HB.PLACE_KEYS = Object.keys(HB.PLACES);
+
+  // Grabspruch: Name + je Rune ihr fester Satz (dieselbe Rune = derselbe Satz; zum zweiten Mal der gesteigerte Satz)
+  HB.runeGraveLines = (w) => {
+    const seen = {};
+    return w.runes.map((r) => { seen[r] = (seen[r] || 0) + 1; return HB.t(seen[r] > 1 ? 'rune.grave.again.' + r : 'rune.grave.' + r); });
+  };
+
+  // ---------- Fenster (Schmiede, Wortkarte, Gräber) ----------
+  let sel = null; // gewählte Rune aus dem Beutel (nur Oberfläche)
+  function forgeEl(g, p) {
+    const I = HB.icons, t = HB.runeTafel(g, p), wrap = document.createElement('div'); wrap.className = 'runeforge';
+    const S = 30, pos = (i) => [S * Math.sqrt(3) * (CELLS[i][0] + CELLS[i][1] / 2), S * 1.5 * CELLS[i][1]];
+    const xs = t.map((_, i) => pos(i)[0]), ys = t.map((_, i) => pos(i)[1]);
+    const x0 = Math.min(...xs) - S, y0 = Math.min(...ys) - S, board = document.createElement('div');
+    board.className = 'runeboard'; board.style.width = (Math.max(...xs) - x0 + S) + 'px'; board.style.height = (Math.max(...ys) - y0 + S) + 'px';
+    t.forEach((id, i) => {
+      const c = document.createElement('button'), [x, y] = pos(i);
+      c.className = 'runecell' + (id ? ' full' : ''); c.style.left = (x - x0 - S * 0.87) + 'px'; c.style.top = (y - y0 - S) + 'px';
+      c.innerHTML = id ? `<span>${I.icon((HB.RELICS[id] || {}).icon || 'relic')}</span>` : '';
+      c.title = id ? `${label(id)}: ${HB.relicText(g, id)}` : HB.t('rune.cell.empty');
+      c.onclick = () => { const s = sel; sel = null; g.apply(s ? { type: 'runeEngrave', player: p.id, slot: i, rune: s } : { type: 'runeUnengrave', player: p.id, slot: i }); g.changed(); };
+      board.appendChild(c);
+    });
+    wrap.appendChild(board);
+    const bag = document.createElement('div'); bag.className = 'runebag';
+    const ids = [...new Set(p.relics || [])];
+    bag.innerHTML = `<div class="msub">${HB.t('rune.bag')}</div>`;
+    for (const id of ids) {
+      const n = HB.runeFree(p, id); if (n < 1) continue;
+      const b = document.createElement('button'); b.className = 'runechip' + (sel === id ? ' sel' : '');
+      b.innerHTML = `${I.icon((HB.RELICS[id] || {}).icon || 'relic')} ${HB.esc(label(id))}${n > 1 ? ` ×${n}` : ''}`;
+      b.title = HB.relicText(g, id);
+      b.onclick = () => { sel = sel === id ? null : id; g.changed(); };
+      bag.appendChild(b);
+    }
+    if (bag.children.length === 1) bag.insertAdjacentHTML('beforeend', `<div class="msub">${HB.t('rune.bag.empty')}</div>`);
+    wrap.appendChild(bag);
+    const book = document.createElement('div'); book.className = 'runebook';
+    const known = (p.runeWordsKnown || []).map(wordOf).filter(Boolean), hints = p.runeHints || [];
+    if (known.length || hints.length) book.innerHTML = `<div class="msub">${HB.t('rune.book')}</div>`;
+    for (const w of known) book.insertAdjacentHTML('beforeend', `<div class="runeline"><b>${HB.esc(HB.tn(w.card.name))}</b>: ${HB.esc(w.runes.map(label).join(' + '))}</div>`);
+    for (const h of hints) {
+      const w = wordOf(h.word); if (!w) continue;
+      book.insertAdjacentHTML('beforeend', h.kind === 'scroll'
+        ? `<div class="runeline">${HB.esc(HB.t('rune.hint.scroll', { text: HB.t('rune.word.' + w.id + '.scroll'), rune: label(h.rune) }))}</div>`
+        : `<div class="runeline">${HB.esc(HB.t('rune.hint.grave', { name: w.grave, lines: HB.runeGraveLines(w).join(' ') }))}</div>`);
+    }
+    wrap.appendChild(book);
+    return wrap;
+  }
+
+  HB.moduleHooks('runes', {
+    saveFields: ['forge', 'graves'],
+    commands: {
+      runeEngrave: (g, p, cmd) => { if (p.runeForge) HB.runeEngrave(g, p, cmd.slot | 0, cmd.rune); g.changed(); return true; },
+      runeUnengrave: (g, p, cmd) => { if (p.runeForge) HB.runeUnengrave(g, p, cmd.slot | 0); g.changed(); return true; },
+      runeClose: (g, p) => { delete p.runeForge; sel = null; g.endFreeMove(p); g.changed(); return true; },
+      runeWord: (g, p, cmd) => {
+        const id = (p.runeWordOffer || []).shift(), w = id && wordOf(id);
+        if (!p.runeWordOffer.length) delete p.runeWordOffer;
+        if (w && cmd.take) g.gainCard(HB.runeWordCard(w), 'rune');
+        g.changed(); return true;
+      },
+      runeGravePick: (g, p, cmd) => {
+        const gr = p.runeGraves, w = gr && !gr.picked && wordOf(gr.words[cmd.index | 0]);
+        if (!w) return true;
+        gr.picked = w.id;
+        addHint(g, p, { kind: 'grave', word: w.id });
+        const r = g.pickRandom(w.runes); // jedes berührte Grab schenkt einen Stein aus dem Rezept
+        g.giveRelic(p, r, true); gr.gift = r;
+        g.changed(); return true;
+      },
+      runeGraveClose: (g, p) => { delete p.runeGraves; g.endFreeMove(p); g.changed(); return true; },
+    },
+    onEvent(g, ev) {
+      if (ev.type === 'relic_gained') { const p = g.players.find((q) => q.id === ev.unit); if (p) record(g, p, ev.relic, 0.25); }
+    },
+    modal(g, p) {
+      if (!p) return null;
+      const offer = (p.runeWordOffer || [])[0], w = offer && wordOf(offer);
+      if (w) {
+        const d = HB.runeWordCard(w);
+        return { sig: 'rw:' + w.id, icon: 'relic', title: HB.t('rune.word.found', { name: HB.tn(w.card.name) }), text: HB.t('rune.word.found.text', { runes: w.runes.map(label).join(' + ') }),
+          lines: [HB.cardText(d)], options: [{ label: HB.t('rune.word.take'), cmd: { type: 'runeWord', take: true }, primary: true }, { label: HB.t('rune.word.decline'), cmd: { type: 'runeWord', take: false } }] };
+      }
+      if (p.runeGraves) {
+        const gr = p.runeGraves;
+        if (gr.picked) {
+          const pw = wordOf(gr.picked);
+          return { sig: 'gr:done', icon: 'skull', title: HB.t('rune.graves.title'), text: HB.t('rune.graves.after', { name: pw.grave, rune: label(gr.gift) }), lines: HB.runeGraveLines(pw),
+            options: [{ label: HB.t('rune.graves.next'), cmd: { type: 'runeGraveClose' }, primary: true }] };
+        }
+        return { sig: 'gr:' + gr.words.join(','), icon: 'skull', title: HB.t('rune.graves.title'), text: HB.t('rune.graves.text'), lines: [],
+          options: gr.words.map((id, i) => { const x = wordOf(id); return { label: `${x.grave}: ${HB.runeGraveLines(x).join(' ')}`, cmd: { type: 'runeGravePick', index: i } }; }) };
+      }
+      if (p.runeForge) {
+        const t = HB.runeTafel(g, p);
+        return { sig: `forge:${t.join(',')}|${(p.relics || []).join(',')}|${sel}|${(p.runeHints || []).length}|${(p.runeWordsKnown || []).length}`, icon: 'relic', title: HB.t('rune.forge.title'), text: HB.t('rune.forge.text'), lines: [],
+          el: forgeEl, options: [{ label: HB.t('rune.forge.close'), cmd: { type: 'runeClose' }, primary: true }] };
+      }
+      return null;
+    },
+  });
 })(window.HB);
 
 </script>
@@ -15117,7 +15561,7 @@ window.HB = window.HB || {};
   let tab = 'setup';
   try { tab = localStorage.getItem('hexdb.tab') || 'setup'; } catch (e) { /* egal */ }
 
-  const TABS = [['setup', 'Spielfeld'], ['test', 'Test (Kampf)'], ['values', 'Werte'], ['waves', 'Wellen'], ['enemies', 'Gegner'], ['bosses', 'Bosse'], ['cards', 'Karten'], ['relics', 'Relikte'], ['curses', 'Störkarten'], ['classes', 'Klassen'], ['affinity', 'Neigung'], ['traps', 'Fallen'], ['rules', 'Regeln'], ['data', 'Daten']];
+  const TABS = [['setup', 'Spielfeld'], ['test', 'Test (Kampf)'], ['values', 'Werte'], ['waves', 'Wellen'], ['enemies', 'Gegner'], ['bosses', 'Bosse'], ['cards', 'Karten'], ['relics', 'Runen'], ['curses', 'Störkarten'], ['classes', 'Klassen'], ['affinity', 'Neigung'], ['traps', 'Fallen'], ['rules', 'Regeln'], ['data', 'Daten']];
 
   function el(tag, attrs = {}, ...kids) {
     const e = document.createElement(tag);
@@ -15379,7 +15823,7 @@ window.HB = window.HB || {};
       const t = HB.OBJECT_TYPES[o.type] || {};
       const kids = [];
       if (t.stairs) kids.push(...stairsControls(c, o, here));
-      if (o.type === 'relicPickup') kids.push(select('Relikt', [['', 'zufällig'], ...relicOptions()], () => o.relic || '', (v) => { if (v) o.relic = v; else delete o.relic; }, true));
+      if (o.type === 'relicPickup') kids.push(select('Rune', [['', 'zufällig'], ...relicOptions()], () => o.relic || '', (v) => { if (v) o.relic = v; else delete o.relic; }, true));
       if (t.spawner) {
         kids.push(num('alle … Runden', () => o.every || t.spawner.every, (v) => { o.every = Math.max(1, v); }, { min: 1, small: true }),
           num('Anzahl', () => o.count || t.spawner.count, (v) => { o.count = Math.max(1, v); }, { min: 1, small: true }),
@@ -15576,7 +16020,7 @@ window.HB = window.HB || {};
       el('div', { class: 'row' },
         btn(`${I.icon('energy')} Energie auffüllen`, () => { if (ok()) { const P = HB.app.me(); P.energy = P.maxEnergy; g.changed(); } }, 'sec'),
         btn(`${I.icon('deck')} 1 Karte ziehen`, () => { if (ok()) { g.as(HB.app.me(), () => g.draw(1)); g.changed(); } }, 'sec')),
-      el('p', { class: 'hint' }, 'Relikt direkt geben (dem gesteuerten Spieler):'),
+      el('p', { class: 'hint' }, 'Rune direkt geben (dem gesteuerten Spieler):'),
       el('div', { class: 'testcards' }, Object.entries(HB.RELICS).map(([id, d]) => el('span', { title: relicDesc(id) }, btn(`+ ${d.label}`, () => { if (ok()) { const P = HB.app.me(); g.as(P, () => g.giveRelic(P, id)); } }, 'sec mini')))),
       el('p', { class: 'hint' }, HB.moduleOn(c, 'corpses') ? 'Werkzeuge oben: „Töten“ = Klick auf Gegner tötet sofort (mit Leiche). „Leiche“ = Klick legt/entfernt eine Leiche.' : 'Werkzeug oben: „Töten“ = Klick auf Gegner tötet sofort.'),
       HB.moduleOn(c, 'corpses') ? num('Max-Leben neuer Test-Leichen', () => c.testCorpseHp || c.enemyDefaults.hp, (v) => { c.testCorpseHp = Math.max(1, v); g.cfg.testCorpseHp = c.testCorpseHp; }, { icon: 'corpse', min: 1 }) : el('span'));
@@ -15662,13 +16106,13 @@ window.HB = window.HB || {};
       el('p', { class: 'hint' }, 'Markt und Heiler erscheinen unabhängig voneinander. Benutzt du einen, verschwinden beide. Welche Karten im Markt angeboten werden, stellst du im Karteneditor mit „im Markt-Pool“ ein.'));
   }
 
-  // ---------- Relikte ----------
-  // Relikt mit Wirkung beschreiben (Auswahlfelder, Listen): sonst stehen dort nur Namen
+  // ---------- Runen ----------
+  // Rune mit Wirkung beschreiben (Auswahlfelder, Listen): sonst stehen dort nur Namen
   const relicDesc = (k) => { try { return HB.relicText({ cfg: HB.app.config }, k); } catch (e) { return ''; } };
   const relicOptions = () => Object.entries(HB.RELICS).map(([k, d]) => [k, `${d.label} – ${relicDesc(k)}`]);
   function relicsTab(c) {
     c.relics = c.relics || {};
-    const box = el('div', {}, el('p', { class: 'hint' }, 'Relikte sind dauerhafte Verbesserungen. Jeder Spieler hat seine eigenen (auch dasselbe mehrfach). Sie liegen als Objekt „Relikt“ auf der Karte (Tab Spielfeld), kommen aus Schatztruhen und können auf den Boden gelegt werden. Hier stellst du Stärke und Fundbarkeit ein; neue Relikte mit eigenem Code: Register `HB.RELICS` in js/relics.js.'));
+    const box = el('div', {}, el('p', { class: 'hint' }, 'Runen sind dauerhafte Verbesserungen. Jeder Spieler hat seine eigenen (auch dasselbe mehrfach). Sie liegen als Objekt „Rune“ auf der Karte (Tab Spielfeld), kommen aus Schatztruhen und können auf den Boden gelegt werden. Hier stellst du Stärke und Fundbarkeit ein; neue Runen mit eigenem Code: Register `HB.RELICS` in js/relics.js.'));
     for (const [id, d] of Object.entries(HB.RELICS)) {
       const o = c.relics[id] = c.relics[id] || {};
       const card = el('div', { class: 'icard' },
@@ -15694,14 +16138,14 @@ window.HB = window.HB || {};
       btn('Nur stärker, nicht mehr Gegner', () => { r.coopEnemyCount = 0; changed(true); }, 'mini'),
       el('p', { class: 'hint' }, `Bei ${n} Spielern: Gegner ×${f('coopEnemyCount', 50)} Anzahl, ×${f('coopEnemyHp', 25)} Leben, ×${f('coopEnemyDmg', 0)} Schaden. Gilt ab dem nächsten Kampf (neue Wellen auch sofort).`));
   }
-  function startRelicsBox(c) { return relicListBox(c.player, 'Start-Relikte (jeder Spieler beginnt damit)'); }
-  // Liste von Relikt-Ids in holder.relics bearbeiten (Start-Relikte aller Spieler, Start-Relikte einer Klasse)
+  function startRelicsBox(c) { return relicListBox(c.player, 'Start-Runen (jeder Spieler beginnt damit)'); }
+  // Liste von Runen-Ids in holder.relics bearbeiten (Start-Runen aller Spieler, Start-Runen einer Klasse)
   function relicListBox(holder, title) {
     holder.relics = holder.relics || [];
     const box = el('div', {}, el('div', { class: 'fxlbl' }, title));
     holder.relics.forEach((id, i) => box.append(el('div', { class: 'srow' }, el('span', { class: 'fic', html: I.icon((HB.RELICS[id] || {}).icon || 'relic') }), el('span', { title: relicDesc(id) }, (HB.RELICS[id] || {}).label || id), el('span', { class: 'hint' }, relicDesc(id)),
       btn('✕', () => { holder.relics.splice(i, 1); changed(true); }, 'mini del'))));
-    box.append(select('Relikt hinzufügen', [['', '– wählen –'], ...relicOptions()], () => '', (v) => { if (v) holder.relics.push(v); }, true));
+    box.append(select('Rune hinzufügen', [['', '– wählen –'], ...relicOptions()], () => '', (v) => { if (v) holder.relics.push(v); }, true));
     return box;
   }
   function valuesTab(c) {
@@ -15742,7 +16186,7 @@ window.HB = window.HB || {};
         num('Ausgänge mindestens', () => r.exitsMin, (v) => { r.exitsMin = Math.max(1, Math.min(6, v)); }, { min: 1, max: 6 }),
         num('Ausgänge höchstens', () => r.exitsMax, (v) => { r.exitsMax = Math.max(1, Math.min(6, v)); }, { min: 1, max: 6 }),
         num('Markt/Heiler: Gegner in %', () => r.easyMul, (v) => { r.easyMul = Math.max(10, Math.min(100, v)); }, { min: 10, max: 100 }),
-        num('Elite: Relikt-Chance in %', () => r.eliteRelic, (v) => { r.eliteRelic = Math.max(0, Math.min(100, v)); }, { min: 0, max: 100 })),
+        num('Elite: Runen-Chance in %', () => r.eliteRelic, (v) => { r.eliteRelic = Math.max(0, Math.min(100, v)); }, { min: 0, max: 100 })),
       el('div', { class: 'fxlbl' }, 'Wie oft zeigt ein Ausgang … (Gewicht, 0 = nie)'),
       el('div', { class: 'grid' }, ...Object.entries(HB.ROUTE_KINDS).filter(([k]) => k !== 'boss').map(([k, d]) => num(d.label, () => r.weights[k] ?? 0, (v) => { r.weights[k] = Math.max(0, v); }, { icon: d.icon, min: 0 }))));
     return box;
@@ -15782,7 +16226,7 @@ window.HB = window.HB || {};
         c.playerClasses = c.playerClasses.map((x) => (x === k.id ? '' : x));
         changed(true);
       }, 'mini del')),
-      relicListBox(k, 'Start-Relikte dieser Klasse (zusätzlich zu denen unter Werte → Spieler)'),
+      relicListBox(k, 'Start-Runen dieser Klasse (zusätzlich zu denen unter Werte → Spieler)'),
       spritePicker(() => k.sprite, (v) => { if (v) k.sprite = v; else delete k.sprite; }, 'hero', 'Figur der Klasse', true),
       classDeckBox(k, cards))));
     box.append(btn('+ Klasse', () => { c.classes.push({ id: 'k' + Date.now().toString(36), name: 'Neue Klasse' }); changed(true); }, 'mini'));
@@ -17538,9 +17982,9 @@ window.HB = window.HB || {};
 // Kartenwünsche (nur Testfassung, im Claude-Artefakt): wie „Karte wünschen“ im alten UW. Der Nutzer diktiert eine Karte, sie landet als Dokument
 // in der Sammlung „kartenwuensche“ des Online-Speichers (Fähigkeit db). Eine wartende Claude-Sitzung baut sie (.claude/skills/kartenwuensche)
 // und schreibt `card` + `status: 'fertig'`; das Spiel beobachtet seine Wünsche und legt die Karte ohne Neuladen in Hand/Deck/Pool.
-// Zwei Arten: Karte (`art: 'karte'`, Ziele `ziele` = Hand / Draft / Markt / Startdecks, mehrere zugleich) und Relikt (`art: 'relikt'`, Ziele: sofort / Start-Relikt / Truhen;
-// das Relikt ist Code in HB.RELICS, den die Sitzung baut; `relic: { id }` meldet ihn).
-// Status: offen → gebaut (Sitzung arbeitet) → fertig (Karte/Relikt da) → geliefert (Spiel hat es übernommen) | fehler. Doku: docs/mechaniken.md „Kartenwünsche“.
+// Zwei Arten: Karte (`art: 'karte'`, Ziele `ziele` = Hand / Draft / Markt / Startdecks, mehrere zugleich) und Rune (`art: 'relikt'`, Ziele: sofort / Start-Rune / Truhen;
+// die Rune ist Code in HB.RELICS, den die Sitzung baut; `relic: { id }` meldet ihn).
+// Status: offen → gebaut (Sitzung arbeitet) → fertig (Karte/Rune da) → geliefert (Spiel hat es übernommen) | fehler. Doku: docs/mechaniken.md „Kartenwünsche“.
 window.HB = window.HB || {};
 (function (HB) {
   const COLL = 'kartenwuensche', KEY = 'hexdb.wishes', TEXT_MAX = 1000;
@@ -17629,8 +18073,8 @@ window.HB = window.HB || {};
     return d;
   }
 
-  // Relikt-Wunsch: der Code steht in HB.RELICS (die Sitzung hat ihn gebaut). Hier nur die Einstellung: Start-Relikt (Klasse / alle Spieler),
-  // Truhen (cfg.relics[id].enabled). Rein; gibt zurück, ob der Relikt-Code schon geladen ist.
+  // Runen-Wunsch: der Code steht in HB.RELICS (die Sitzung hat ihn gebaut). Hier nur die Einstellung: Start-Rune (Klasse / alle Spieler),
+  // Truhen (cfg.relics[id].enabled). Rein; gibt zurück, ob der Runen-Code schon geladen ist.
   function applyRelic(cfg, id, z) {
     cfg.relics = cfg.relics || {};
     const o = cfg.relics[id] = cfg.relics[id] || {};
@@ -17645,14 +18089,14 @@ window.HB = window.HB || {};
   }
   function deliverRelic(wish, relic) {
     const app = HB.app, id = clean((relic && relic.id) || '', 30), w = wish.ziele || {};
-    if (!/^[a-z][a-z0-9]{1,29}$/.test(id)) throw new Error('keine gültige Relikt-Kennung');
+    if (!/^[a-z][a-z0-9]{1,29}$/.test(id)) throw new Error('keine gültige Runen-Kennung');
     const z = { truhe: !!w.truhe, sofort: !!w.sofort, startKlasse: typeof w.startKlasse === 'string' ? clean(w.startKlasse, 40) : null };
-    app.pushBackup(JSON.stringify(app.config), 'Vor Reliktwunsch');
+    app.pushBackup(JSON.stringify(app.config), 'Vor Runenwunsch');
     const da = applyRelic(app.config, id, z);
     app.save();
-    let msg = `Relikt „${(HB.RELICS[id] || {}).label || id}“ eingetragen`;
-    if (!da) msg = `Relikt „${id}“ eingetragen – Relikt-Code erst nach Neuladen`;
-    else if (z.sofort && app.mode === 'combat' && app.game) { const g = app.game, P = app.me(); g.as(P, () => g.giveRelic(P, id)); msg = `Relikt „${HB.RELICS[id].label}“ erhalten`; }
+    let msg = `Rune „${(HB.RELICS[id] || {}).label || id}“ eingetragen`;
+    if (!da) msg = `Rune „${id}“ eingetragen – Runen-Code erst nach Neuladen`;
+    else if (z.sofort && app.mode === 'combat' && app.game) { const g = app.game, P = app.me(); g.as(P, () => g.giveRelic(P, id)); msg = `Rune „${HB.RELICS[id].label}“ erhalten`; }
     else if (z.sofort) msg += ' (sofort nur im Kampf)';
     try { HB.editor.render(); app.renderAll(); } catch (e) { /* egal */ }
     toast(msg + '.');
@@ -17663,7 +18107,7 @@ window.HB = window.HB || {};
   async function handle(id, data, db) {
     if (!data || !mine.get().includes(id) || done.has(id)) return;
     const set = (v) => db.collection(COLL).doc(id).update(v);
-    if (data.status === 'gebaut' && !told.has(id)) { told.add(id); toast((data.art === 'relikt' ? 'Reliktwunsch' : 'Kartenwunsch') + ' wird gebaut …'); }
+    if (data.status === 'gebaut' && !told.has(id)) { told.add(id); toast((data.art === 'relikt' ? 'Runenwunsch' : 'Kartenwunsch') + ' wird gebaut …'); }
     if (data.status !== 'fertig') return;
     done.add(id);
     try { if (data.art === 'relikt') deliverRelic(data, data.relic); else deliver(data, data.card); await set({ status: 'geliefert' }); }
@@ -17696,8 +18140,8 @@ window.HB = window.HB || {};
     const classes = (HB.app && HB.app.config.classes) || [];
     const clsOpts = (first) => [['', first], ...classes.map((k) => [k.id, k.name])];
     const chk = (cls, label, on) => `<label class="wzchk"><input type="checkbox" class="${cls}"${on ? ' checked' : ''}> ${label}</label>`;
-    ov.innerHTML = '<div class="modalbox"><div class="mtitle">Wünschen</div><p class="cphint">Beschreibe die Karte oder das Relikt in deinen Worten. Eine wartende Claude-Sitzung baut es; Karten erscheinen ohne Neuladen (ein Relikt ist Code und braucht danach einen Neustart des Spiels).</p>'
-      + '<label class="fbrow"><span>Art:</span>' + sel('wart', [['karte', 'Karte'], ['relikt', 'Relikt']], sticky.get('art', 'karte')) + '</label>'
+    ov.innerHTML = '<div class="modalbox"><div class="mtitle">Wünschen</div><p class="cphint">Beschreibe die Karte oder die Rune in deinen Worten. Eine wartende Claude-Sitzung baut sie; Karten erscheinen ohne Neuladen (eine Rune ist Code und braucht danach einen Neustart des Spiels).</p>'
+      + '<label class="fbrow"><span>Art:</span>' + sel('wart', [['karte', 'Karte'], ['relikt', 'Rune']], sticky.get('art', 'karte')) + '</label>'
       + `<textarea class="wtext" rows="5" maxlength="${TEXT_MAX}"></textarea>`
       + '<label class="fbrow"><span>Name:</span><input class="wname" maxlength="60" placeholder="leer = die KI denkt sich einen aus"></label>'
       + '<div class="wzbox wz-karte"><b>Wohin mit der Karte?</b>'
@@ -17708,9 +18152,9 @@ window.HB = window.HB || {};
       + '<label class="fbrow"><span>Kosten:</span><input class="wcost" type="number" min="0" max="9" placeholder="aus dem Text"></label>'
       + '<label class="fbrow"><span>Seltenheit:</span>' + sel('wrar', [['', 'aus dem Text'], ...Object.entries(HB.CARD_RARITIES).map(([k, v]) => [k, v.label])], sticky.get('rar', '')) + '</label>'
       + '<label class="fbrow"><span>Art:</span>' + sel('wcat', [['', 'aus dem Text'], ...Object.entries(HB.CARD_CATEGORIES).filter(([k]) => k !== 'curse').map(([k, v]) => [k, v.label])], sticky.get('cat', '')) + '</label></div>'
-      + '<div class="wzbox wz-relikt"><b>Wohin mit dem Relikt?</b>'
+      + '<div class="wzbox wz-relikt"><b>Wohin mit der Rune?</b>'
       + chk('wr-sofort', 'Sofort bekommen (im Kampf)', sticky.get('r.sofort', '1') === '1')
-      + '<div class="wzrow">' + chk('wr-start', 'Start-Relikt von:', sticky.get('r.start', '') === '1') + sel('wr-sk', clsOpts('allen Spielern'), sticky.get('r.sk', '')) + '</div>'
+      + '<div class="wzrow">' + chk('wr-start', 'Start-Rune von:', sticky.get('r.start', '') === '1') + sel('wr-sk', clsOpts('allen Spielern'), sticky.get('r.sk', '')) + '</div>'
       + chk('wr-truhe', 'Kann in Truhen gefunden werden', sticky.get('r.truhe', '1') === '1') + '</div>'
       + '<p class="cphint wstatus" role="status"></p>'
       + '<div class="mopts"><button type="button" class="primary" data-m="send">Wünschen</button><button type="button" data-m="close">Schließen</button></div></div>';
@@ -17743,7 +18187,7 @@ window.HB = window.HB || {};
       }
       sticky.set('art', art());
       busy = true; say('Wird gespeichert …');
-      try { await save(wish); say(art() === 'karte' ? 'Gespeichert – die Karte wird gebaut und kommt von selbst.' : 'Gespeichert – das Relikt wird gebaut (Code); danach das Spiel neu laden.'); q('.wtext').value = ''; }
+      try { await save(wish); say(art() === 'karte' ? 'Gespeichert – die Karte wird gebaut und kommt von selbst.' : 'Gespeichert – die Rune wird gebaut (Code); danach das Spiel neu laden.'); q('.wtext').value = ''; }
       catch (e) { say('Nicht gespeichert: ' + String(e.message || e).slice(0, 120), true); }
       busy = false;
     };
@@ -17754,7 +18198,7 @@ window.HB = window.HB || {};
     if (HB.isPublic()) return;
     const host = $('#devwin .hbtns');
     if (host && !$('#btn-wish')) {
-      const b = document.createElement('button'); b.id = 'btn-wish'; b.type = 'button'; b.className = 'sec'; b.textContent = 'Karte/Relikt wünschen';
+      const b = document.createElement('button'); b.id = 'btn-wish'; b.type = 'button'; b.className = 'sec'; b.textContent = 'Karte/Rune wünschen';
       b.title = 'Eine Karte diktieren – eine wartende Claude-Sitzung baut sie'; b.onclick = open; host.appendChild(b);
     }
     setTimeout(() => { if (mine.get().length) watch(); }, 1500); // offene Wünsche aus der letzten Sitzung weiter beobachten
@@ -17775,7 +18219,7 @@ window.HB = window.HB || {};
 // das nie im Spiel steht. Datei: {schema, kind:'session', game:'hex', session, seq, player (zufällige Kennung), version, channel:'web',
 // content, start, lang, tech, events:[{e, t, …}]}. Ereignisse (Namen wie UW wo es passt): session_start, settings, fight_start, fight (Ausgang,
 // Züge, Leben, Karten, Gegner je Typ, Schaden, Todesursache, je Platz: seats), offer + pick (Angebot → Wahl), deck_change, relic_gained,
-// crypt_choice, wave_cleared, player_joined/left, coop_guest/coop_guest_end (Mitspieler online), error, session_end. Ratenbegrenzung: höchstens 1 Sendung je 60 s, höchstens 1500 Ereignisse gepuffert; die Brücke
+// crypt_choice, wave_cleared, place_used (Orte am Feld), player_joined/left, coop_guest/coop_guest_end (Mitspieler online), error, session_end. Ratenbegrenzung: höchstens 1 Sendung je 60 s, höchstens 1500 Ereignisse gepuffert; die Brücke
 // bremst zusätzlich je Spieler/Stunde. Nicht Gesendetes bleibt im Ausgang (localStorage) bis zum nächsten Anlass.
 window.HB = window.HB || {};
 (function (HB) {
@@ -17836,7 +18280,7 @@ window.HB = window.HB || {};
   function seat(g, id) {
     if (!cur.seats[id]) {
       const p = g.players.find((x) => x.id === id) || {};
-      cur.seats[id] = { cls: clip(p.cls || ''), hp_start: p.hp, cards: {}, dealt: 0, taken: 0, blocked: 0, kills: 0, gold: {}, turns: [] };
+      cur.seats[id] = { cls: clip(p.cls || ''), hp_start: p.hp, cards: {}, dealt: 0, taken: 0, blocked: 0, kills: 0, gold: {}, places: {}, turns: [] };
     }
     return cur.seats[id];
   }
@@ -17858,7 +18302,7 @@ window.HB = window.HB || {};
     const cards = {}; for (const s of seats) for (const [n, c] of Object.entries(s.cards)) cards[n] = (cards[n] || 0) + c.played; // Summe aller Plätze
     rec('fight', { outcome, turns: g.turn, waves: g.waveNo, boss: cur.boss || undefined, players: g.players.length, classes: cur.classes,
       match: g.netMatch || undefined, hp_start: cur.hp0, hp_end: p.hp, max_hp: p.maxHp, seconds: Math.round((Date.now() - cur.t0) / 1000), floor: g.floor || 0,
-      cards, kills: cur.kills, dealt: cur.dealt, taken: cur.taken, foes: cur.foes, seats,
+      cards, kills: cur.kills, dealt: cur.dealt, taken: cur.taken, foes: cur.foes, places_shown: cur.places, seats,
       death: outcome === 'lost' ? { by: cur.lastAttacker || '', kind: cur.lastKind || '' } : undefined, resumed: cur.resumed || undefined });
   }
   function observeGuest(g) { // Mitspieler online: eigener Rahmen, kein Kampf
@@ -17886,7 +18330,7 @@ window.HB = window.HB || {};
       if (!cur && (g.phase === 'won' || g.phase === 'lost')) return; // schon beendeter Kampf (z. B. der alte, während der neue gebaut wird)
       if (!cur) {
         const p = g.players[0] || g.player;
-        cur = { game: g, t0: Date.now(), hp0: p.hp, seats: {}, foes: {}, kills: {}, dealt: 0, taken: 0, classes: (g.startClasses || []).map((c) => clip(c)), resumed: g.turn > 1, turnT: {} };
+        cur = { game: g, t0: Date.now(), hp0: p.hp, seats: {}, foes: {}, places: {}, kills: {}, dealt: 0, taken: 0, classes: (g.startClasses || []).map((c) => clip(c)), resumed: g.turn > 1, turnT: {} };
         pend = {};
         g.players.forEach((x) => seat(g, x.id));
         rec('fight_start', { players: g.players.length, classes: cur.classes, hp: p.hp, deck: (g.cfg.deck || []).reduce((n, d) => n + (d.count || 0), 0), waves: g.waveCount,
@@ -17953,6 +18397,13 @@ window.HB = window.HB || {};
           case 'relic_gained': rec('relic_gained', { relic: clip(ev.relic), seat: ev.unit, turn: ev.turn }); break;
           case 'crypt_choice': rec('crypt_choice', { event: clip(ev.event), option: ev.option, ok: ev.ok, seat: ev.by }); break;
           case 'wave_cleared': rec('wave_cleared', { wave: ev.wave, turn: ev.turn, hp: g.players.map((p) => p.hp) }); break;
+          case 'places_shown': (ev.places || []).forEach((k) => { cur.places[clip(k, 30)] = (cur.places[clip(k, 30)] || 0) + 1; }); break;
+          case 'place_used': { // Orte am Feld (Markt, Heiler, Krypta, später Schmiede …): wer ging wohin, mit Leben und Gold beim Betreten
+            const k = clip(ev.place, 30), s = seat(g, ev.by), p = g.players.find((x) => x.id === ev.by) || {};
+            s.places[k] = (s.places[k] || 0) + 1;
+            rec('place_used', { place: k, seat: ev.by, turn: ev.turn, wave: g.waveNo, hp: p.hp, max_hp: p.maxHp, gold: p.gold });
+            break;
+          }
           case 'player_joined': case 'player_left': rec(ev.type, { seat: ev.unit, players: g.players.length, turn: ev.turn }); break;
           default: break;
         }
@@ -19787,7 +20238,7 @@ window.HB = window.HB || {};
         + (p.slow ? `<span class="stat sl" title="${p.slow.root ? HB.t('hud.rooted') : HB.t('hud.slowed', { n: p.slow.amount })}${HB.t('hud.turnsleft', { n: p.slow.turns })}">${I.icon('slow')}${p.slow.root ? HB.t('hud.rootedshort') : '−' + p.slow.amount} (${p.slow.turns})</span>` : '')
         + (p.nextAttackPoison ? `<span class="stat buff" title="${HB.t('hud.nextpoison')}">${I.icon('poisonBuff')}+${p.nextAttackPoison}</span>` : '')
         + `<span class="stat hand" title="${HB.t('hud.hand')}">${I.icon('deck')}${g.hand.length}/${g.handLimit()}</span>`
-        + `<div class="drawrow">${pileHtml('drawPile', HB.t('pile.draw'), g.drawPile.length)}${relicBarHtml(p)}</div>` // Nachziehstapel mit den Relikten rechts daneben
+        + `<div class="drawrow">${pileHtml('drawPile', HB.t('pile.draw'), g.drawPile.length)}${relicBarHtml(p)}</div>` // Nachziehstapel mit den Runen rechts daneben
         + `<span class="stat turn">${HB.t('hud.round', { n: g.turn })}</span>`
         + (handChoice() ? `<span class="stat pickhint">${I.icon(HB.CHOICES[handChoice().type].icon)} ${HB.CHOICES[handChoice().type].prompt(handChoice())}</span>` : '')
         + `</div><span class="grow"></span>`
@@ -19905,7 +20356,7 @@ window.HB = window.HB || {};
     const handRight = Math.max(0, ...[...$('#hand').children].map((c) => c.getBoundingClientRect().right - h.left));
     hud.style.setProperty('--br', Math.round(Math.max(left + vb.width * scale, handRight + 4)) + 'px');
   }
-  // ---------- Relikte: dauerhafte Leiste unten links (neben dem Leben), Maus drüber = Erklärung, Klick = festhalten + „auf den Boden legen“ ----------
+  // ---------- Runen: dauerhafte Leiste unten links (neben dem Leben), Maus drüber = Erklärung, Klick = festhalten + „auf den Boden legen“ ----------
   function relicBarHtml(p) {
     const counts = new Map();
     (p.relics || []).forEach((id) => counts.set(id, (counts.get(id) || 0) + 1));
@@ -20004,6 +20455,7 @@ window.HB = window.HB || {};
     if (kind === 'module') {
       box.innerHTML = `<div class="mtitle">${I.icon(mm.icon || 'flag')} ${HB.esc(mm.title)}</div>` + (mm.text ? `<p class="mtext">${HB.esc(mm.text)}</p>` : '')
         + (mm.lines || []).map((l) => `<div class="msub">${HB.esc(l)}</div>`).join('');
+      if (mm.el) box.appendChild(mm.el(g, me())); // eigener Inhalt des Moduls (z. B. Runentafel)
       const opts = document.createElement('div'); opts.className = 'mopts';
       (mm.options || []).forEach((o) => { const b = button(o.label + (o.sub ? ` (${o.sub})` : ''), o.primary ? 'primary' : 'sec', () => g.apply({ ...o.cmd, player: me().id })); b.disabled = !!o.disabled; opts.append(b); });
       box.appendChild(opts);
