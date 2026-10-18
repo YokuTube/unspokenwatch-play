@@ -1579,6 +1579,10 @@ kbd { border: 1px solid var(--iron); border-radius: 2px; background: var(--ink1)
 
 /* ---------- DEV-Fenster + Werkzeugleiste oben rechts (wie UW: Zahnrad, DEV) ---------- */
 #uwtools { position: absolute; top: 8px; right: 8px; z-index: 8; display: flex; gap: 6px; align-items: center; }
+#gearmenu { position: absolute; top: calc(100% + 6px); right: 0; display: flex; flex-direction: column; gap: 6px; padding: 8px; min-width: 170px;
+  background: var(--panel, #1c1e24); border: 2px solid #3a3f4a; box-shadow: 0 6px 18px rgba(0, 0, 0, .55); }
+#gearmenu[hidden] { display: none; }
+#gearmenu button { width: 100%; }
 #uwtools button { font-family: var(--display); font-size: 14px; padding: 6px 12px; min-height: 40px; }
 #uwtools #btn-gear { width: 46px; padding: 6px; background: none; border-image-source: var(--stone-main); }
 #uwtools #btn-gear::after { content: ""; display: block; width: 26px; height: 26px; margin: 0 auto; image-rendering: pixelated; background: center / contain no-repeat url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABzElEQVR4nMVXC6qEMAxs1QXBcwmi4KJ4/4uI9tFqS4xJY+vCGwhIP5NpN0mzWuXBMOM6lajIFHCoMMbZGxQcN7C3cDzDMDzmMoQFnETOPCJiLzx934sijLdlWSgRlzFCgLNpmgzHJYkwnoAj99eJAW+GEolEyTcAobV2BoVx8ELseohHcdW2Lan+LSBn13XxOOiOBeQp8CmhjeNIrq2qKikIPUgBJ0HUsJDclDY4GC2x5JwSIQWfZpwfH6DKaX1f6seoahjZq6lKaLDKaZrCou/3SzrY990ZJQDugVyUL5P4O4ZxGyOxgvQwfpSY33BD0zSsMzv3NI19JhXqn1CWZfg21j6fj8tZKvfhqeq6zr4B68NbSHXFpEcsA/wczgJuHTXnUXBdzDzP4Xscx8scdMw5H4YhmkWBSr2oA3Vdq23b1Lqu2XXgBljxcishfK5hJUzuijQKSO7N55zDWvH4LegyX0OqScHZIr6GHXAuFZIUYKHi1SuiI7I1gnvzIewa30FxIkQBy7JwG9nr5oKUmc/qig1HLq1jOmxZhELBw8UI1fPh/jIpE5QcuZyAC7Dgn/yZPOHIiDKczKdTN0ABv+DL6gf6vr+NwccnBX+f5Geup6riMwAAAABJRU5ErkJggg==); }
@@ -1616,7 +1620,12 @@ body[data-mode="setup"] #btn-devclose { display: none; }
       <!-- Werkzeuge oben rechts wie UW: Zahnrad (Optionen) und DEV (klappt das DEV-Fenster mit allen Test-/Leistenknöpfen auf) -->
       <div id="uwtools">
         <button id="btn-dev" class="sec" type="button" title="DEV-Fenster ein-/ausklappen" aria-expanded="false">DEV</button>
-        <button id="btn-gear" class="sec" type="button" title="Optionen" aria-label="Optionen"></button>
+        <button id="btn-full" class="sec" title="Vollbild an/aus">Vollbild</button>
+        <button id="btn-gear" class="sec" type="button" title="Hauptmenü und Optionen" aria-label="Hauptmenü und Optionen" aria-expanded="false"></button>
+        <div id="gearmenu" hidden>
+          <button id="btn-menu" class="sec" type="button" title="Zurück zum Hauptmenü">Hauptmenü</button>
+          <button id="btn-options" class="sec" type="button" title="Musik, Effekte, Ton">Optionen</button>
+        </div>
       </div>
       <div id="devwin">
         <div class="devhead"><span class="devgrip">⠿</span><b>DEV</b><button id="btn-devclose" class="sec mini" type="button" title="Einklappen">▾</button></div>
@@ -1624,14 +1633,12 @@ body[data-mode="setup"] #btn-devclose { display: none; }
             <span id="coopctl" hidden></span>
             <button id="btn-start">Kampf starten</button>
             <button id="btn-setup" class="sec" hidden>Zum Aufbau</button>
-            <button id="btn-menu" class="sec" type="button" title="Hauptmenü">Menü</button>
             <button id="btn-feedback" class="sec" type="button" title="Rückmeldung senden (F8) – Fehler, Balance, Ideen; mit der Maus über einer Karte: Karte kommentieren">Feedback</button>
             <button id="btn-online" class="sec" type="button" title="Online-Koop: Raum öffnen oder mit Code beitreten">Online</button>
             <span class="vol" title="Lautstärke">
               <button id="btn-mute" class="sec mini" type="button" title="Ton an/aus"></button>
               <input id="vol" type="range" min="0" max="100" step="1" aria-label="Lautstärke">
             </span>
-            <button id="btn-full" class="sec" title="Vollbild an/aus">Vollbild</button>
             <button id="btn-editor" class="sec" title="Editor ein-/ausblenden – ausgeblendet wird das Spielfeld größer">Editor</button>
           </div>
       </div>
@@ -15443,7 +15450,11 @@ window.HB = window.HB || {};
     const applyDev = () => { document.body.dataset.dev = devOpen ? 'open' : 'closed'; $('#btn-dev').setAttribute('aria-expanded', devOpen ? 'true' : 'false'); };
     const toggleDev = () => { devOpen = !devOpen; try { localStorage.setItem('hexdb.devOpen', devOpen ? '1' : '0'); } catch (e) { /* egal */ } applyDev(); };
     $('#btn-dev').onclick = toggleDev; $('#btn-devclose').onclick = toggleDev;
-    $('#btn-gear').onclick = () => HB.uiMenu.showOptions();
+    // Zahnrad oben rechts (wie UW): kleines Menü mit „Hauptmenü“ und „Optionen“; Klick daneben schließt es
+    const gear = $('#gearmenu'), setGear = (v) => { gear.hidden = !v; $('#btn-gear').setAttribute('aria-expanded', v ? 'true' : 'false'); };
+    $('#btn-gear').onclick = (ev) => { ev.stopPropagation(); setGear(gear.hidden); };
+    $('#btn-options').onclick = () => { setGear(false); HB.uiMenu.showOptions(); };
+    document.addEventListener('click', (ev) => { if (!gear.hidden && !gear.contains(ev.target)) setGear(false); });
     applyDev();
     // Fenster am Kopf verschieben (nur bis zum Neuladen)
     $('#devwin .devhead').addEventListener('pointerdown', (ev) => {
@@ -15511,7 +15522,7 @@ window.HB = window.HB || {};
     let menuOn = true; try { menuOn = localStorage.getItem('hexdb.menu') !== 'off'; } catch (e) { /* egal */ }
     const jm = /#join=([A-Z0-9]{5})/i.exec(location.hash);
     if (jm) { history.replaceState(null, '', location.href.split('#')[0]); HB.uiMenu.showOnline(jm[1].toUpperCase()); } else if (!resumed && menuOn) HB.uiMenu.showMenu();
-    $('#btn-menu').onclick = () => HB.uiMenu.showMenu();
+    $('#btn-menu').onclick = () => { $('#gearmenu').hidden = true; HB.uiMenu.showMenu(); };
   }
 })(window.HB);
 
