@@ -12177,8 +12177,14 @@ window.HB = window.HB || {};
       return res;
     }
     // Weg zum Ziel: wenn möglich ohne Falle unterwegs (das Ziel selbst darf eine Falle sein)
+    // Schädliches Bodenfeld für dich (Gift, Schlamm … = Bodenfeld-Art mit Warnung)? Der Laufweg macht einen Bogen darum, wenn es gleich weit geht
+    badTile(x) { return this.effectsAt(x).some((t) => (HB.tileEffectTypes[t.type] || {}).warn && t.affectsPlayer !== false); }
     playerPath(h, maxSteps) {
-      const safe = H.dijkstra(this.player.pos, (x) => this.playerPassable(x) && (!this.trapAt(x) || H.eq(x, h)), maxSteps, (x) => this.stepCost(x));
+      const cost = (x) => this.stepCost(x), ok = (x) => this.playerPassable(x);
+      // 1. ohne Fallen UND ohne schädliche Bodenfelder, 2. nur ohne Fallen, 3. egal wie
+      const clean = H.dijkstra(this.player.pos, (x) => ok(x) && ((!this.trapAt(x) && !this.badTile(x)) || H.eq(x, h)), maxSteps, cost);
+      if (clean.dist.has(H.key(h))) return H.pathTo(clean, h);
+      const safe = H.dijkstra(this.player.pos, (x) => ok(x) && (!this.trapAt(x) || H.eq(x, h)), maxSteps, cost);
       if (safe.dist.has(H.key(h))) return H.pathTo(safe, h);
       return H.pathTo(this.playerReach(maxSteps), h);
     }
