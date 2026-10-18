@@ -1711,13 +1711,13 @@ body[data-editorfull="1"] #editor .tabbody { max-width: none; }
 #editor .clssearch { width: 100%; margin: 4px 0 6px; }
 .classtbl tr[hidden] { display: none; }
 
-/* Relikte: nur der Name, rechts neben den Stapeln (Ablage/Erschöpft); Maus drüber = Wirkung */
-#hud .hud-piles .relicbar { grid-column: auto; border-top: 0; padding: 0; flex-direction: column; align-items: flex-start; gap: 3px; max-width: 210px; align-self: center; }
-#hud .hud-piles .relic { font-size: 12px; font-family: var(--display); padding: 2px 8px; white-space: nowrap; }
-/* Mit Relikten rechts neben den Stapeln braucht die rechte Gruppe mehr Platz: an den rechten Rand */
-@media (min-width: 761px), (min-width: 561px) and (max-height: 540px) and (orientation: landscape) {
-  #hud .hud-right:has(.relicbar) { left: auto !important; right: 10px; }
-}
+/* Relikte: nur der Name, rechts neben dem Nachziehstapel (unten links); Maus drüber = Wirkung */
+#hud .hud-left .relicbar { grid-column: auto; order: 0; border-top: 0; padding: 0; flex-direction: column; align-items: flex-start; gap: 3px; max-width: 150px; align-self: center; }
+#hud .hud-left .relic { font-size: 12px; font-family: var(--display); padding: 2px 8px; white-space: nowrap; }
+#hud .hud-left .drawrow { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; }
+#hud .hud-left .drawrow .relicbar { align-self: center; margin: 0 0 12px; }
+#hud .hud-left .drawrow .pile-draw { order: -1; margin: 0 0 12px 6px; }
+#hud .hud-left .drawrow .relicbar { order: 1; }
 
 </style>
 </head>
@@ -19549,11 +19549,11 @@ window.HB = window.HB || {};
         + (p.slow ? `<span class="stat sl" title="${p.slow.root ? HB.t('hud.rooted') : HB.t('hud.slowed', { n: p.slow.amount })}${HB.t('hud.turnsleft', { n: p.slow.turns })}">${I.icon('slow')}${p.slow.root ? HB.t('hud.rootedshort') : '−' + p.slow.amount} (${p.slow.turns})</span>` : '')
         + (p.nextAttackPoison ? `<span class="stat buff" title="${HB.t('hud.nextpoison')}">${I.icon('poisonBuff')}+${p.nextAttackPoison}</span>` : '')
         + `<span class="stat hand" title="${HB.t('hud.hand')}">${I.icon('deck')}${g.hand.length}/${g.handLimit()}</span>`
-        + pileHtml('drawPile', HB.t('pile.draw'), g.drawPile.length)
+        + `<div class="drawrow">${pileHtml('drawPile', HB.t('pile.draw'), g.drawPile.length)}${relicBarHtml(p)}</div>` // Nachziehstapel mit den Relikten rechts daneben
         + `<span class="stat turn">${HB.t('hud.round', { n: g.turn })}</span>`
         + (handChoice() ? `<span class="stat pickhint">${I.icon(HB.CHOICES[handChoice().type].icon)} ${HB.CHOICES[handChoice().type].prompt(handChoice())}</span>` : '')
         + `</div><span class="grow"></span>`
-        + `<div class="hud-right"><button id="btn-end" ${g.phase !== 'player' || g.busy || p.ended || p.hp <= 0 ? 'disabled' : ''}>${p.ended && g.phase === 'player' && p.hp > 0 ? HB.t('hud.waiting') : HB.t('hud.endturn') + ' <kbd>E</kbd>'}</button><div class="hud-piles">${pileHtml('discard', HB.t('pile.discard'), g.discard.length, Date.now() - (app.pulseDiscard || 0) < 1500)}${pileHtml('exhausted', HB.t('pile.exhausted'), g.exhausted.length)}${relicBarHtml(p)}</div></div>`;
+        + `<div class="hud-right"><button id="btn-end" ${g.phase !== 'player' || g.busy || p.ended || p.hp <= 0 ? 'disabled' : ''}>${p.ended && g.phase === 'player' && p.hp > 0 ? HB.t('hud.waiting') : HB.t('hud.endturn') + ' <kbd>E</kbd>'}</button><div class="hud-piles">${pileHtml('discard', HB.t('pile.discard'), g.discard.length, Date.now() - (app.pulseDiscard || 0) < 1500)}${pileHtml('exhausted', HB.t('pile.exhausted'), g.exhausted.length)}</div></div>`;
       $('#btn-end').onclick = () => g.apply({ type: 'endTurn', player: p.id });
       if (hud.querySelector('.hudtools')) {
         const live = (fn) => () => { if (!app.canEditLive()) return; fn(); g.changed(); };
@@ -19671,7 +19671,7 @@ window.HB = window.HB || {};
   function relicBarHtml(p) {
     const counts = new Map();
     (p.relics || []).forEach((id) => counts.set(id, (counts.get(id) || 0) + 1));
-    // nur der Name (Maus drüber = Wirkung, Klick = festhalten); steht rechts neben den Stapeln
+    // nur der Name (Maus drüber = Wirkung, Klick = festhalten); steht rechts neben dem Nachziehstapel
     const chips = [...counts].map(([id, n]) => `<span class="relic" data-relic="${HB.esc(id)}">${HB.esc(HB.tn((HB.RELICS[id] || {}).label || id))}${n > 1 ? `<b>×${n}</b>` : ''}</span>`).join('');
     return chips ? `<div class="relicbar" title="${HB.t('relic.bar')}">${chips}</div>` : '';
   }
