@@ -3241,6 +3241,150 @@ window.HB = window.HB || {};
 window.HB = window.HB || {};
 (function (HB) {
   HB.addStrings('de', {
+    "apply.addCard": "{n}× {name} auf die Hand",
+    "apply.addCard.discard": " ({n} auf die Ablage, Hand voll)",
+    "apply.addCard.none": "Karte nicht gefunden",
+    "apply.barrage": "{n} Einschläge, {h} getroffen",
+    "apply.buffPoison": "nächster Angriff +{n} Gift",
+    "apply.chain.bounce": "Kugel trifft {n}×",
+    "apply.chain.hit": "Kette trifft {n}",
+    "apply.chain.none": "Kette: kein Ziel",
+    "apply.cond.any": "Zustände",
+    "apply.cond.no": "Bedingung nicht erfüllt",
+    "apply.corpse.explode": "Leiche von {name} explodiert: {dmg} Schaden an {list}",
+    "apply.corpse.none": "keine Leiche",
+    "apply.draw": "{n} gezogen",
+    "apply.enemyAttack.disarmed": "{name} ist entwaffnet und verfehlt",
+    "apply.enemyAttack.hit": "{name} trifft {target} ({dmg})",
+    "apply.enemyAttack.nobody": "{name} trifft niemanden",
+    "apply.enemyAttack.nobody.fx": "niemand in Reichweite",
+    "apply.energy": "+{n} Energie",
+    "apply.fieldZone": { one: "Fläche auf {n} Feld ({d} Runden)", other: "Fläche auf {n} Feldern ({d} Runden)" },
+    "apply.fogZone": { one: "Nebel auf {n} Feld ({d} Runden)", other: "Nebel auf {n} Feldern ({d} Runden)" },
+    "apply.heal": "+{n} Leben",
+    "apply.leap": "gesprungen",
+    "apply.mill": { one: "{n} Karte abgelegt (Mill)", other: "{n} Karten abgelegt (Mill)" },
+    "apply.move.pick": "Bewegen {n} (Feld wählen)",
+    "apply.move.unreached": "Ziel nicht erreicht",
+    "apply.move.walked": { one: "{n} Feld gelaufen", other: "{n} Felder gelaufen" },
+    "apply.moveEnemy": { one: "{n} Feld bewegt", other: "{n} Felder bewegt" },
+    "apply.noRoom": "kein Platz",
+    "apply.placeTrap": "{label} gelegt",
+    "apply.placeTrap.noRoom": "kein Platz für die Falle",
+    "apply.poisonMult": "Gift {a} → {b}",
+    "apply.poisonZone": { one: "Gift auf {n} Feld ({d} Runden)", other: "Gift auf {n} Feldern ({d} Runden)" },
+    "apply.poisonZone.now": "{list} sofort +{n} Gift",
+    "apply.pullTo": "{m} von {n} zur Mitte gezogen",
+    "apply.pushWave": "Rückstoßwelle: {m} von {n} weggestoßen",
+    "apply.radiusHit": "{text}: {n} getroffen",
+    "apply.scry": "oberste {n} ansehen",
+    "apply.shuffleDiscard": { one: "{n} Karte aus der Ablage eingemischt", other: "{n} Karten aus der Ablage eingemischt" },
+    "apply.slow.hit": "{n} Gegner verlangsamt",
+    "apply.slow.self": "du bist verlangsamt",
+    "apply.slowZone": "Schlamm auf {n} Feldern ({d} Runden)",
+    "apply.summon.unknown": "unbekanntes Objekt",
+    "choice.bury.log": "{card} begraben.",
+    "choice.bury.notice": "{card} begraben",
+    "choice.bury.prompt": { one: "{n} Karte aus deinem Deck begraben (für immer weg)", other: "{n} Karten aus deinem Deck begraben (für immer weg)" },
+    "choice.bury.verb": "Begraben",
+    "choice.copy.log": "{card} kopiert (Kopie auf dem Ablagestapel).",
+    "choice.copy.notice": "{card} kopiert",
+    "choice.copy.prompt": "Eine Karte deines Decks kopieren",
+    "choice.copy.verb": "Kopieren",
+    "choice.discard.log": "{card} abgeworfen.",
+    "choice.discard.notice": "{card} abgeworfen (liegt auf dem Ablagestapel)",
+    "choice.discard.prompt": { one: "{n} Karte abwerfen", other: "{n} Karten abwerfen" },
+    "choice.discard.verb": "Abwerfen",
+    "choice.exhaust.log": "{card} erschöpft (bis Kampfende weg).",
+    "choice.exhaust.notice": "{card} erschöpft",
+    "choice.exhaust.prompt": { one: "{n} Handkarte erschöpfen", other: "{n} Handkarten erschöpfen" },
+    "choice.exhaust.verb": "Erschöpfen",
+    "choice.recall.log": "{card} aus der Ablage zurück auf die Hand.",
+    "choice.recall.prompt": { one: "{n} Karte aus der Ablage auf die Hand", other: "{n} Karten aus der Ablage auf die Hand" },
+    "choice.scry.log": "{card} abgelegt (Scry).",
+    "choice.scry.prompt": "Oberste Karten: beliebige ablegen, dann „Fertig“",
+    "choice.scry.verb": "Ablegen",
+    "choice.search.log": "{card} aus dem Nachziehstapel geholt (neu gemischt).",
+    "choice.search.prompt": { one: "{n} Karte aus dem Nachziehstapel suchen", other: "{n} Karten aus dem Nachziehstapel suchen" },
+    "choice.toHand.verb": "Auf die Hand",
+    "choice.transform.log": "{card} umgewandelt in {to}.",
+    "choice.transform.log.none": "{card} umgewandelt (kein Ersatz im Draft-Pool).",
+    "choice.transform.notice": "{card} → {to}",
+    "choice.transform.notice.none": "{card} verschwindet",
+    "choice.transform.prompt": "Eine Karte deines Decks umwandeln (wird zu einer zufälligen anderen)",
+    "choice.transform.verb": "Umwandeln",
+    "confused.fx": "verwirrt!",
+    "confused.log": "{name} ist verwirrt und greift {target} an.",
+    "confused.log.you": "{name} bist verwirrt und greift {target} an.",
+    "confused.self": "sich selbst",
+    "confused.self.you": "sich selbst",
+    "eff.aura.all": " für alle",
+    "eff.aura.foes": " für Feinde",
+    "eff.aura.text": "Aura (Radius {r}, {t} Züge): {list}{who}{tick}",
+    "eff.aura.tick": ", jede Runde",
+    "eff.bleed.apply": "blutet {n}",
+    "eff.bleed.text": "Blutung {n}",
+    "eff.block.text": "{n} Block",
+    "eff.confuse.apply": "verwirrt {n}",
+    "eff.confuse.text": "Verwirren {n}",
+    "eff.corpseBomb.text": "Kadaver: stirbt es, {p}% seiner Max-Leben als Schaden an alle im Radius {r}",
+    "eff.damage.label": "Schaden",
+    "eff.damage.miss": "verfehlt",
+    "eff.damage.missDisarmed": "verfehlt (entwaffnet)",
+    "eff.damage.object": "{dmg} an {obj}",
+    "eff.disarm.apply": "entwaffnet {n}",
+    "eff.disarm.label": "Entwaffnen",
+    "eff.disarm.text": "Entwaffnen {n}",
+    "eff.dodge.apply": "Ausweichen {n}",
+    "eff.dodge.text": "Ausweichen {n}",
+    "eff.fear.apply": "fürchtet sich ({n})",
+    "eff.fear.text": { one: "Furcht {n} Feld, {t} Züge", other: "Furcht {n} Felder, {t} Züge" },
+    "eff.fly.apply": "fliegt {n}",
+    "eff.fly.text": "Fliegen {n}",
+    "eff.grace.text": "Schonfrist {n}",
+    "eff.haste.apply": "Eile {n}",
+    "eff.haste.text": "Eile {n}",
+    "eff.invis.apply": "unsichtbar {n}",
+    "eff.invis.text": "Unsichtbar {n}",
+    "eff.lure.apply": "angelockt ({n})",
+    "eff.lure.text": { one: "Anlocken {n} Feld, {t} Züge", other: "Anlocken {n} Felder, {t} Züge" },
+    "eff.poison.label": "Gift",
+    "eff.poison.text": "{n} Gift",
+    "eff.poisonTick.apply": "Gift tickt ({n})",
+    "eff.poisonTick.label": "Gift tickt sofort",
+    "eff.poisonTick.none": "kein Gift",
+    "eff.radius": ", Radius {n}",
+    "eff.root.apply": "immobil für {d} Züge",
+    "eff.root.label": "Immobil",
+    "eff.root.text": "Immobil {d}",
+    "eff.seed.text": "Seuchensaat: Stirbt das Ziel, bekommen alle {who} im Radius {r} seine Zustände",
+    "eff.slow.apply": "−{a} Bewegung für {d} Züge",
+    "eff.slow.label": "Verlangsamen",
+    "eff.slow.text": "Verlangsamt −{a}, {d} Züge",
+    "eff.strength.text": "Kraft +{n}",
+    "eff.stun.apply": { one: "betäubt für {n} Zug", other: "betäubt für {n} Züge" },
+    "eff.stun.label": "Betäuben",
+    "eff.stun.text": "Betäubt {n}",
+    "eff.taunt.apply": "verspottet ({n})",
+    "eff.taunt.text": "Verspotten {n}",
+    "eff.thorns.apply": "Dornen {n}",
+    "eff.thorns.text": "Dornen {n}",
+    "eff.wound.apply": "verwundet {n}",
+    "eff.wound.text": "Verwunden {n}",
+    "fx.aura": "Aura",
+    "fx.bleed": "Blutung",
+    "fx.confuse": "Verwirren",
+    "fx.corpseBomb": "Kadaver (explodiert beim Tod)",
+    "fx.dodge": "Ausweichen",
+    "fx.fear": "Furcht",
+    "fx.fly": "Fliegen",
+    "fx.haste": "Eile",
+    "fx.invis": "Unsichtbar",
+    "fx.lure": "Anlocken",
+    "fx.seed": "Seuchensaat",
+    "fx.taunt": "Verspotten",
+    "fx.thorns": "Dornen",
+    "fx.wound": "Verwunden",
     "game.abort": "{name} erreicht dich nicht – der Rest der Intention entfällt.",
     "game.abort.fx": "Abbruch",
     "game.begin": "Kampf beginnt.",
@@ -3325,6 +3469,7 @@ window.HB = window.HB || {};
     "name:Verspottet": "Verspottet",
     "name:Verwirrt": "Verwirrt",
     "name:Verwundet": "Verwundet",
+    "obj.default": "Objekt",
     "stall.log": "Flaute: {n} Runden ohne Schaden an Gegnern – alle Gegner bekommen +{s} Kraft und +{r} Hast.",
     "stall.notice": "Die Gegner werden stärker und schneller",
     "status.aura.all": "alle",
@@ -3424,8 +3569,153 @@ window.HB = window.HB || {};
     "status.thorns.label": "Dornen",
     "status.wound.info": "Die nächsten {n} Treffer machen je +{p} % Schaden.",
     "status.wound.label": "Verwundet",
+    "step.disarmedMiss.fx": "entwaffnet – verfehlt",
   });
   HB.addStrings('en', {
+    "apply.addCard": "{n}× {name} to hand",
+    "apply.addCard.discard": " ({n} to the discard pile, hand full)",
+    "apply.addCard.none": "card not found",
+    "apply.barrage": "{n} impacts, {h} hit",
+    "apply.buffPoison": "next attack +{n} Poison",
+    "apply.chain.bounce": "Orb hits {n}×",
+    "apply.chain.hit": "Chain hits {n}",
+    "apply.chain.none": "Chain: no target",
+    "apply.cond.any": "afflictions",
+    "apply.cond.no": "condition not met",
+    "apply.corpse.explode": "Corpse of {name} explodes: {dmg} damage to {list}",
+    "apply.corpse.none": "no corpse",
+    "apply.draw": "drew {n}",
+    "apply.enemyAttack.disarmed": "{name} is disarmed and misses",
+    "apply.enemyAttack.hit": "{name} hits {target} ({dmg})",
+    "apply.enemyAttack.nobody": "{name} hits nobody",
+    "apply.enemyAttack.nobody.fx": "nobody in range",
+    "apply.energy": "+{n} Energy",
+    "apply.fieldZone": { one: "Area on {n} tile ({d} rounds)", other: "Area on {n} tiles ({d} rounds)" },
+    "apply.fogZone": { one: "Fog on {n} tile ({d} rounds)", other: "Fog on {n} tiles ({d} rounds)" },
+    "apply.heal": "+{n} HP",
+    "apply.leap": "leaped",
+    "apply.mill": { one: "{n} card milled", other: "{n} cards milled" },
+    "apply.move.pick": "Move {n} (choose a tile)",
+    "apply.move.unreached": "target not reached",
+    "apply.move.walked": { one: "walked {n} tile", other: "walked {n} tiles" },
+    "apply.moveEnemy": { one: "moved {n} tile", other: "moved {n} tiles" },
+    "apply.noRoom": "no room",
+    "apply.placeTrap": "{label} laid",
+    "apply.placeTrap.noRoom": "no room for the trap",
+    "apply.poisonMult": "Poison {a} → {b}",
+    "apply.poisonZone": { one: "Poison on {n} tile ({d} rounds)", other: "Poison on {n} tiles ({d} rounds)" },
+    "apply.poisonZone.now": "{list} immediately +{n} Poison",
+    "apply.pullTo": "{m} of {n} pulled to the center",
+    "apply.pushWave": "Shockwave: {m} of {n} pushed away",
+    "apply.radiusHit": "{text}: {n} hit",
+    "apply.scry": "look at the top {n}",
+    "apply.shuffleDiscard": { one: "{n} card shuffled in from the discard pile", other: "{n} cards shuffled in from the discard pile" },
+    "apply.slow.hit": "{n} enemies slowed",
+    "apply.slow.self": "you are slowed",
+    "apply.slowZone": "Mud on {n} tiles ({d} rounds)",
+    "apply.summon.unknown": "unknown object",
+    "choice.bury.log": "{card} buried.",
+    "choice.bury.notice": "{card} buried",
+    "choice.bury.prompt": { one: "Bury {n} card from your deck (gone forever)", other: "Bury {n} cards from your deck (gone forever)" },
+    "choice.bury.verb": "Bury",
+    "choice.copy.log": "{card} copied (copy in the discard pile).",
+    "choice.copy.notice": "{card} copied",
+    "choice.copy.prompt": "Copy a card from your deck",
+    "choice.copy.verb": "Copy",
+    "choice.discard.log": "{card} discarded.",
+    "choice.discard.notice": "{card} discarded (in the discard pile)",
+    "choice.discard.prompt": { one: "Discard {n} card", other: "Discard {n} cards" },
+    "choice.discard.verb": "Discard",
+    "choice.exhaust.log": "{card} exhausted (gone until the end of the fight).",
+    "choice.exhaust.notice": "{card} exhausted",
+    "choice.exhaust.prompt": { one: "Exhaust {n} card from your hand", other: "Exhaust {n} cards from your hand" },
+    "choice.exhaust.verb": "Exhaust",
+    "choice.recall.log": "{card} returned from the discard pile to your hand.",
+    "choice.recall.prompt": { one: "Return {n} card from the discard pile to your hand", other: "Return {n} cards from the discard pile to your hand" },
+    "choice.scry.log": "{card} discarded (Scry).",
+    "choice.scry.prompt": "Top cards: discard any, then \"Done\"",
+    "choice.scry.verb": "Discard",
+    "choice.search.log": "{card} taken from the draw pile (reshuffled).",
+    "choice.search.prompt": { one: "Search {n} card from the draw pile", other: "Search {n} cards from the draw pile" },
+    "choice.toHand.verb": "To hand",
+    "choice.transform.log": "{card} transformed into {to}.",
+    "choice.transform.log.none": "{card} transformed (no replacement in the draft pool).",
+    "choice.transform.notice": "{card} → {to}",
+    "choice.transform.notice.none": "{card} disappears",
+    "choice.transform.prompt": "Transform a card from your deck (becomes a random other one)",
+    "choice.transform.verb": "Transform",
+    "confused.fx": "confused!",
+    "confused.log": "{name} is confused and attacks {target}.",
+    "confused.log.you": "{name} are confused and attack {target}.",
+    "confused.self": "itself",
+    "confused.self.you": "yourself",
+    "eff.aura.all": " for everyone",
+    "eff.aura.foes": " for foes",
+    "eff.aura.text": "Aura (radius {r}, {t} turns): {list}{who}{tick}",
+    "eff.aura.tick": ", every round",
+    "eff.bleed.apply": "bleeding {n}",
+    "eff.bleed.text": "Bleed {n}",
+    "eff.block.text": "{n} Block",
+    "eff.confuse.apply": "confused {n}",
+    "eff.confuse.text": "Confuse {n}",
+    "eff.corpseBomb.text": "Carcass: when it dies, {p}% of its max HP as damage to everyone within radius {r}",
+    "eff.damage.label": "Damage",
+    "eff.damage.miss": "missed",
+    "eff.damage.missDisarmed": "missed (disarmed)",
+    "eff.damage.object": "{dmg} to {obj}",
+    "eff.disarm.apply": "disarmed {n}",
+    "eff.disarm.label": "Disarm",
+    "eff.disarm.text": "Disarm {n}",
+    "eff.dodge.apply": "Dodge {n}",
+    "eff.dodge.text": "Dodge {n}",
+    "eff.fear.apply": "afraid ({n})",
+    "eff.fear.text": { one: "Fear {n} tile, {t} turns", other: "Fear {n} tiles, {t} turns" },
+    "eff.fly.apply": "flying {n}",
+    "eff.fly.text": "Fly {n}",
+    "eff.grace.text": "Grace {n}",
+    "eff.haste.apply": "Swiftness {n}",
+    "eff.haste.text": "Swiftness {n}",
+    "eff.invis.apply": "invisible {n}",
+    "eff.invis.text": "Invisible {n}",
+    "eff.lure.apply": "lured ({n})",
+    "eff.lure.text": { one: "Lure {n} tile, {t} turns", other: "Lure {n} tiles, {t} turns" },
+    "eff.poison.label": "Poison",
+    "eff.poison.text": "{n} Poison",
+    "eff.poisonTick.apply": "Poison ticks ({n})",
+    "eff.poisonTick.label": "Poison ticks now",
+    "eff.poisonTick.none": "no Poison",
+    "eff.radius": ", radius {n}",
+    "eff.root.apply": "rooted for {d} turns",
+    "eff.root.label": "Root",
+    "eff.root.text": "Rooted {d}",
+    "eff.seed.text": "Plague seed: when the target dies, all {who} within radius {r} get its afflictions",
+    "eff.slow.apply": "−{a} Movement for {d} turns",
+    "eff.slow.label": "Slow",
+    "eff.slow.text": "Slowed −{a}, {d} turns",
+    "eff.strength.text": "Strength +{n}",
+    "eff.stun.apply": { one: "stunned for {n} turn", other: "stunned for {n} turns" },
+    "eff.stun.label": "Stun",
+    "eff.stun.text": "Stunned {n}",
+    "eff.taunt.apply": "taunted ({n})",
+    "eff.taunt.text": "Taunt {n}",
+    "eff.thorns.apply": "Thorns {n}",
+    "eff.thorns.text": "Thorns {n}",
+    "eff.wound.apply": "wounded {n}",
+    "eff.wound.text": "Wound {n}",
+    "fx.aura": "Aura",
+    "fx.bleed": "Bleed",
+    "fx.confuse": "Confuse",
+    "fx.corpseBomb": "Carcass (explodes on death)",
+    "fx.dodge": "Dodge",
+    "fx.fear": "Fear",
+    "fx.fly": "Fly",
+    "fx.haste": "Swiftness",
+    "fx.invis": "Invisible",
+    "fx.lure": "Lure",
+    "fx.seed": "Plague seed",
+    "fx.taunt": "Taunt",
+    "fx.thorns": "Thorns",
+    "fx.wound": "Wound",
     "game.abort": "{name} cannot reach you – the rest of its intent is dropped.",
     "game.abort.fx": "Aborted",
     "game.begin": "Battle begins.",
@@ -3510,6 +3800,7 @@ window.HB = window.HB || {};
     "name:Verspottet": "Taunted",
     "name:Verwirrt": "Confused",
     "name:Verwundet": "Wounded",
+    "obj.default": "object",
     "stall.log": "Lull: {n} rounds without damage to enemies – all enemies gain +{s} Strength and +{r} Haste.",
     "stall.notice": "The enemies grow stronger and faster",
     "status.aura.all": "everyone",
@@ -3609,6 +3900,7 @@ window.HB = window.HB || {};
     "status.thorns.label": "Thorns",
     "status.wound.info": "The next {n} hits deal +{p}% damage each.",
     "status.wound.label": "Wounded",
+    "step.disarmedMiss.fx": "disarmed – miss",
   });
 })(window.HB);
 
@@ -4459,11 +4751,13 @@ window.HB = window.HB || {};
     "status.reach.label": "Reichweite",
     "status.reach.info": "Alle Angriffe +{n} Reichweite (Einzelschläge, Länge und Radius von Flächenangriffen), bis Kampfende.",
     "status.reach.fx": "+{n} Reichweite",
+    "stall.spawn": "Flaute: Ein {name} stößt dazu.",
   });
   HB.addStrings('en', {
     "status.reach.label": "Reach",
     "status.reach.info": "All attacks gain +{n} range (single strikes, length and radius of area attacks) until the end of combat.",
     "status.reach.fx": "+{n} Reach",
+    "stall.spawn": "Lull: A {name} joins the fight.",
   });
 })(window.HB);
 
@@ -9177,11 +9471,31 @@ window.HB = window.HB || {};
 </script>
   <script>
 // Modul Flaute (Hintergrund-Mechanik): Erleidet drei Runden lang KEIN Gegner Schaden, bekommen alle Gegner im Feld dauerhaft
-// +1 Kraft, +1 Hast und +1 Reichweite (bis Kampfende). Danach bekommen sie JEDE weitere ruhige Runde wieder alle Segen, bis irgendein Gegner Schaden erleidet (dann Zähler von vorn). Zahlen: Regeln stallRounds / stallStrength / stallRush / stallReach.
+// +1 Kraft, +1 Hast und +1 Reichweite (bis Kampfende) und es stößt jede Runde ein Gegner dazu. Danach bekommen sie JEDE weitere ruhige Runde wieder alle Segen, bis irgendein Gegner Schaden erleidet (dann Zähler von vorn). Zahlen: Regeln stallRounds / stallStrength / stallRush / stallReach.
 // Hängt sich nur über Anschlüsse ein (modules.js): onEvent merkt sich Gegner-Schaden, onTurnStart wertet einmal je Runde aus.
 window.HB = window.HB || {};
 (function (HB) {
   const rule = (g, k, d) => ((g.cfg.rules || {})[k] ?? d);
+  // Jede Flaute-Runde stößt ein Gegner dazu (Regel stallSpawn, Typ stallSpawnType), weit weg vom Spieler: wer nur wegläuft, wird irgendwann eingekesselt.
+  // Er erscheint zu Beginn deines Zugs und handelt erst danach.
+  const stallReinforce = (g) => {
+    const n = rule(g, 'stallSpawn', 1);
+    if (!(n > 0)) return;
+    const ts = (g.cfg.enemyTypes || []).filter((t) => !t.disabled && !t.boss);
+    const type = ts.find((t) => t.id === rule(g, 'stallSpawnType', 'kaempfer')) || ts[0];
+    const from = (g.floorPlayers && g.floorPlayers[0]) || g.player;
+    if (!type || !from) return;
+    for (let i = 0; i < n; i++) {
+      const free = g.board.tiles.filter((h) => g.freeTile(h));
+      if (!free.length) return;
+      const far = Math.max(...free.map((h) => HB.hex.distance(h, from.pos)));
+      const pick = g.pickRandom(free.filter((h) => HB.hex.distance(h, from.pos) >= Math.min(far, 4)));
+      const e = g.newEnemy(type.id, pick);
+      g.enemies.push(e); g.renumber();
+      g.log(HB.t('stall.spawn', { name: e.name }));
+    }
+    g.aimStrikes(false);
+  };
   HB.moduleHooks('stall', {
     saveFields: ['calmTurns', 'calmHit', 'calmEval'],
     onEvent(g, ev) {
@@ -9196,8 +9510,9 @@ window.HB = window.HB || {};
       g.calmTurns = g.calmHit ? 0 : (g.calmTurns || 0) + 1;
       g.calmHit = false;
       if (g.calmTurns < rule(g, 'stallRounds', 3)) return;
+      stallReinforce(g); // Verstärkung vor den Segen: der Neue bekommt sie gleich mit
       const s = rule(g, 'stallStrength', 1), r = rule(g, 'stallRush', 1), w = rule(g, 'stallReach', 1);
-      for (const e of foes) { if (s > 0) HB.addStatus(g, e, 'strength', s); if (r > 0) HB.addStatus(g, e, 'rush', r); if (w > 0) HB.addStatus(g, e, 'reach', w); }
+      for (const e of g.alive) { if (s > 0) HB.addStatus(g, e, 'strength', s); if (r > 0) HB.addStatus(g, e, 'rush', r); if (w > 0) HB.addStatus(g, e, 'reach', w); }
       g.log(HB.t('stall.log', { n: rule(g, 'stallRounds', 3), s, r, w }));
       g.notice(HB.t('stall.notice'), 'stun');
     },
@@ -12310,71 +12625,71 @@ window.HB = window.HB || {};
     const own = att.isPlayer ? g.floorPlayers : g.alive;
     const pool = [att, ...own.filter((o) => o !== att && g.inRangeAndSight(att.pos, o.pos, range, min).ok)];
     const t = pool[Math.floor(Math.random() * pool.length)];
-    g.fx(att.pos, 'verwirrt!', 'stun');
-    g.log(`${g.unitName(att)} ${att.isPlayer && g.players.length === 1 ? 'bist' : 'ist'} verwirrt und greift ${t === att ? (att.isPlayer ? 'sich selbst' : 'sich selbst') : g.unitName(t)} an.`);
+    g.fx(att.pos, HB.t('confused.fx'), 'stun');
+    g.log(g.tu('confused.log', att, { target: t === att ? HB.t(att.isPlayer && g.players.length === 1 ? 'confused.self.you' : 'confused.self') : g.unitName(t) }));
     return t;
   };
   // ---------------------------------------------------------------------------------------------
   // WIRKUNGEN AUF EINE FIGUR – gemeinsam für Karten, Fallen (Schablonen) und alles, was eine Figur direkt trifft.
   // apply(g, u, e) gibt den Text für Log/Kartenzusammenfassung zurück. Karteneffekte gleichen Namens laufen automatisch hierüber.
   // ---------------------------------------------------------------------------------------------
-  const stack = (key, word) => (g, u, e) => { HB.addStatus(g, u, key, e.amount); return `${word} ${u[key] || e.amount}`; };
-  const sourcedFx = (key, word) => (g, u, e, src) => {
+  const stack = (key) => (g, u, e) => { HB.addStatus(g, u, key, e.amount); return HB.t('eff.' + key + '.apply', { n: u[key] || e.amount }); };
+  const sourcedFx = (key) => (g, u, e, src) => {
     if (!src || src === u) return '';
     HB.addStatus(g, u, key, { n: e.amount, steps: e.steps, by: g.unitId(src) });
-    return `${word} (${e.amount})`;
+    return HB.t('eff.' + key + '.apply', { n: e.amount });
   };
   HB.UNIT_EFFECTS = {
-    damage: { label: 'Schaden', icon: 'sword', params: [['amount', 'Schaden', 5], ['hits', 'Treffer', 1]], text: (e) => HB.dmgText(e.amount, e.hits),
-      apply(g, u, e, src) { if (HB.attackMisses(src)) { src.missedAttack = true; g.fx(u.pos, 'verfehlt', 'miss'); return 'verfehlt (entwaffnet)'; } const n = HB.attackDamage(g, src, e.amount); g.strike(u, n, e.hits, src); return HB.dmgText(n, e.hits); },
+    damage: { label: HB.t('eff.damage.label'), icon: 'sword', params: [['amount', 'Schaden', 5], ['hits', 'Treffer', 1]], text: (e) => HB.dmgText(e.amount, e.hits),
+      apply(g, u, e, src) { if (HB.attackMisses(src)) { src.missedAttack = true; g.fx(u.pos, HB.t('eff.damage.miss'), 'miss'); return HB.t('eff.damage.missDisarmed'); } const n = HB.attackDamage(g, src, e.amount); g.strike(u, n, e.hits, src); return HB.dmgText(n, e.hits); },
       // trifft auch zerstörbare Objekte (HB.OBJECT_TYPES)
-      object(g, o, e, src) { const n = HB.attackDamage(g, src, e.amount); for (let k = 0; k < (e.hits || 1) && g.objects.includes(o); k++) g.hitObject(o, n, src); return `${HB.dmgText(n, e.hits)} an ${(HB.OBJECT_TYPES[o.type] || {}).label || 'Objekt'}`; } },
-    poison: { status: 'poison', label: 'Gift', icon: 'poison', params: [['amount', 'Gift', 4]], text: (e) => `${e.amount} Gift`,
-      apply(g, u, e) { HB.addStatus(g, u, 'poison', e.amount); return `${e.amount} Gift`; } },
-    slow: { status: 'slow', label: 'Verlangsamen', icon: 'slow', params: [['amount', '−Bewegung', 1], ['duration', 'Züge', 2]], text: (e) => `Verlangsamt −${e.amount}, ${e.duration} Züge`,
-      apply(g, u, e) { HB.addStatus(g, u, 'slow', { amount: e.amount, turns: e.duration }); return `−${e.amount} Bewegung für ${e.duration} Züge`; } },
-    root: { status: 'slow', label: 'Immobil', icon: 'trapRoot', params: [['duration', 'Züge', 2]], text: (e) => `Immobil ${e.duration}`,
-      apply(g, u, e) { HB.addStatus(g, u, 'slow', { turns: e.duration, root: true }); return `immobil für ${e.duration} Züge`; } },
-    stun: { status: 'stun', label: 'Betäuben', icon: 'stun', params: [['amount', 'Züge', 1]], text: (e) => `Betäubt ${e.amount}`,
-      apply(g, u, e) { HB.addStatus(g, u, 'stun', e.amount); return `betäubt für ${e.amount} ${e.amount === 1 ? 'Zug' : 'Züge'}`; } },
-    block: { status: 'block', label: 'Block', icon: 'block', params: [['amount', 'Block', 5]], text: (e) => `${e.amount} Block`,
-      apply(g, u, e) { HB.addStatus(g, u, 'block', e.amount); return `${e.amount} Block`; } },
-    grace: { status: 'grace', label: 'Schonfrist', icon: 'grace', params: [['amount', 'Runden', 2]], text: (e) => `Schonfrist ${e.amount}`,
-      apply(g, u, e) { HB.addStatus(g, u, 'grace', e.amount); return `Schonfrist ${u.grace}`; } },
-    poisonTick: { label: 'Gift tickt sofort', icon: 'poison', params: [], text: () => 'Gift tickt sofort',
-      apply(g, u) { const n = u.poison || 0; if (!n) return 'kein Gift'; HB.STATUSES.poison.tick(g, u); return `Gift tickt (${n})`; } },
-    strength: { status: 'strength', label: 'Kraft', icon: 'strength', params: [['amount', 'Kraft', 1]], text: (e) => `Kraft +${e.amount}`,
-      apply(g, u, e) { HB.addStatus(g, u, 'strength', e.amount); return `Kraft +${e.amount}`; } },
-    disarm: { status: 'disarm', label: 'Entwaffnen', icon: 'disarm', params: [['amount', 'Stapel', 1]], text: (e) => `Entwaffnen ${e.amount}`,
-      apply(g, u, e) { HB.addStatus(g, u, 'disarm', e.amount); return `entwaffnet ${e.amount}`; } },
-    wound: { status: 'wound', label: 'Verwunden', icon: 'wound', params: [['amount', 'Stapel', 1]], text: (e) => `Verwunden ${e.amount}`, apply: stack('wound', 'verwundet') },
-    confuse: { status: 'confuse', label: 'Verwirren', icon: 'confuse', params: [['amount', 'Stapel', 1]], text: (e) => `Verwirren ${e.amount}`, apply: stack('confuse', 'verwirrt') },
-    thorns: { status: 'thorns', label: 'Dornen', icon: 'thorns', params: [['amount', 'Dornen', 3]], text: (e) => `Dornen ${e.amount}`, apply: stack('thorns', 'Dornen') },
-    dodge: { status: 'dodge', label: 'Ausweichen', icon: 'dodge', params: [['amount', 'Stapel', 1]], text: (e) => `Ausweichen ${e.amount}`, apply: stack('dodge', 'Ausweichen') },
-    fly: { status: 'fly', label: 'Fliegen', icon: 'fly', params: [['amount', 'Runden', 2]], text: (e) => `Fliegen ${e.amount}`, apply: stack('fly', 'fliegt') },
-    haste: { status: 'haste', label: 'Eile', icon: 'haste', params: [['amount', 'Züge', 2]], text: (e) => `Eile ${e.amount}`, apply: stack('haste', 'Eile') },
-    bleed: { status: 'bleed', label: 'Blutung', icon: 'bleed', params: [['amount', 'Stapel', 3]], text: (e) => `Blutung ${e.amount}`, apply: stack('bleed', 'blutet') },
-    invis: { status: 'invis', label: 'Unsichtbar', icon: 'eyeOff', params: [['amount', 'Stapel', 1]], text: (e) => `Unsichtbar ${e.amount}`, apply: stack('invis', 'unsichtbar') },
+      object(g, o, e, src) { const n = HB.attackDamage(g, src, e.amount); for (let k = 0; k < (e.hits || 1) && g.objects.includes(o); k++) g.hitObject(o, n, src); return HB.t('eff.damage.object', { dmg: HB.dmgText(n, e.hits), obj: (HB.OBJECT_TYPES[o.type] || {}).label || HB.t('obj.default') }); } },
+    poison: { status: 'poison', label: HB.t('eff.poison.label'), icon: 'poison', params: [['amount', 'Gift', 4]], text: (e) => HB.t('eff.poison.text', { n: e.amount }),
+      apply(g, u, e) { HB.addStatus(g, u, 'poison', e.amount); return HB.t('eff.poison.text', { n: e.amount }); } },
+    slow: { status: 'slow', label: HB.t('eff.slow.label'), icon: 'slow', params: [['amount', '−Bewegung', 1], ['duration', 'Züge', 2]], text: (e) => HB.t('eff.slow.text', { a: e.amount, d: e.duration }),
+      apply(g, u, e) { HB.addStatus(g, u, 'slow', { amount: e.amount, turns: e.duration }); return HB.t('eff.slow.apply', { a: e.amount, d: e.duration }); } },
+    root: { status: 'slow', label: HB.t('eff.root.label'), icon: 'trapRoot', params: [['duration', 'Züge', 2]], text: (e) => HB.t('eff.root.text', { d: e.duration }),
+      apply(g, u, e) { HB.addStatus(g, u, 'slow', { turns: e.duration, root: true }); return HB.t('eff.root.apply', { d: e.duration }); } },
+    stun: { status: 'stun', label: HB.t('eff.stun.label'), icon: 'stun', params: [['amount', 'Züge', 1]], text: (e) => HB.t('eff.stun.text', { n: e.amount }),
+      apply(g, u, e) { HB.addStatus(g, u, 'stun', e.amount); return HB.t('eff.stun.apply', { n: e.amount }); } },
+    block: { status: 'block', label: HB.t('status.block.label'), icon: 'block', params: [['amount', 'Block', 5]], text: (e) => HB.t('eff.block.text', { n: e.amount }),
+      apply(g, u, e) { HB.addStatus(g, u, 'block', e.amount); return HB.t('eff.block.text', { n: e.amount }); } },
+    grace: { status: 'grace', label: HB.t('status.grace.label'), icon: 'grace', params: [['amount', 'Runden', 2]], text: (e) => HB.t('eff.grace.text', { n: e.amount }),
+      apply(g, u, e) { HB.addStatus(g, u, 'grace', e.amount); return HB.t('eff.grace.text', { n: u.grace }); } },
+    poisonTick: { label: HB.t('eff.poisonTick.label'), icon: 'poison', params: [], text: () => HB.t('eff.poisonTick.label'),
+      apply(g, u) { const n = u.poison || 0; if (!n) return HB.t('eff.poisonTick.none'); HB.STATUSES.poison.tick(g, u); return HB.t('eff.poisonTick.apply', { n }); } },
+    strength: { status: 'strength', label: HB.t('status.strength.label'), icon: 'strength', params: [['amount', 'Kraft', 1]], text: (e) => HB.t('eff.strength.text', { n: e.amount }),
+      apply(g, u, e) { HB.addStatus(g, u, 'strength', e.amount); return HB.t('eff.strength.text', { n: e.amount }); } },
+    disarm: { status: 'disarm', label: HB.t('eff.disarm.label'), icon: 'disarm', params: [['amount', 'Stapel', 1]], text: (e) => HB.t('eff.disarm.text', { n: e.amount }),
+      apply(g, u, e) { HB.addStatus(g, u, 'disarm', e.amount); return HB.t('eff.disarm.apply', { n: e.amount }); } },
+    wound: { status: 'wound', label: HB.t('fx.wound'), icon: 'wound', params: [['amount', 'Stapel', 1]], text: (e) => HB.t('eff.wound.text', { n: e.amount }), apply: stack('wound') },
+    confuse: { status: 'confuse', label: HB.t('fx.confuse'), icon: 'confuse', params: [['amount', 'Stapel', 1]], text: (e) => HB.t('eff.confuse.text', { n: e.amount }), apply: stack('confuse') },
+    thorns: { status: 'thorns', label: HB.t('fx.thorns'), icon: 'thorns', params: [['amount', 'Dornen', 3]], text: (e) => HB.t('eff.thorns.text', { n: e.amount }), apply: stack('thorns') },
+    dodge: { status: 'dodge', label: HB.t('fx.dodge'), icon: 'dodge', params: [['amount', 'Stapel', 1]], text: (e) => HB.t('eff.dodge.text', { n: e.amount }), apply: stack('dodge') },
+    fly: { status: 'fly', label: HB.t('fx.fly'), icon: 'fly', params: [['amount', 'Runden', 2]], text: (e) => HB.t('eff.fly.text', { n: e.amount }), apply: stack('fly') },
+    haste: { status: 'haste', label: HB.t('fx.haste'), icon: 'haste', params: [['amount', 'Züge', 2]], text: (e) => HB.t('eff.haste.text', { n: e.amount }), apply: stack('haste') },
+    bleed: { status: 'bleed', label: HB.t('fx.bleed'), icon: 'bleed', params: [['amount', 'Stapel', 3]], text: (e) => HB.t('eff.bleed.text', { n: e.amount }), apply: stack('bleed') },
+    invis: { status: 'invis', label: HB.t('fx.invis'), icon: 'eyeOff', params: [['amount', 'Stapel', 1]], text: (e) => HB.t('eff.invis.text', { n: e.amount }), apply: stack('invis') },
     // Mit Verursacher (src): Anlocken/Furcht = zu Zugbeginn Schritte auf ihn zu / weg; Verspotten = greift nur ihn an. Ohne src (z. B. Falle) wirkungslos.
     // radius: true = als Karteneffekt mit Radius um das Ziel (0 = nur das Ziel; auf dich gespielt = um dich herum)
-    lure: { status: 'lure', label: 'Anlocken', icon: 'lure', radius: true, params: [['amount', 'Züge', 2], ['steps', 'Schritte je Zug', 1]],
-      text: (e) => `Anlocken ${e.steps || 1} Feld${(e.steps || 1) === 1 ? '' : 'er'}, ${e.amount} Züge`, apply: sourcedFx('lure', 'angelockt') },
-    fear: { status: 'fear', label: 'Furcht', icon: 'fear', radius: true, params: [['amount', 'Züge', 2], ['steps', 'Schritte je Zug', 1]],
-      text: (e) => `Furcht ${e.steps || 1} Feld${(e.steps || 1) === 1 ? '' : 'er'}, ${e.amount} Züge`, apply: sourcedFx('fear', 'fürchtet sich') },
-    taunt: { status: 'taunt', label: 'Verspotten', icon: 'taunt', radius: true, params: [['amount', 'Züge', 1]],
-      text: (e) => `Verspotten ${e.amount}`, apply: sourcedFx('taunt', 'verspottet') },
-    seed: { status: 'seed', label: 'Seuchensaat', icon: 'seed', noEnemyStep: true, params: [['radius', 'Radius', 2, null, { inf: true }], ['who', 'Verteilt auf', 'foes', [['foes', 'nur Gegner'], ['all', 'auch Spieler']]]],
-      text: (e) => `Seuchensaat: Stirbt das Ziel, bekommen alle ${e.who === 'all' ? 'Figuren' : 'Gegner'} im Radius ${HB.util.rangeText(e.radius ?? 2)} seine Zustände`,
-      apply(g, u, e) { HB.addStatus(g, u, 'seed', { radius: e.radius, who: e.who }); return 'Seuchensaat'; } },
-    corpseBomb: { status: 'corpseBomb', label: 'Kadaver (explodiert beim Tod)', icon: 'corpse', noEnemyStep: true, params: [['percent', '% Max-Leben', 100], ['radius', 'Radius', 2, null, { inf: true }]],
-      text: (e) => `Kadaver: stirbt es, ${e.percent ?? 100}% seiner Max-Leben als Schaden an alle im Radius ${HB.util.rangeText(e.radius ?? 2)}`,
-      apply(g, u, e) { HB.addStatus(g, u, 'corpseBomb', { radius: e.radius, percent: e.percent }); return 'Kadaver'; } },
-    aura: { status: 'aura', label: 'Aura', icon: 'aura', noEnemyStep: true,
+    lure: { status: 'lure', label: HB.t('fx.lure'), icon: 'lure', radius: true, params: [['amount', 'Züge', 2], ['steps', 'Schritte je Zug', 1]],
+      text: (e) => HB.t('eff.lure.text', { n: e.steps || 1, t: e.amount }), apply: sourcedFx('lure') },
+    fear: { status: 'fear', label: HB.t('fx.fear'), icon: 'fear', radius: true, params: [['amount', 'Züge', 2], ['steps', 'Schritte je Zug', 1]],
+      text: (e) => HB.t('eff.fear.text', { n: e.steps || 1, t: e.amount }), apply: sourcedFx('fear') },
+    taunt: { status: 'taunt', label: HB.t('fx.taunt'), icon: 'taunt', radius: true, params: [['amount', 'Züge', 1]],
+      text: (e) => HB.t('eff.taunt.text', { n: e.amount }), apply: sourcedFx('taunt') },
+    seed: { status: 'seed', label: HB.t('fx.seed'), icon: 'seed', noEnemyStep: true, params: [['radius', 'Radius', 2, null, { inf: true }], ['who', 'Verteilt auf', 'foes', [['foes', 'nur Gegner'], ['all', 'auch Spieler']]]],
+      text: (e) => HB.t('eff.seed.text', { who: HB.t(e.who === 'all' ? 'status.seed.all' : 'status.seed.foes'), r: HB.util.rangeText(e.radius ?? 2) }),
+      apply(g, u, e) { HB.addStatus(g, u, 'seed', { radius: e.radius, who: e.who }); return HB.t('status.seed.label'); } },
+    corpseBomb: { status: 'corpseBomb', label: HB.t('fx.corpseBomb'), icon: 'corpse', noEnemyStep: true, params: [['percent', '% Max-Leben', 100], ['radius', 'Radius', 2, null, { inf: true }]],
+      text: (e) => HB.t('eff.corpseBomb.text', { p: e.percent ?? 100, r: HB.util.rangeText(e.radius ?? 2) }),
+      apply(g, u, e) { HB.addStatus(g, u, 'corpseBomb', { radius: e.radius, percent: e.percent }); return HB.t('status.corpseBomb.label'); } },
+    aura: { status: 'aura', label: HB.t('fx.aura'), icon: 'aura', noEnemyStep: true,
       params: [['radius', 'Radius', 2, null, { inf: true }], ['who', 'Trifft', 'friends', [['friends', 'eigene Seite (auch du)'], ['foes', 'Feinde'], ['all', 'alle']]], ['turns', 'Züge', 3],
         ['mode', 'Wirkt', 'while', [['while', 'solange man drin steht (stapelt nicht)'], ['tick', 'jede Runde einmal (z. B. Gift)']]],
         ['effects', 'Wirkung', [{ type: 'strength', amount: 1 }], null, { nested: true, unit: true }]],
-      text: (e) => `Aura (Radius ${HB.util.rangeText(e.radius ?? 2)}, ${e.turns ?? 3} Züge): ${(e.effects || []).map((f) => (HB.UNIT_EFFECTS[f.type] ? HB.UNIT_EFFECTS[f.type].text(f) : f.type)).join(' + ') || 'nichts'}${({ foes: ' für Feinde', all: ' für alle' })[e.who] || ''}${e.mode === 'tick' ? ', jede Runde' : ''}`,
-      apply(g, u, e, src) { HB.addStatus(g, u, 'aura', { ...e, by: src ? g.unitId(src) : null }); return 'Aura'; } },
+      text: (e) => HB.t('eff.aura.text', { r: HB.util.rangeText(e.radius ?? 2), t: e.turns ?? 3, list: (e.effects || []).map((f) => (HB.UNIT_EFFECTS[f.type] ? HB.UNIT_EFFECTS[f.type].text(f) : f.type)).join(' + ') || HB.t('tile.effect.none'), who: ({ foes: HB.t('eff.aura.foes'), all: HB.t('eff.aura.all') })[e.who] || '', tick: e.mode === 'tick' ? HB.t('eff.aura.tick') : '' }),
+      apply(g, u, e, src) { HB.addStatus(g, u, 'aura', { ...e, by: src ? g.unitId(src) : null }); return HB.t('status.aura.label'); } },
   };
   // Auswahlliste der Wirkungen (Gegner-Aktion „Wirkung“). noEnemyStep = braucht Werte, die der Gegner-Schritt nicht einstellen kann (Radius, Wirkungsliste …)
   HB.UNIT_EFFECT_CHOICES = HB.UNIT_EFFECT_CHOICES || [];
@@ -12388,9 +12703,10 @@ window.HB = window.HB || {};
     if (HB.CARD_EFFECTS[k]) continue;
     HB.CARD_EFFECTS[k] = { label: ue.label, icon: ue.icon, orSelf: HB.isBlessing(k), auto: true,
       params: [...ue.params, ...(ue.radius ? [['radius', 'Radius (0 = nur Ziel)', 0]] : [])],
-      text: (e) => ue.text(e) + (ue.radius && e.radius > 0 ? `, Radius ${e.radius}` : ''),
+      text: (e) => ue.text(e) + (ue.radius && e.radius > 0 ? HB.t('eff.radius', { n: e.radius }) : ''),
       ...(ue.radius ? { area: (g, e, t) => (e.radius > 0 ? g.board.tiles.filter((h) => H.distance(h, t) <= e.radius) : []) } : {}) };
   }
+  if (HB.localizeEffects) HB.localizeEffects(); // die eben angehängten Einträge bekommen ihre Anzeigenamen (fx.<typ>)
   // src = wer die Wirkung austeilt (für Kraft/Entwaffnet beim Schaden); Fallen haben keine Quelle
   HB.applyUnitEffect = (g, u, e, src) => { const d = HB.UNIT_EFFECTS[e.type]; return d ? d.apply(g, u, e, src) : ''; };
 
@@ -12411,10 +12727,10 @@ window.HB = window.HB || {};
     poisonMult(g, fx, c) {
       if (c.live(c.e) && c.e.poison > 0) {
         const before = c.e.poison; c.e.poison = Math.round(c.e.poison * fx.factor);
-        g.fx(c.e.pos, `×${fx.factor}`, 'poison'); c.parts.push(`Gift ${before} → ${c.e.poison}`);
+        g.fx(c.e.pos, `×${fx.factor}`, 'poison'); c.parts.push(HB.t('apply.poisonMult', { a: before, b: c.e.poison }));
       }
     },
-    plague(g, fx, c) { if (c.live(c.e)) { g.newOutbreak(c.e, fx); c.parts.push('Seuche'); } },
+    plague(g, fx, c) { if (c.live(c.e)) { g.newOutbreak(c.e, fx); c.parts.push(HB.t('status.plague.label')); } },
     async push(g, fx, c) {
       // Richtung selbst gewählt (Game.evaluateGrab): gerade Linie in diese Richtung; ohne Wahl (z. B. Vorschau) gerade von dir weg
       if (c.target.pushDir != null && c.live(c.e) && !c.e.isPlayer) await g.forceMoveDir(c.e, c.target.pushDir, fx.amount, c.speed);
@@ -12429,8 +12745,8 @@ window.HB = window.HB || {};
       const center = c.target.hex || g.player.pos;
       const hit = g.alive.filter((o) => H.distance(o.pos, center) <= (fx.radius || 0) || o === c.e);
       hit.forEach((o) => HB.addStatus(g, o, 'slow', { amount: fx.amount, turns: fx.duration }));
-      if (c.target.self) { HB.addStatus(g, g.player, 'slow', { amount: fx.amount, turns: fx.duration }); c.parts.push('du bist verlangsamt'); }
-      c.parts.push(`${hit.length} Gegner verlangsamt`);
+      if (c.target.self) { HB.addStatus(g, g.player, 'slow', { amount: fx.amount, turns: fx.duration }); c.parts.push(HB.t('apply.slow.self')); }
+      c.parts.push(HB.t('apply.slow.hit', { n: hit.length }));
     },
     slowZone(g, fx, c) {
       const center = c.target.hex || g.player.pos;
@@ -12438,24 +12754,24 @@ window.HB = window.HB || {};
       tiles.forEach((h) => g.addTileEffect('slowField', h, { amount: fx.amount, duration: fx.duration, owner: ownerOf(g, c) }));
       const inside = [...g.hitPlayers(), ...g.alive].filter((o) => tiles.some((h) => H.eq(h, o.pos)));
       inside.forEach((o) => HB.tileEffectTypes.slowField.apply(g, o, fx));
-      c.parts.push(`Schlamm auf ${tiles.length} Feldern (${fx.duration} Runden)`);
+      c.parts.push(HB.t('apply.slowZone', { n: tiles.length, d: fx.duration }));
     },
     poisonZone(g, fx, c) {
       // Liegt schon Gift auf dem Feld: Gift addiert sich, die Dauer wird auf den neuen Wert gesetzt
       const tiles = g.zoneTiles(fx.shape, c.target.hex || g.player.pos, fx.cells);
       tiles.forEach((h) => g.addTileEffect('poisonField', h, { amount: fx.amount, duration: fx.duration, owner: ownerOf(g, c) }));
-      c.parts.push(`Gift auf ${tiles.length} Feld${tiles.length === 1 ? '' : 'ern'} (${fx.duration} Runden)`);
+      c.parts.push(HB.t('apply.poisonZone', { n: tiles.length, d: fx.duration }));
       const inside = [...g.hitPlayers(), ...g.alive].filter((o) => tiles.some((h) => H.eq(h, o.pos)));
       inside.forEach((o) => HB.addStatus(g, o, 'poison', fx.amount));
-      if (inside.length) c.parts.push(`${inside.map((o) => g.unitName(o)).join(', ')} sofort +${fx.amount} Gift`);
+      if (inside.length) c.parts.push(HB.t('apply.poisonZone.now', { list: inside.map((o) => g.unitName(o)).join(', '), n: fx.amount }));
     },
-    buffPoison(g, fx, c) { HB.addStatus(g, g.player, 'buffPoison', fx.amount); c.parts.push(`nächster Angriff +${g.player.nextAttackPoison} Gift`); },
+    buffPoison(g, fx, c) { HB.addStatus(g, g.player, 'buffPoison', fx.amount); c.parts.push(HB.t('apply.buffPoison', { n: g.player.nextAttackPoison })); },
     // Nebel (Bodenfeld fog) auf die Fläche; wer schon darin steht, ist sofort unsichtbar
     fogZone(g, fx, c) {
       const tiles = g.areaTiles(fx, c.target.hex || (c.e && c.e.pos) || g.player.pos);
       tiles.forEach((h) => g.addTileEffect('fog', h, { duration: fx.duration, owner: ownerOf(g, c) }));
       [...g.floorPlayers, ...g.alive].forEach((o) => { const f = g.effectsAt(o.pos).find((x) => x.type === 'fog'); if (f) HB.tileEffectTypes.fog.hide(g, o, f); });
-      c.parts.push(`Nebel auf ${tiles.length} Feld${tiles.length === 1 ? '' : 'ern'} (${fx.duration} Runden)`);
+      c.parts.push(HB.t('apply.fogZone', { n: tiles.length, d: fx.duration }));
     },
     // Bodenfläche mit Wirkungen (Bodenfeld effectField); wer schon darin steht, bekommt sie sofort (wie beim Betreten)
     fieldZone(g, fx, c) {
@@ -12463,12 +12779,12 @@ window.HB = window.HB || {};
       const props = { effects: HB.util.clone(fx.effects || []), renew: fx.renew || 'turn', who: fx.who || 'all', duration: fx.duration, owner: ownerOf(g, c), name: c.d ? c.d.name : '' };
       const made = tiles.map((h) => g.addTileEffect('effectField', h, HB.util.clone(props)));
       for (const o of [...g.floorPlayers, ...g.alive]) { const f = made.find((m) => g.tileEffects.includes(m) && H.eq(m.pos, o.pos)); if (f) HB.tileEffectTypes.effectField.give(g, o, f); }
-      c.parts.push(`Fläche auf ${tiles.length} Feld${tiles.length === 1 ? '' : 'ern'} (${fx.duration} Runden)`);
+      c.parts.push(HB.t('apply.fieldZone', { n: tiles.length, d: fx.duration }));
     },
     // Objekt erschaffen (Wand, Puppe …) auf freie Felder der Form; gehört dem Wirkenden (owner → Rechtsklick abreißen)
     summon(g, fx, c) {
       const t = HB.OBJECT_TYPES[fx.object];
-      if (!t) { c.parts.push('unbekanntes Objekt'); return; }
+      if (!t) { c.parts.push(HB.t('apply.summon.unknown')); return; }
       const tiles = g.areaTiles(fx, c.target.hex || (c.e && c.e.pos) || g.player.pos)
         .filter((h) => !g.blocksMove(h) && !g.objectAt(h) && !g.enemyAt(h) && !g.isPlayerAt(h) && !g.trapAt(h));
       for (const h of tiles) {
@@ -12480,7 +12796,7 @@ window.HB = window.HB || {};
         g.objects.push(o);
         g.emit('object_summoned', { type: fx.object, pos: { ...h }, owner: own || null });
       }
-      c.parts.push(tiles.length ? `${t.label} ×${tiles.length}` : 'kein Platz');
+      c.parts.push(tiles.length ? `${t.label} ×${tiles.length}` : HB.t('apply.noRoom'));
     },
     async pullTo(g, fx, c) {
       const center = c.target.hex || g.player.pos;
@@ -12489,7 +12805,7 @@ window.HB = window.HB || {};
         .sort((a, b) => H.distance(a.pos, center) - H.distance(b.pos, center));
       let moved = 0;
       for (const u of units) moved += (await g.forceMove(u, center, fx.amount, false, c.speed)) > 0 ? 1 : 0;
-      c.parts.push(`${moved} von ${units.length} zur Mitte gezogen`);
+      c.parts.push(HB.t('apply.pullTo', { m: moved, n: units.length }));
     },
     // Einschläge (CARD_EFFECTS.barrage): Mitte = Zielfeld/Ziel-Gegner/du. Je Einschlag laufen die Wirkungen wie ein eigener Karteneffekt
     // mit Ziel = dieses Feld (Figur darauf, sonst nur das Feld). noSelf: Wirkungen ohne Figur weichen nie auf dich aus (orSelf)
@@ -12511,7 +12827,7 @@ window.HB = window.HB || {};
         for (const sfx of subs) await HB.applyCardEffect(g, sfx, sc);
         if (fx.mode !== 'all') { g.changed(); await g.wait(90 / c.speed); }
       }
-      c.parts.push(`${picks.length} Einschläge, ${n} getroffen`);
+      c.parts.push(HB.t('apply.barrage', { n: picks.length, h: n }));
     },
     // Kette (CARD_EFFECTS.chain): erstes Ziel = Ziel-Figur der Karte; dann Sprung zur nächsten noch nicht getroffenen Figur in Sprungweite.
     // Hört auf, wenn keine mehr in Weite ist oder alle Stärken auf 0 gefallen sind
@@ -12528,7 +12844,7 @@ window.HB = window.HB || {};
       let u = onSelf ? src : c.live(c.e) && pool().includes(c.e) ? c.e
         : c.target.object && pool().includes(c.target.object) ? c.target.object
           : c.target.hex ? pool().find((x) => H.eq(x.pos, c.target.hex)) : null;
-      if (!u) { c.parts.push('Kette: kein Ziel'); return; }
+      if (!u) { c.parts.push(HB.t('apply.chain.none')); return; }
       const subs = HB.barrageEffects(fx), hit = new Set(), reach = HB.util.reach(fx.jumpRange ?? 2);
       let from = src.isPlayer ? null : { ...src.pos }, prev = null, n = 0; // Gegner: Linie vom Gegner zum ersten Ziel
       for (let k = 0; u && k <= (fx.jumps || 0); k++) {
@@ -12549,7 +12865,7 @@ window.HB = window.HB || {};
           .filter((x) => x !== prev && alive(x) && (x !== src || always) && H.distance(x.pos, from) <= reach && (bounce || !hit.has(x)));
         u = bounce ? cands[Math.floor(Math.random() * cands.length)] : cands.sort((a, b) => H.distance(a.pos, from) - H.distance(b.pos, from))[0];
       }
-      c.parts.push(bounce ? `Kugel trifft ${n}×` : `Kette trifft ${hit.size}`);
+      c.parts.push(bounce ? HB.t('apply.chain.bounce', { n }) : HB.t('apply.chain.hit', { n: hit.size }));
     },
     // Rückstoßwelle: alle Feinde (und schubsbaren Objekte) im Radius um die Mitte werden weggestoßen – die äußeren zuerst
     async pushWave(g, fx, c) {
@@ -12559,7 +12875,7 @@ window.HB = window.HB || {};
       let moved = 0;
       for (const u of units) if (u.alive) moved += (await g.forceMove(u, center, fx.amount, true, c.speed)) > 0 ? 1 : 0;
       for (const o of objs) if (g.objects.includes(o)) await g.pushObject(o, center, fx.amount, true, c.speed);
-      c.parts.push(`Rückstoßwelle: ${moved} von ${units.length} weggestoßen`);
+      c.parts.push(HB.t('apply.pushWave', { m: moved, n: units.length }));
     },
     // Bedingung: Wenn … (Ziel/du hat Zustand, verbrauche Stapel, Ziel stirbt durch die Karte), dann Wirkungen (auf das Ziel oder dich)
     async cond(g, fx, c) {
@@ -12579,30 +12895,30 @@ window.HB = window.HB || {};
             if (!ks.length) break;
             HB.takeStacks(who, fx.status === 'any' ? ks[Math.floor(Math.random() * ks.length)] : ks[0], 1);
           }
-          g.fx(who.pos, `−${n} ${fx.status === 'any' ? 'Zustände' : (HB.STATUSES[fx.status] || {}).label || ''}`, 'miss');
+          g.fx(who.pos, `−${n} ${fx.status === 'any' ? HB.t('apply.cond.any') : (HB.STATUSES[fx.status] || {}).label || ''}`, 'miss');
         }
       }
-      if (!ok) { c.parts.push('Bedingung nicht erfüllt'); return; }
+      if (!ok) { c.parts.push(HB.t('apply.cond.no')); return; }
       const sc = fx.to === 'self' ? { ...c, e: src, target: { ...c.target, self: true, enemy: null, object: null } } : c;
       for (const s of fx.effects || []) await HB.applyCardEffect(g, s, sc);
     },
     corpseExplosion(g, fx, c) {
       const at = c.target.hex || g.player.pos;
       const corpse = g.corpseAt(at);
-      if (!corpse) { c.parts.push('keine Leiche'); return; }
+      if (!corpse) { c.parts.push(HB.t('apply.corpse.none')); return; }
       g.corpses = g.corpses.filter((x) => x !== corpse);
       const dmg = Math.round(corpse.maxHp * (fx.percent || 75) / 100);
       const r = fx.radius ?? 1;
       g.emit('corpse_explode', { pos: { ...at }, radius: r, damage: dmg });
       const victims = [...g.hitPlayers(), ...g.alive].filter((u) => H.distance(u.pos, at) <= r);
       victims.forEach((u) => g.damage(u, dmg));
-      c.parts.push(`Leiche von ${corpse.name} explodiert: ${dmg} Schaden an ${victims.map((u) => g.unitName(u)).join(', ') || 'niemandem'}`);
+      c.parts.push(HB.t('apply.corpse.explode', { name: HB.tn(corpse.name), dmg, list: victims.map((u) => g.unitName(u)).join(', ') || HB.t('status.corpseBomb.nobody') }));
     },
     // Bewegen vor dem Angriff: läuft den beim Ablegen berechneten Weg (target.movePath); ist der Gegner danach nicht in
     // Reichweite, entfällt der Rest der Karte (es war nur eine Bewegung)
     async move(g, fx, c) {
       // nach anderen Effekten der Karte: Nachbewegung – du wählst das Feld selbst (oder brichst ab), Game.followMove
-      if (c.otherDone) { g.player.pendingMove = { amount: fx.amount || 0, card: c.d ? c.d.name : '' }; c.parts.push(`Bewegen ${fx.amount} (Feld wählen)`); return; }
+      if (c.otherDone) { g.player.pendingMove = { amount: fx.amount || 0, card: c.d ? c.d.name : '' }; c.parts.push(HB.t('apply.move.pick', { n: fx.amount })); return; }
       const path = c.target.movePath || [];
       const steps = path.slice(1);
       for (const [i, p] of steps.entries()) {
@@ -12611,9 +12927,9 @@ window.HB = window.HB || {};
         await g.wait(110 / c.speed);
         if (g.player.hp <= 0) { c.stop = true; return; }
       }
-      if (steps.length) c.parts.push(`${steps.length} Feld${steps.length === 1 ? '' : 'er'} gelaufen`);
+      if (steps.length) c.parts.push(HB.t('apply.move.walked', { n: steps.length }));
       const en = c.target.enemy;
-      if (en && !g.inRangeAndSight(g.player.pos, en.pos, g.cardRange(c.d)).ok) { c.stop = true; c.parts.push('Ziel nicht erreicht'); }
+      if (en && !g.inRangeAndSight(g.player.pos, en.pos, g.cardRange(c.d)).ok) { c.stop = true; c.parts.push(HB.t('apply.move.unreached')); }
     },
     // Sprung: Spieler landet direkt auf dem Zielfeld (über Gegner, Hindernisse und Fallen hinweg)
     leap(g, fx, c) {
@@ -12621,7 +12937,7 @@ window.HB = window.HB || {};
       if (!h) return;
       g.emit('move_step', { unit: g.player.id, from: { ...g.player.pos }, to: { ...h }, kind: 'leap' });
       g.player.pos = { ...h }; g.enterTile(g.player, h, true);
-      c.parts.push('gesprungen');
+      c.parts.push(HB.t('apply.leap'));
     },
     // Gegner bewegen: Weg aus der Vorschau (target.path) Schritt für Schritt; Fallen und Bodenfelder unterwegs wirken
     async moveEnemy(g, fx, c) {
@@ -12636,7 +12952,7 @@ window.HB = window.HB || {};
         await g.wait(140 / c.speed);
         if (!c.live(e)) break;
       }
-      c.parts.push(`${n} Feld${n === 1 ? '' : 'er'} bewegt`);
+      c.parts.push(HB.t('apply.moveEnemy', { n }));
     },
     // Gegner greift an: trifft das gewählte Opfer (target.victim) oder den nächsten anderen Gegner in Reichweite + Sicht
     enemyAttack(g, fx, c) {
@@ -12644,18 +12960,18 @@ window.HB = window.HB || {};
       if (!c.live(e)) return;
       const v0 = c.target.victim;
       const v = v0 && c.live(v0) && g.inRangeAndSight(e.pos, v0.pos, fx.range, fx.minRange).ok ? v0 : g.attackVictims(e, e.pos, fx)[0];
-      if (!v) { g.fx(e.pos, 'niemand in Reichweite', 'miss'); c.parts.push(`${e.name} trifft niemanden`); return; }
+      if (!v) { g.fx(e.pos, HB.t('apply.enemyAttack.nobody.fx'), 'miss'); c.parts.push(HB.t('apply.enemyAttack.nobody', { name: e.name ? HB.tn(e.name) : g.unitName(e) })); return; }
       g.hooks.fxLine && g.hooks.fxLine(e.pos, v.pos, 'hit');
       g.emit('enemy_attack', { unit: g.unitId(e), target: g.unitId(v), amount: fx.amount, forced: true });
-      if (HB.attackMisses(e)) { g.fx(e.pos, 'entwaffnet – verfehlt', 'miss'); HB.spendMiss(g, e); c.parts.push(`${e.name} ist entwaffnet und verfehlt`); return; }
+      if (HB.attackMisses(e)) { g.fx(e.pos, HB.t('step.disarmedMiss.fx'), 'miss'); HB.spendMiss(g, e); c.parts.push(HB.t('apply.enemyAttack.disarmed', { name: e.name ? HB.tn(e.name) : g.unitName(e) })); return; }
       const dmg = HB.attackDamage(g, e, fx.amount);
       g.strike(v, dmg, fx.hits, e);
-      c.parts.push(`${e.name} trifft ${v.name} (${HB.dmgText(dmg, fx.hits)})`);
+      c.parts.push(HB.t('apply.enemyAttack.hit', { name: e.name ? HB.tn(e.name) : g.unitName(e), target: v.name ? HB.tn(v.name) : g.unitName(v), dmg: HB.dmgText(dmg, fx.hits) }));
     },
     // Kopien einer Karte aus der Einstellung auf die Hand (volle Hand: auf den Ablagestapel). Bleiben bis Kampfende im Deck.
     addCard(g, fx, c) {
       const d = (g.cfg.deck || []).find((x) => x.cid === fx.card);
-      if (!d) { c.parts.push('Karte nicht gefunden'); return; }
+      if (!d) { c.parts.push(HB.t('apply.addCard.none')); return; }
       const n = fx.amount || 1, limit = g.handLimit();
       let toDiscard = 0;
       for (let i = 0; i < n; i++) {
@@ -12663,24 +12979,24 @@ window.HB = window.HB || {};
         else { g.discard.push(g.newCard(d)); toDiscard++; }
       }
       g.emit('card_gained', { card: d.name, source: 'Karte', count: n, temp: true }); // temp: nur bis Kampfende im Deck (Neigung/Telemetrie zählen es nicht)
-      c.parts.push(`${n}× ${d.name} auf die Hand` + (toDiscard ? ` (${toDiscard} auf die Ablage, Hand voll)` : ''));
+      c.parts.push(HB.t('apply.addCard', { n, name: HB.tn(d.name) }) + (toDiscard ? HB.t('apply.addCard.discard', { n: toDiscard }) : ''));
     },
     // Falle (Schablone aus dem Tab „Fallen“) auf das Zielfeld legen. Steht dort eine Figur, löst sie sofort aus.
     placeTrap(g, fx, c) {
       const h = c.target.hex || (c.e && c.e.pos);
       const tt = HB.TRAP_TYPES[fx.kind];
-      if (!h || !tt || g.obstacleAt(h) || g.trapAt(h)) { c.parts.push('kein Platz für die Falle'); return; }
+      if (!h || !tt || g.obstacleAt(h) || g.trapAt(h)) { c.parts.push(HB.t('apply.placeTrap.noRoom')); return; }
       g.traps.push({ type: fx.kind, owner: ownerOf(g, c), pos: { ...h } });
       g.emit('trap_laid', { unit: g.unitId(srcOf(g, c)), trap: fx.kind, pos: { ...h } });
       const u = g.enemyAt(h) || g.playerAt(h);
       if (u) g.enterTile(u, h, false, true);
-      c.parts.push(`${tt.label} gelegt`);
+      c.parts.push(HB.t('apply.placeTrap', { label: tt.label }));
     },
     heal(g, fx, c) {
       const before = g.player.hp; g.player.hp = Math.min(g.player.maxHp, g.player.hp + fx.amount);
-      g.fx(g.player.pos, `+${g.player.hp - before}`, 'heal'); c.parts.push(`+${g.player.hp - before} Leben`);
+      g.fx(g.player.pos, `+${g.player.hp - before}`, 'heal'); c.parts.push(HB.t('apply.heal', { n: g.player.hp - before }));
     },
-    draw(g, fx, c) { g.draw(fx.amount); c.parts.push(`${fx.amount} gezogen`); },
+    draw(g, fx, c) { g.draw(fx.amount); c.parts.push(HB.t('apply.draw', { n: fx.amount })); },
     discard(g, fx) { g.addChoice('discard', fx.amount); },
     exhaustCard(g, fx) { g.addChoice('exhaust', fx.amount); },
     recall(g, fx) { g.addChoice('recall', fx.amount); },
@@ -12688,19 +13004,19 @@ window.HB = window.HB || {};
     // Scry: die obersten X Karten ansehen, beliebige davon ablegen (Rest bleibt in gleicher Reihenfolge oben)
     scry(g, fx, c) {
       const top = g.drawPile.slice(-fx.amount).map((k) => k.uid);
-      if (g.addChoice('scry', top.length, { cards: top })) c.parts.push(`oberste ${top.length} ansehen`);
+      if (g.addChoice('scry', top.length, { cards: top })) c.parts.push(HB.t('apply.scry', { n: top.length }));
     },
     // Mill: die obersten X Karten des Nachziehstapels ablegen (ohne neu zu mischen)
     mill(g, fx, c) {
       const n = Math.min(fx.amount, g.drawPile.length);
       for (let i = 0; i < n; i++) g.discard.push(g.drawPile.pop());
-      c.parts.push(`${n} Karte${n === 1 ? '' : 'n'} abgelegt (Mill)`);
+      c.parts.push(HB.t('apply.mill', { n }));
     },
-    energy(g, fx, c) { g.player.energy += fx.amount; g.fx(g.player.pos, `+${fx.amount} Energie`, 'grace'); c.parts.push(`+${fx.amount} Energie`); },
+    energy(g, fx, c) { g.player.energy += fx.amount; g.fx(g.player.pos, HB.t('apply.energy', { n: fx.amount }), 'grace'); c.parts.push(HB.t('apply.energy', { n: fx.amount })); },
     shuffleDiscard(g, fx, c) {
       const n = g.discard.length;
       g.drawPile.push(...g.discard); g.discard = []; HB.util.shuffle(g.drawPile);
-      c.parts.push(`${n} Karte${n === 1 ? '' : 'n'} aus der Ablage eingemischt`);
+      c.parts.push(HB.t('apply.shuffleDiscard', { n }));
     },
   };
   // Wer wirkt (ctx.src, Standard: aktiver Spieler) – Gegner können Karteneffekte nutzen (Gegner-Aktionen aus cardStep).
@@ -12718,7 +13034,7 @@ window.HB = window.HB || {};
       const center = (c.e && c.e.pos) || (c.target && c.target.hex) || src0.pos;
       const hit = foesOf(g, src0).filter((o) => H.distance(o.pos, center) <= fx.radius);
       hit.forEach((o) => HB.applyUnitEffect(g, o, fx, src0));
-      c.parts.push(`${ue0.text(fx)}: ${hit.length} getroffen`);
+      c.parts.push(HB.t('apply.radiusHit', { text: ue0.text(fx), n: hit.length }));
       return;
     }
     const u = c.live(c.e) ? c.e : (HB.CARD_EFFECTS[fx.type] || {}).orSelf && !c.noSelf ? g.player : null;
@@ -12744,40 +13060,39 @@ window.HB = window.HB || {};
   // ---------------------------------------------------------------------------------------------
   const moveCard = (g, card, from, to) => { g[from] = g[from].filter((c) => c !== card); g[to].push(card); };
   const takeOut = (g, card) => { for (const k of ['hand', 'drawPile', 'discard', 'exhausted']) g[k] = g[k].filter((c) => c !== card); };
-  const n1 = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-  HB.CHOICES = {
-    discard: { from: 'hand', verb: 'Abwerfen', icon: 'discard', prompt: (ch) => `${n1(ch.left, 'Karte', 'Karten')} abwerfen`,
+    HB.CHOICES = {
+    discard: { from: 'hand', verb: HB.t('choice.discard.verb'), icon: 'discard', prompt: (ch) => HB.t('choice.discard.prompt', { n: ch.left }),
       apply(g, card) {
         moveCard(g, card, 'hand', 'discard');
-        g.log(`${card.def.name} abgeworfen.`);
-        g.notice(`${card.def.name} abgeworfen (liegt auf dem Ablagestapel)`, 'discard');
+        g.log(HB.t('choice.discard.log', { card: HB.tn(card.def.name) }));
+        g.notice(HB.t('choice.discard.notice', { card: HB.tn(card.def.name) }), 'discard');
       } },
-    exhaust: { from: 'hand', verb: 'Erschöpfen', icon: 'exhaust', prompt: (ch) => `${n1(ch.left, 'Handkarte', 'Handkarten')} erschöpfen`,
+    exhaust: { from: 'hand', verb: HB.t('choice.exhaust.verb'), icon: 'exhaust', prompt: (ch) => HB.t('choice.exhaust.prompt', { n: ch.left }),
       apply(g, card) {
         moveCard(g, card, 'hand', 'exhausted');
         g.emit('card_exhausted', { card: card.def.name });
-        g.log(`${card.def.name} erschöpft (bis Kampfende weg).`);
-        g.notice(`${card.def.name} erschöpft`, 'discard');
+        g.log(HB.t('choice.exhaust.log', { card: HB.tn(card.def.name) }));
+        g.notice(HB.t('choice.exhaust.notice', { card: HB.tn(card.def.name) }), 'discard');
       } },
-    recall: { from: 'discard', verb: 'Auf die Hand', icon: 'draw', prompt: (ch) => `${n1(ch.left, 'Karte', 'Karten')} aus der Ablage auf die Hand`,
-      apply(g, card) { moveCard(g, card, 'discard', 'hand'); g.log(`${card.def.name} aus der Ablage zurück auf die Hand.`); } },
-    search: { from: 'draw', verb: 'Auf die Hand', icon: 'deck', prompt: (ch) => `${n1(ch.left, 'Karte', 'Karten')} aus dem Nachziehstapel suchen`,
-      apply(g, card) { moveCard(g, card, 'drawPile', 'hand'); HB.util.shuffle(g.drawPile); g.log(`${card.def.name} aus dem Nachziehstapel geholt (neu gemischt).`); } },
-    scry: { from: 'top', optional: true, verb: 'Ablegen', icon: 'discard', prompt: () => 'Oberste Karten: beliebige ablegen, dann „Fertig“',
-      apply(g, card) { moveCard(g, card, 'drawPile', 'discard'); g.log(`${card.def.name} abgelegt (Scry).`); } },
+    recall: { from: 'discard', verb: HB.t('choice.toHand.verb'), icon: 'draw', prompt: (ch) => HB.t('choice.recall.prompt', { n: ch.left }),
+      apply(g, card) { moveCard(g, card, 'discard', 'hand'); g.log(HB.t('choice.recall.log', { card: HB.tn(card.def.name) })); } },
+    search: { from: 'draw', verb: HB.t('choice.toHand.verb'), icon: 'deck', prompt: (ch) => HB.t('choice.search.prompt', { n: ch.left }),
+      apply(g, card) { moveCard(g, card, 'drawPile', 'hand'); HB.util.shuffle(g.drawPile); g.log(HB.t('choice.search.log', { card: HB.tn(card.def.name) })); } },
+    scry: { from: 'top', optional: true, verb: HB.t('choice.scry.verb'), icon: 'discard', prompt: () => HB.t('choice.scry.prompt'),
+      apply(g, card) { moveCard(g, card, 'drawPile', 'discard'); g.log(HB.t('choice.scry.log', { card: HB.tn(card.def.name) })); } },
     // aus dem ganzen Deck (z. B. Krypta-Ereignisse): für immer entfernen / kopieren / gegen eine zufällige Draft-Karte tauschen
-    bury: { from: 'deck', verb: 'Begraben', icon: 'skull', prompt: (ch) => `${n1(ch.left, 'Karte', 'Karten')} aus deinem Deck begraben (für immer weg)`,
-      apply(g, card) { takeOut(g, card); g.emit('card_removed', { card: card.def.name }); g.log(`${card.def.name} begraben.`); g.notice(`${card.def.name} begraben`, 'discard'); } },
-    copy: { from: 'deck', verb: 'Kopieren', icon: 'deck', prompt: () => 'Eine Karte deines Decks kopieren',
-      apply(g, card) { g.giveCard(card.def, 'discard'); g.log(`${card.def.name} kopiert (Kopie auf dem Ablagestapel).`); g.notice(`${card.def.name} kopiert`, 'discard'); } },
-    transform: { from: 'deck', verb: 'Umwandeln', icon: 'deck', prompt: () => 'Eine Karte deines Decks umwandeln (wird zu einer zufälligen anderen)',
+    bury: { from: 'deck', verb: HB.t('choice.bury.verb'), icon: 'skull', prompt: (ch) => HB.t('choice.bury.prompt', { n: ch.left }),
+      apply(g, card) { takeOut(g, card); g.emit('card_removed', { card: card.def.name }); g.log(HB.t('choice.bury.log', { card: HB.tn(card.def.name) })); g.notice(HB.t('choice.bury.notice', { card: HB.tn(card.def.name) }), 'discard'); } },
+    copy: { from: 'deck', verb: HB.t('choice.copy.verb'), icon: 'deck', prompt: () => HB.t('choice.copy.prompt'),
+      apply(g, card) { g.giveCard(card.def, 'discard'); g.log(HB.t('choice.copy.log', { card: HB.tn(card.def.name) })); g.notice(HB.t('choice.copy.notice', { card: HB.tn(card.def.name) }), 'discard'); } },
+    transform: { from: 'deck', verb: HB.t('choice.transform.verb'), icon: 'deck', prompt: () => HB.t('choice.transform.prompt'),
       apply(g, card) {
         const pool = (g.cfg.deck || []).filter((d) => d.inDraft && !HB.cardCategory(d).noPool && d.name !== card.def.name);
         takeOut(g, card);
         const d = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
         if (d) g.giveCard(d, 'discard');
-        g.log(`${card.def.name} umgewandelt${d ? ` in ${d.name}` : ' (kein Ersatz im Draft-Pool)'}.`);
-        g.notice(d ? `${card.def.name} → ${d.name}` : `${card.def.name} verschwindet`, 'discard');
+        g.log(d ? HB.t('choice.transform.log', { card: HB.tn(card.def.name), to: HB.tn(d.name) }) : HB.t('choice.transform.log.none', { card: HB.tn(card.def.name) }));
+        g.notice(d ? HB.t('choice.transform.notice', { card: HB.tn(card.def.name), to: HB.tn(d.name) }) : HB.t('choice.transform.notice.none', { card: HB.tn(card.def.name) }), 'discard');
       } },
   };
 
@@ -13139,6 +13454,7 @@ window.HB = window.HB || {};
     ['confusePct', 'Verwirrt: Chance, ein falsches Ziel zu treffen (%)', 50, 'So wahrscheinlich trifft ein verwirrter Angriff einen Verbündeten in Reichweite oder den Angreifer selbst'],
     ['hasteBonus', 'Eile: zusätzliche Bewegung', 1, 'So viele Felder mehr hat jede Bewegung, solange Eile wirkt'],
     ['stallRounds', 'Flaute: Runden ohne Schaden an Gegnern', 3, 'Nach so vielen Runden, in denen kein Gegner Schaden erlitten hat, werden alle Gegner stärker (Modul Flaute)'],
+    ['stallSpawn', 'Flaute: Gegner dazu pro Runde', 1, 'So viele Gegner (Typ Kämpfer) stoßen in jeder Flaute-Runde dazu, weit weg von dir (0 = keine)'],
     ['stallReach', 'Flaute: Reichweite für alle Gegner', 1, 'So viel Reichweite mehr (Einzelschläge und Radius) bekommen alle Gegner dauerhaft, wenn die Flaute zuschlägt'],
     ['stallStrength', 'Flaute: Kraft für alle Gegner', 1, 'So viel Kraft bekommen alle Gegner dauerhaft, wenn die Flaute zuschlägt'],
     ['stallRush', 'Flaute: Hast für alle Gegner', 1, 'So viel Hast (zusätzliche Bewegung, dauerhaft) bekommen alle Gegner, wenn die Flaute zuschlägt'],
