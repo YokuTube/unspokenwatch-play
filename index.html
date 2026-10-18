@@ -1685,6 +1685,11 @@ body[data-public="1"] #devwin, body[data-public="1"] #btn-dev { display: none !i
 .relictile.banishtile { align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
 .relictile.banishtile.done { opacity: .4; cursor: default; }
 
+/* Test-Knöpfe im Kampf (Testfassung): Gegner töten an = rot, Fadenkreuz über dem Spielfeld */
+#uwtools #btn-kill.on { color: #ff9a94; box-shadow: 0 0 0 2px #c8443e; }
+body[data-kill="1"] #board { cursor: crosshair; }
+#uwtools #btn-kill[hidden], #uwtools #btn-rerun[hidden] { display: none; }
+
 </style>
 </head>
 <body data-mode="setup" data-public="1">
@@ -1701,6 +1706,8 @@ body[data-public="1"] #devwin, body[data-public="1"] #btn-dev { display: none !i
            DEV (nur Testfassung) klappt das DEV-Fenster mit dem echten Entwickler-Zeug auf: Zum Aufbau, Editor, Kampf starten im Aufbau -->
       <div id="uwtools">
         <button id="btn-start2" class="sec" type="button" title="Kampf starten">Kampf starten</button>
+        <button id="btn-kill" class="sec" type="button" title="Gegner anklicken = sofort töten (Esc beendet)" hidden>Gegner töten</button>
+        <button id="btn-rerun" class="sec" type="button" title="Neuer Run: von Kampf 1 an" hidden>Run neu starten</button>
         <button id="btn-dev" class="sec" type="button" title="DEV-Fenster ein-/ausklappen" aria-expanded="false">DEV</button>
         <button id="btn-feedback" class="sec" type="button" title="Rückmeldung senden (F8) – Fehler, Balance, Ideen; mit der Maus über einer Karte: Karte kommentieren"><span class="fbico" aria-hidden="true">&#128172;</span> Feedback</button>
         <button id="btn-full" class="sec" title="Vollbild an/aus">Vollbild</button>
@@ -16017,7 +16024,10 @@ window.HB = window.HB || {};
     // Kopfzeile
     $('#btn-start').textContent = app.mode === 'setup' ? 'Kampf starten' : 'Kampf neu starten';
     const bSetup = $('#btn-setup'); if (bSetup) bSetup.hidden = app.mode === 'setup';
-    const bStart2 = $('#btn-start2'); if (bStart2) { bStart2.textContent = app.mode === 'setup' ? 'Kampf starten' : 'Zum Aufbau'; bStart2.title = app.mode === 'setup' ? 'Kampf starten' : 'Zurück in den Aufbau (Editor)'; bStart2.hidden = PUBLIC && app.mode !== 'setup'; } // Kampf: Knopf führt zum Aufbau (nur Testfassung)
+    const bStart2 = $('#btn-start2'); if (bStart2) { bStart2.textContent = app.mode === 'setup' ? 'Kampf starten' : 'Zum Aufbau'; bStart2.title = app.mode === 'setup' ? 'Kampf starten' : 'Zurück in den Aufbau (Editor)'; bStart2.hidden = PUBLIC && app.mode !== 'setup'; }
+    for (const id of ['#btn-kill', '#btn-rerun']) { const b = $(id); if (b) b.hidden = PUBLIC || app.mode !== 'combat'; } // Test-Werkzeuge im Kampf (nur Testfassung)
+    if (app.mode !== 'combat') app.killMode = false;
+    $('#btn-kill')?.classList.toggle('on', !!app.killMode); document.body.dataset.kill = app.killMode ? '1' : ''; // Kampf: Knopf führt zum Aufbau (nur Testfassung)
     renderCoopCtl(g);
 
     // Intention
@@ -16717,6 +16727,11 @@ window.HB = window.HB || {};
     const k = ev.target.closest && ev.target.closest('[data-key]');
     if (!k) return;
     const h = H.parse(k.getAttribute('data-key'));
+    if (app.killMode && app.mode === 'combat' && app.game) { // Test: Gegner anklicken = töten
+      const e = asMe(() => app.game.enemyAt(h));
+      if (e) { app.game.log(`Test: ${e.name} getötet.`); app.game.killEnemy(e); app.game.checkEnd(); app.game.changed(); }
+      return;
+    }
     if (app.pick && app.mode === 'combat') { pickClick(h); return; }
     if (app.mode === 'combat' && app.game.phase === 'player' && me().pendingMove) {
       app.game.apply({ type: 'followMove', player: me().id, hex: h }).then((ok) => { if (!ok) app.toast('Dort kannst du nicht hinlaufen – Rechtsklick = Bewegung verfallen lassen'); });
@@ -16990,6 +17005,8 @@ window.HB = window.HB || {};
     $('#btn-start').onclick = () => app.startCombat();
     $('#btn-online').onclick = () => HB.uiMenu.showOnline();
     if ($('#btn-setup')) $('#btn-setup').onclick = () => app.toSetup();
+    if ($('#btn-kill')) $('#btn-kill').onclick = () => { app.killMode = !app.killMode; if (app.killMode) app.toast('Gegner anklicken = töten. Esc oder nochmal drücken beendet.'); renderAll(); };
+    if ($('#btn-rerun')) $('#btn-rerun').onclick = () => { app.killMode = false; app.startCombat(); };
     if ($('#btn-start2')) $('#btn-start2').onclick = () => (app.mode === 'setup' ? app.startCombat() : app.toSetup());
     // Editor ein-/ausblenden (gemerkt pro Browser)
     if (PUBLIC) { $('#devwin')?.remove(); $('#btn-dev')?.remove(); document.body.dataset.editor = 'hidden'; }
@@ -17069,6 +17086,7 @@ window.HB = window.HB || {};
       // Offenes Fenster (Menü, Online, Optionen, Feedback, Wünsche …) fängt die Tasten ab – nichts im Kampf dahinter auslösen
       if (document.querySelector('#mainmenu, #classpick, #mmcredits, #mmdiscord, #mmoptions, #fbwin, #wishwin')) return;
       if (e.key === 'Escape' && app.pick) { endPick(); return; }
+      if (e.key === 'Escape' && app.killMode) { app.killMode = false; renderAll(); return; }
       if (e.key === 'Escape' && app.liveActive && app.tool === 'enemy') { app.tool = 'inspect'; app.toast('Platzieren beendet.'); HB.editor && HB.editor.render(); return; }
       if (e.key === 'Escape' && app.game && app.mode === 'combat' && me().pendingMove) { app.game.apply({ type: 'cancelMove', player: me().id }); return; }
       if ((e.key === 'e' || e.key === 'E') && app.game && app.mode === 'combat') app.game.apply({ type: 'endTurn', player: me().id });
