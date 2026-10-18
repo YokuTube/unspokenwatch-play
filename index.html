@@ -1727,6 +1727,10 @@ body[data-editorfull="1"] #editor .tabbody { max-width: none; }
 #wishwin .wzrow select { flex: 1; min-width: 120px; }
 #wishwin .wz-sdn { width: 56px; }
 
+/* Reichweite im Kartentext: Symbol + Zahl statt Wort */
+.ctext .rng { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+.ctext .rng .ic { width: 1em; height: 1em; }
+
 </style>
 </head>
 <body data-mode="setup" data-public="1">
@@ -7546,11 +7550,12 @@ window.HB = window.HB || {};
     const a = e.falloff === 'flat' ? fx.amount - e.drop * k : Math.round(fx.amount * Math.pow(1 - e.drop / 100, k));
     return { ...fx, amount: Math.max(0, a) };
   };
-  HB.cardText = (d) => {
+  HB.cardText = (d, html) => {
     // „auf dich“ bei Effekten, die unabhängig vom Kartenziel immer dich treffen (Effekt-Feld on: 'self')
     const parts = (d.effects || []).map((e) => (HB.CARD_EFFECTS[e.type] ? HB.CARD_EFFECTS[e.type].text(e) : e.type) + (e.on === 'self' && d.target !== 'self' ? t('card.onSelf') : ''));
     // Nahkampf (Reichweite 1) steht nicht extra da – nur echte Reichweite
-    if (HB.cardRanged(d)) parts.push(t('card.range', { r: HB.util.rangeText(d.range) }));
+    // html: statt des Worts „Reichweite“ eine Marke, die cardHtml durch das Reichweite-Symbol ersetzt (spart Platz auf der Karte)
+    if (HB.cardRanged(d)) parts.push(html ? `${HB.util.rangeText(d.range)}` : t('card.range', { r: HB.util.rangeText(d.range) }));
     if (d.target === 'corpse') parts.unshift(t('card.onCorpse'));
     // nur eigene Haken der Karte – was die Kategorie mitbringt, zeigt das Kategorie-Schild
     for (const k of ['retain', 'ethereal', 'exhaust', 'noMove']) if (d[k]) parts.push(HB.CARD_TRAITS[k].label);
@@ -7615,7 +7620,9 @@ window.HB = window.HB || {};
   // Wort -> Begriff in keywords.js (Erklär-Kasten beim Überfahren des Worts, wie die Tooltips der Schlagwörter in UW)
   HB.markKeywords = (text) => { kwInit(); return esc(text).replace(kwRe, (w) => { const k = kwMap.get(w); return `<b class="kc kc-${k.cls}"${k.kw ? ` data-kw="${k.kw}"` : ''}>${w}</b>`; }); };
   // Kartentext wie UW: Wirkungswörter mit Erklärung blau (CSS), Zahlen fett (hier gekennzeichnet)
-  HB.cardHtml = (d) => HB.markKeywords(HB.cardText(d)).replace(/(<[^>]*>)|(\d+(?:[.,]\d+)?)/g, (m, tag, num) => (tag ? tag : `<b class="num">${num}</b>`));
+  // Reichweite steht im Kartentext als Symbol + Zahl (Hover = Erklärung „Reichweite“), nicht als Wort
+  const rangeMark = (htmlText) => htmlText.replace(/([^]*)/g, (m, r) => `<b class="kc kc-range rng" data-kw="range">${HB.icons ? HB.icons.icon('range') : ''}${r}</b>`);
+  HB.cardHtml = (d) => rangeMark(HB.markKeywords(HB.cardText(d, true))).replace(/(<[^>]*>)|(\d+(?:[.,]\d+)?)/g, (m, tag, num) => (tag ? tag : `<b class="num">${num}</b>`));
   // Bild, Aderfarbe der Karte: Bild gewählt (d.art) > Hauptwirkung > Platzhalter der Kategorie
   const decorOf = (d) => {
     const fx = (d.effects || []).map((e) => fxDef(e.type)).filter((x) => x.art);
