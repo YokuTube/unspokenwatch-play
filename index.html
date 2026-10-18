@@ -1691,6 +1691,11 @@ body[data-public="1"] #devwin, body[data-public="1"] #btn-dev { display: none !i
 body[data-kill="1"] #board { cursor: crosshair; }
 #uwtools #btn-kill[hidden], #uwtools #btn-rerun[hidden] { display: none; }
 
+/* Editor: Karten-Vorschau beim Überfahren eines Kartennamens in Listen (Klassen, Familien) */
+#cardhover { position: fixed; z-index: 400; pointer-events: none; filter: drop-shadow(0 8px 20px rgba(0, 0, 0, .6)); }
+#cardhover .card { margin: 0; transform: none; }
+.cardhoverable { cursor: help; text-decoration: underline dotted rgba(255, 255, 255, .35); text-underline-offset: 3px; }
+
 </style>
 </head>
 <body data-mode="setup" data-public="1">
@@ -2134,6 +2139,11 @@ window.HB = window.HB || {};
     "view.orders": "Zugnummern",
     "view.orders.title": "Zugnummern der Gegner an/aus",
     "view.show": "zeigen",
+    "hud.wait.enemies": "Warte, bis die Gegner fertig sind.",
+    "hud.wave.pending.all": "Welle {no} erscheint, wenn alle den Zug beendet haben",
+    "hud.wave.pending.one": "Welle {no} erscheint, wenn du den Zug beendest",
+    "hud.free.exit": "Frei laufen – dann einen Ausgang am Rand wählen",
+    "hud.free.tile": "Frei laufen: Feld anklicken (bis Markt zu / Heiler benutzt)",
   });
   HB.addStrings('en', {
     "banish.back": "Back to the market",
@@ -2424,6 +2434,11 @@ window.HB = window.HB || {};
     "view.orders": "Turn numbers",
     "view.orders.title": "Show or hide enemy turn numbers",
     "view.show": "show",
+    "hud.wait.enemies": "Wait until the enemies have finished.",
+    "hud.wave.pending.all": "Wave {no} appears once everyone has ended their turn",
+    "hud.wave.pending.one": "Wave {no} appears when you end your turn",
+    "hud.free.exit": "Move freely – then pick an exit at the edge",
+    "hud.free.tile": "Move freely: click a tile (until market closes / healer used)",
   });
 })(window.HB);
 
@@ -15463,7 +15478,7 @@ window.HB = window.HB || {};
         btn(`${I.icon('energy')} Energie auffüllen`, () => { if (ok()) { const P = HB.app.me(); P.energy = P.maxEnergy; g.changed(); } }, 'sec'),
         btn(`${I.icon('deck')} 1 Karte ziehen`, () => { if (ok()) { g.as(HB.app.me(), () => g.draw(1)); g.changed(); } }, 'sec')),
       el('p', { class: 'hint' }, 'Relikt direkt geben (dem gesteuerten Spieler):'),
-      el('div', { class: 'testcards' }, Object.entries(HB.RELICS).map(([id, d]) => btn(`+ ${d.label}`, () => { if (ok()) { const P = HB.app.me(); g.as(P, () => g.giveRelic(P, id)); } }, 'sec mini'))),
+      el('div', { class: 'testcards' }, Object.entries(HB.RELICS).map(([id, d]) => el('span', { title: relicDesc(id) }, btn(`+ ${d.label}`, () => { if (ok()) { const P = HB.app.me(); g.as(P, () => g.giveRelic(P, id)); } }, 'sec mini')))),
       el('p', { class: 'hint' }, HB.moduleOn(c, 'corpses') ? 'Werkzeuge oben: „Töten“ = Klick auf Gegner tötet sofort (mit Leiche). „Leiche“ = Klick legt/entfernt eine Leiche.' : 'Werkzeug oben: „Töten“ = Klick auf Gegner tötet sofort.'),
       HB.moduleOn(c, 'corpses') ? num('Max-Leben neuer Test-Leichen', () => c.testCorpseHp || c.enemyDefaults.hp, (v) => { c.testCorpseHp = Math.max(1, v); g.cfg.testCorpseHp = c.testCorpseHp; }, { icon: 'corpse', min: 1 }) : el('span'));
   }
@@ -15549,7 +15564,9 @@ window.HB = window.HB || {};
   }
 
   // ---------- Relikte ----------
-  const relicOptions = () => Object.entries(HB.RELICS).map(([k, d]) => [k, d.label]);
+  // Relikt mit Wirkung beschreiben (Auswahlfelder, Listen): sonst stehen dort nur Namen
+  const relicDesc = (k) => { try { return HB.relicText({ cfg: HB.app.config }, k); } catch (e) { return ''; } };
+  const relicOptions = () => Object.entries(HB.RELICS).map(([k, d]) => [k, `${d.label} – ${relicDesc(k)}`]);
   function relicsTab(c) {
     c.relics = c.relics || {};
     const box = el('div', {}, el('p', { class: 'hint' }, 'Relikte sind dauerhafte Verbesserungen. Jeder Spieler hat seine eigenen (auch dasselbe mehrfach). Sie liegen als Objekt „Relikt“ auf der Karte (Tab Spielfeld), kommen aus Schatztruhen und können auf den Boden gelegt werden. Hier stellst du Stärke und Fundbarkeit ein; neue Relikte mit eigenem Code: Register `HB.RELICS` in js/relics.js.'));
@@ -15583,7 +15600,7 @@ window.HB = window.HB || {};
   function relicListBox(holder, title) {
     holder.relics = holder.relics || [];
     const box = el('div', {}, el('div', { class: 'fxlbl' }, title));
-    holder.relics.forEach((id, i) => box.append(el('div', { class: 'srow' }, el('span', { class: 'fic', html: I.icon((HB.RELICS[id] || {}).icon || 'relic') }), el('span', {}, (HB.RELICS[id] || {}).label || id),
+    holder.relics.forEach((id, i) => box.append(el('div', { class: 'srow' }, el('span', { class: 'fic', html: I.icon((HB.RELICS[id] || {}).icon || 'relic') }), el('span', { title: relicDesc(id) }, (HB.RELICS[id] || {}).label || id), el('span', { class: 'hint' }, relicDesc(id)),
       btn('✕', () => { holder.relics.splice(i, 1); changed(true); }, 'mini del'))));
     box.append(select('Relikt hinzufügen', [['', '– wählen –'], ...relicOptions()], () => '', (v) => { if (v) holder.relics.push(v); }, true));
     return box;
@@ -15679,7 +15696,7 @@ window.HB = window.HB || {};
     if (c.classes.length) {
       const tbl = el('table', { class: 'classtbl' });
       tbl.append(el('tr', {}, el('th', {}, 'Karte'), el('th', { title: 'Haken = Karte für alle Klassen' }, 'Alle'), ...c.classes.map((k) => el('th', { title: k.name }, k.name))));
-      cards.forEach((d) => tbl.append(el('tr', { class: (d.classes || []).length ? '' : 'allcls' }, el('td', { title: (d.classes || []).length ? '' : 'Ohne Haken: für alle Klassen' }, d.name || '?'),
+      cards.forEach((d) => tbl.append(el('tr', { class: (d.classes || []).length ? '' : 'allcls' }, cardCell(d, (d.classes || []).length ? '' : 'Ohne Haken: für alle Klassen'),
         (() => { const all = el('input', { type: 'checkbox', onchange: (ev) => { if (ev.target.checked) delete d.classes; else ev.target.checked = true; changed(true); } }); all.checked = !(d.classes || []).length; return el('td', {}, all); })(),
         ...c.classes.map((k) => { const cb = el('input', { type: 'checkbox', onchange: (ev) => { d.classes = (d.classes || []).filter((x) => x !== k.id); if (ev.target.checked) d.classes.push(k.id); if (!d.classes.length) delete d.classes; changed(true); } });
           cb.checked = (d.classes || []).includes(k.id); return el('td', {}, cb); }))));
@@ -15745,7 +15762,7 @@ window.HB = window.HB || {};
     if (c.families.length) {
       const tbl = el('table', { class: 'classtbl' });
       tbl.append(el('tr', {}, el('th', {}, 'Karte'), ...c.families.map((f) => el('th', { title: f.name }, f.name))));
-      cards.forEach((d) => tbl.append(el('tr', { class: (d.families || []).length ? '' : 'allcls' }, el('td', { title: (d.families || []).length ? '' : 'Ohne Familie (neutral)' }, d.name || '?'),
+      cards.forEach((d) => tbl.append(el('tr', { class: (d.families || []).length ? '' : 'allcls' }, cardCell(d, (d.families || []).length ? '' : 'Ohne Familie (neutral)'),
         ...c.families.map((f) => { const cb = el('input', { type: 'checkbox', onchange: (ev) => { setFam(d, f.id, ev.target.checked); changed(true); } });
           cb.checked = (d.families || []).includes(f.id); return el('td', {}, cb); }))));
       box.append(el('h4', {}, 'Karten × Familien'), el('p', { class: 'hint' }, 'Graue Zeilen = Karte ohne Familie (neutral). Eine Karte kann zu mehreren Familien gehören.'), tbl);
@@ -15756,6 +15773,29 @@ window.HB = window.HB || {};
       `${g.unitName(p)}: ` + (HB.affinityShares(p).map((x) => `${(c.families.find((f) => f.id === x.id) || {}).name || x.id} ${Math.round(x.share * 100)} %`).join(', ') || 'noch keine') + ` (${p.affSignals || 0} Signale)`)));
     return box;
   }
+  // Kartenname in einer Liste: Maus drüber = die echte Karte als Vorschau neben dem Zeiger (nicht bei Touch)
+  let hoverBox = null;
+  const hideCardHover = () => { if (hoverBox) { hoverBox.remove(); hoverBox = null; } };
+  function cardHover(node, d) {
+    const place = (ev) => {
+      if (!hoverBox) return;
+      const w = hoverBox.offsetWidth || 190, h = hoverBox.offsetHeight || 260, pad = 14;
+      const x = ev.clientX + pad + w > window.innerWidth ? ev.clientX - pad - w : ev.clientX + pad;
+      hoverBox.style.left = Math.max(4, x) + 'px';
+      hoverBox.style.top = Math.max(4, Math.min(ev.clientY - h / 3, window.innerHeight - h - 4)) + 'px';
+    };
+    node.classList.add('cardhoverable');
+    node.addEventListener('pointerenter', (ev) => {
+      if (ev.pointerType === 'touch') return;
+      hideCardHover();
+      hoverBox = el('div', { id: 'cardhover' }, HB.cardFace(d));
+      document.body.append(hoverBox); place(ev);
+    });
+    node.addEventListener('pointermove', place);
+    node.addEventListener('pointerleave', hideCardHover);
+    return node;
+  }
+  const cardCell = (d, title) => cardHover(el('td', { title: title || '' }, d.name || '?'), d);
   // Eigenes Startdeck einer Klasse: Anzahl je Karte (k.deck[cid]); aus = Startdeck wie bei den Karten eingestellt
   function classDeckBox(k, cards) {
     const box = el('div', {}, check('Eigenes Startdeck', () => k.ownDeck, (v) => {
@@ -15767,7 +15807,7 @@ window.HB = window.HB || {};
     const tbl = el('table', { class: 'classtbl' }, el('tr', {}, el('th', {}, 'Karte'), el('th', {}, 'Anzahl im Startdeck'), el('th', { title: 'So viele Exemplare liegen schon in der ersten Hand (höchstens so viele, wie im Startdeck sind)' }, 'Davon in der Starthand')));
     const numCell = (d, key) => el('td', {}, el('input', { type: 'number', min: 0, max: 30, value: ((k.deck[d.cid] || {})[key]) || 0, class: 'qnum',
       oninput: (ev) => { const v = Math.max(0, parseInt(ev.target.value, 10) || 0), e = k.deck[d.cid] = k.deck[d.cid] || { count: 0 }; e[key] = v; if (!e.count) delete k.deck[d.cid]; changed(); } }));
-    cards.filter((d) => HB.cardForClass(d, k.id)).forEach((d) => tbl.append(el('tr', {}, el('td', {}, d.name || '?'), numCell(d, 'count'), numCell(d, 'startHand'))));
+    cards.filter((d) => HB.cardForClass(d, k.id)).forEach((d) => tbl.append(el('tr', {}, cardCell(d), numCell(d, 'count'), numCell(d, 'startHand'))));
     const total = Object.values(k.deck).reduce((a, e) => a + (e.count || 0), 0);
     box.append(el('details', {}, el('summary', {}, `Startdeck: ${total} Karten`), tbl));
     return box;
@@ -19078,7 +19118,7 @@ window.HB = window.HB || {};
     // Darf gerade live bearbeitet werden? (nicht während die Gegner ziehen)
     canEditLive() {
       if (!app.liveActive) return false;
-      if (app.game.busy) { app.toast('Warte, bis die Gegner fertig sind.'); return false; }
+      if (app.game.busy) { app.toast(HB.t('hud.wait.enemies')); return false; }
       return true;
     },
     refresh() { renderAll(); },
@@ -19283,8 +19323,8 @@ window.HB = window.HB || {};
     if (app.mode === 'combat' && g) {
       const rt = g.routeOn && g.routeOn() ? { ...g.routeCfg(), ...(g.route || { stage: 1 }) } : null;
       const waveTxt = rt ? `<span class="wave${rt.kind === 'boss' ? ' bosswave' : ''}">${rt.kind === 'boss' ? `${I.icon('crown')} Boss` : `Feld ${rt.stage} · Boss nach Feld ${rt.bossAfter}`}</span>` : g.waveCount > 1 ? `<span class="wave${g.bossAlive() ? ' bosswave' : ''}">${g.bossAlive() ? `${I.icon('crown')} Boss` : `Welle ${g.waveNo}/${g.waveCount}`}</span>` : '';
-      const pend = g.pendingWave ? `<span class="wave pending">${I.icon('enemy')} Welle ${g.pendingWave.no} erscheint, wenn ${g.players.length > 1 ? 'alle den Zug beendet haben' : 'du den Zug beendest'}</span>` : '';
-      const free = me().freeMove && !me().ended ? `<span class="wave free">${I.icon('move')} ${g.route && g.route.exits ? 'Frei laufen – dann einen Ausgang am Rand wählen' : 'Frei laufen: Feld anklicken (bis Markt zu / Heiler benutzt)'}</span>` : '';
+      const pend = g.pendingWave ? `<span class="wave pending">${I.icon('enemy')} ${HB.t(g.players.length > 1 ? 'hud.wave.pending.all' : 'hud.wave.pending.one', { no: g.pendingWave.no })}</span>` : '';
+      const free = me().freeMove && !me().ended ? `<span class="wave free">${I.icon('move')} ${g.route && g.route.exits ? HB.t('hud.free.exit') : HB.t('hud.free.tile')}</span>` : '';
       // Jeder Gegnertyp hat seine eigenen Intentionen (über dem Gegner und im Hover-Kärtchen); oben stehen nur Welle/Boss
       // Ebenen-Umschaltung nur, wenn wirklich mehrere Ebenen belegt sind (Spieler oder Gegner im Keller)
       const multi = g.floors.length > 1 && (g.floorInfo().some((f) => f.i > 0 && (f.enemies || f.nests)) || g.players.some((q) => (q.floor | 0) !== 0));
