@@ -345,6 +345,7 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 .healer { pointer-events: none; }
 .healer polygon { fill: rgba(95, 209, 122, .22); stroke: var(--ok); stroke-width: 2; }
 .healer svg { color: var(--ok); }
+.card .discard-tag.poor { opacity: .55; text-decoration: line-through; }
 .crypt { pointer-events: none; }
 .crypt polygon { fill: rgba(150, 120, 200, .22); stroke: #a58bd6; stroke-width: 2; }
 .crypt svg { color: #c5b3ea; }
@@ -1411,6 +1412,7 @@ window.HB = window.HB || {};
     deck: '<rect x="5" y="3" width="12" height="16" rx="2"/><path d="M8 21h11V6"/>',
     discard: '<rect x="4" y="6" width="12" height="15" rx="2" transform="rotate(-12 10 13)"/><path d="M14 4l6 2-3 13"/>',
     crown: '<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/><path d="M5 19h14"/>',
+    coin: '<circle cx="12" cy="12" r="8"/><path d="M14.5 9.5h-3.5a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3H9.5M12 7.5v9"/>',
     skull: '<path d="M12 3a8 8 0 0 0-8 8v4l3 2v4h10v-4l3-2v-4a8 8 0 0 0-8-8z"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>',
     erase: '<path d="M4 16l9-9 6 6-6 6H8z"/><path d="M10 10l6 6"/>',
     order: '<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
@@ -1497,7 +1499,7 @@ window.HB = window.HB || {};
 //                                        Reihenfolge der Liste zählt: das erste zuständige Modul entscheidet.
 //   onTurnStart(game, spieler)          – Zugbeginn eines Spielers, nach seinen Zuständen (Block ist schon verfallen), vor dem Ziehen
 //   onEvent(game, ev)                  – jedes Ereignis (game.emit), nur wenn das Modul an ist; nur zuhören, nichts zurückgeben
-//   modal(game, spieler)               – Fenster über dem Spielfeld (main.js zeichnet es): { sig, icon, title, text, lines, options: [{ label, sub, cmd }] } oder null
+//   modal(game, spieler)               – Fenster über dem Spielfeld (main.js zeichnet es): { sig, icon, title, text, lines, options: [{ label, sub, disabled, cmd }] } oder null
 //   slots(game, n, kind)               – Seltenheit je Angebotsplatz (['rare', 'common', …]); das erste zuständige Modul zählt
 //   offer(game, pool, n, kind, slots)  – Kartenangebot (Draft/Markt/Truhe) aus pool wählen: Liste von Karten, undefined = nicht zuständig
 //   offered(game, liste, kind)         – das Angebot steht fest (z. B. Glückszähler nachführen)
@@ -1512,6 +1514,7 @@ window.HB = window.HB || {};
     { id: 'draft', label: 'Kartendraft nach jeder Welle', get: (c) => !!(c.draft && c.draft.enabled), set: (c, v) => { c.draft.enabled = v; } },
     { id: 'affinity', label: 'Neigung (Draft und Markt richten sich nach genommenen/gespielten Karten; Familien im Editor → Neigung)', get: (c) => !!(c.affinity && c.affinity.enabled), set: (c, v) => { c.affinity = { ...(HB.defaultAffinity ? HB.defaultAffinity() : {}), ...(c.affinity || {}), enabled: v }; } },
     { id: 'rarity', label: 'Seltenheit je Angebotsplatz (Bänder, Glückszähler, Anlauf wie in Unspoken Watch)', get: (c) => !!(c.rarity && c.rarity.enabled), set: (c, v) => { c.rarity = { ...(HB.defaultRarity ? HB.defaultRarity() : {}), ...(c.rarity || {}), enabled: v }; } },
+    { id: 'gold', label: 'Gold (je Spieler; Markt und Verbannen kosten, Kampf-Sieg bringt Gold)', get: (c) => !!(c.gold && c.gold.enabled), set: (c, v) => { c.gold = { ...(HB.defaultGold ? HB.defaultGold() : {}), ...(c.gold || {}), enabled: v }; } },
     { id: 'crypt', label: 'Krypta-Ereignisse (Ort „Krypta“: Ereignis mit Wahl, aus Unspoken Watch)', get: (c) => !!(c.crypt && c.crypt.enabled), set: (c, v) => { c.crypt = { ...(HB.defaultCrypt ? HB.defaultCrypt() : {}), ...(c.crypt || {}), enabled: v }; } },
     { id: 'classes', label: 'Klassen (Klassenwahl, Kartenpool und Startdeck je Klasse)', get: (c) => c.classesEnabled !== false, set: (c, v) => { c.classesEnabled = v; } },
     { id: 'relics', label: 'Relikte (Start-Relikte, Schatztruhen)', get: (c) => c.relicsEnabled !== false, set: (c, v) => { c.relicsEnabled = v; } },
@@ -3780,6 +3783,18 @@ window.HB = window.HB || {};
       const d0 = H.distance(u.pos, from), V = H.neighbors({ q: 0, r: 0 });
       return V.map((v, k) => k).filter((k) => H.distance({ q: u.pos.q + V[k].q, r: u.pos.r + V[k].r }, from) > d0);
     }
+    // Standard-Richtung beim Stoßen ohne gezogene Linie: der Nachbar, der (in Pixeln) am weitesten von from wegliegt = gerade weg
+    pushDefaultDir(u, from) {
+      const V = H.neighbors({ q: 0, r: 0 }), f = H.toPixel(from, 1);
+      const far = (k) => { const p = H.toPixel({ q: u.pos.q + V[k].q, r: u.pos.r + V[k].r }, 1); return (p.x - f.x) ** 2 + (p.y - f.y) ** 2; };
+      return this.pushDirs(u, from).sort((a, b) => far(b) - far(a) || a - b)[0];
+    }
+    // liegt h auf der geraden Linie ab start in Richtung dir?
+    onPushRay(start, dir, h) {
+      const V = H.neighbors({ q: 0, r: 0 })[dir];
+      for (let i = 1, c = start; i <= 30; i++) { c = { q: c.q + V.q, r: c.r + V.r }; if (H.eq(c, h)) return true; }
+      return false;
+    }
     planForceDir(u, start, dir, n) {
       const V = H.neighbors({ q: 0, r: 0 })[dir], path = [{ ...start }];
       let cur = start, impact = null;
@@ -4154,14 +4169,14 @@ window.HB = window.HB || {};
     chooseMarketCard(i) {
       if (!this.marketOffer || this.marketPicked) return;
       const d = this.marketOffer[i];
-      if (d) { this.gainCard(d, 'Markt'); this.marketPicked = true; }
+      if (d && HB.goldPay(this, this.player, HB.goldPrice(this, 'card', d))) { this.gainCard(d, 'Markt'); this.marketPicked = true; } // Preis nur mit Modul Gold
       this.changed();
     }
     // Verbannen: die Karte verlässt dein Deck. Solange der Markt steht, können andere Spieler sie zusätzlich nehmen (takeBanished).
     removeDeckCard(cardUid) {
       if (!this.marketOffer || this.marketRemoved || !(this.cfg.market || {}).allowRemove) return;
       const c = this.ownedCards().find((x) => x.uid === cardUid);
-      if (!c) return;
+      if (!c || !HB.goldPay(this, this.player, HB.goldPrice(this, 'banish'))) return;
       for (const k of ['hand', 'drawPile', 'discard', 'exhausted']) this[k] = this[k].filter((x) => x !== c);
       this.marketRemoved = true;
       if (this.market && this.players.length > 1) (this.marketBanished = this.marketBanished || []).push({ def: c.def, by: this.player.id });
@@ -4372,6 +4387,14 @@ window.HB = window.HB || {};
       const ro = this.cfg.randomObstacles || {};
       if (ro.enabled) f.obstacles = this.randomObstacles(ro);
       this.routeSpawn(kind);
+      // Neues Feld = neuer Kampf: Hand ablegen (Behalten bleibt), erschöpfte Karten kommen zurück, Energie voll, neue Hand ziehen
+      for (const p of this.livePlayers) this.as(p, () => {
+        const keep = this.hand.filter((c) => HB.cardFlag(c.def, 'retain'));
+        this.discard.push(...this.hand.filter((c) => !keep.includes(c)), ...this.exhausted);
+        this.hand = keep; this.exhausted = []; this.choices = [];
+        p.energy = p.maxEnergy;
+        this.draw(this.cfg.player.draw + HB.relicStat(this, p, 'draw'));
+      });
       this.forEachFloor(() => this.renumber());
       this.aimStrikes(false);
       const msg = `Feld ${r.stage}: ${kind.label}!${kind.boss ? ' Der Boss erwartet euch.' : ''} Ihr seid zuerst dran.`;
@@ -4572,8 +4595,8 @@ window.HB = window.HB || {};
   <script>
 // Modul „Seltenheit je Angebotsplatz“ (HB.MODULES id 'rarity', Einstellung cfg.rarity) – Rechnung aus UW (docs/uw-daten.md Abschnitt 3,
 // UW GameManager.roll_offer_rarities). Jeder Platz eines Kartenangebots würfelt 0–99; Bänder von unten: legendär, Tafel, selten, Rest normal.
-// - Kampf (Kartendraft, Truhe, Krypta-Kartenwahl) und Elite (Weiterziehen-Feld „Elite“) haben eigene Bänder; der Markt: Legendär-Band +
-//   Selten-Chance je Platz, keine Tafeln.
+// - Kampf (Kartendraft, Truhe, Krypta-Kartenwahl) und Elite (Weiterziehen-Feld „Elite“) haben eigene Bänder; der Markt: Legendär- und Tafel-Band +
+//   Selten-Chance je Platz (UW: 35 % Akt 1, 45 % Akt 2, danach 55 % – hier keine Akte, darum 35 %).
 // - Glückszähler je Spieler (p.rarityPity, Start pityStart): +1 je Kampf-Angebot ohne Legendäre (Deckel pityMax), zeigt ein Angebot eine
 //   Legendäre → zurück auf den Start. Der Markt hebt ihn nie, setzt ihn aber zurück. Er verbreitert das Legendär-Band auf Kosten von „normal“.
 // - Anlauf: Selten- und Tafel-Band (auch im Markt) starten bei rampStart % ihrer Breite, voll nach rampOffers Kampf-Angeboten (p.rarityOffers).
@@ -4583,7 +4606,7 @@ window.HB = window.HB || {};
 (function (HB) {
   const { shuffle } = HB.util;
   HB.defaultRarity = () => ({ enabled: false, fight: { legendary: 1, power: 8, rare: 37 }, elite: { legendary: 4, power: 14, rare: 40 },
-    market: { legendary: 1, rare: 35 }, pityStart: -2, pityMax: 8, rampStart: 40, rampOffers: 5 });
+    market: { legendary: 1, power: 8, rare: 35 }, pityStart: -2, pityMax: 8, rampStart: 40, rampOffers: 5 });
   HB.rarityCfg = (cfg) => { const d = HB.defaultRarity(), c = (cfg && cfg.rarity) || {};
     return { ...d, ...c, fight: { ...d.fight, ...(c.fight || {}) }, elite: { ...d.elite, ...(c.elite || {}) }, market: { ...d.market, ...(c.market || {}) } }; };
   const ORDER = ['legendary', 'power', 'rare', 'common']; // fehlt eine Seltenheit im Pool: nächst häufigere
@@ -4597,8 +4620,8 @@ window.HB = window.HB || {};
     for (let i = 0; i < n; i++) {
       const r = Math.random() * 100;
       if (kind === 'market') {
-        const leg = Math.max(0, rc.market.legendary + pity);
-        out.push(r < leg ? 'legendary' : Math.random() * 100 < rc.market.rare * ramp ? 'rare' : 'common');
+        const leg = Math.max(0, rc.market.legendary + pity), pow = rc.market.power * ramp;
+        out.push(r < leg ? 'legendary' : r < leg + pow ? 'power' : Math.random() * 100 < rc.market.rare * ramp ? 'rare' : 'common');
       } else {
         const b = isElite(g) ? rc.elite : rc.fight, leg = Math.max(0, b.legendary + pity), pow = b.power * ramp, rare = b.rare * ramp;
         out.push(r < leg ? 'legendary' : r < leg + pow ? 'power' : r < leg + pow + rare ? 'rare' : 'common');
@@ -4629,6 +4652,50 @@ window.HB = window.HB || {};
     if (kind !== 'market') p.rarityOffers = (p.rarityOffers || 0) + 1;
   }
   HB.moduleHooks('rarity', { slots, offer, offered });
+})(window.HB);
+
+</script>
+  <script>
+// Modul „Gold“ (HB.MODULES id 'gold', Einstellung cfg.gold), standardmäßig aus – Werte aus UW (spielwerte.csv): Start 100 Gold,
+// je geschafftem Kampf 22 (Clear) + 15 (Sieg), Markt-Preise je Seltenheit 75/125/150/175, Verbannen 75. Je Spieler (Koop: eigenes Gold, p.gold).
+// Ist das Modul aus, kostet nichts etwas: HB.goldPrice gibt 0, HB.goldPay ist immer erfolgreich.
+window.HB = window.HB || {};
+(function (HB) {
+  HB.defaultGold = () => ({ enabled: false, start: 100, win: 37, price: { common: 75, rare: 125, power: 150, legendary: 175 }, banish: 75 });
+  HB.goldCfg = (cfg) => { const d = HB.defaultGold(), c = (cfg && cfg.gold) || {}; return { ...d, ...c, price: { ...d.price, ...(c.price || {}) } }; };
+  HB.goldOn = (cfg) => HB.moduleOn(cfg, 'gold');
+  HB.goldOf = (g, p) => (p.gold ?? HB.goldCfg(g.cfg).start);
+  // Preis einer Karte im Markt (nach Seltenheit) bzw. fürs Verbannen; 0 = umsonst (Modul aus)
+  HB.goldPrice = (g, what, d) => {
+    if (!HB.goldOn(g.cfg)) return 0;
+    const gc = HB.goldCfg(g.cfg);
+    return what === 'banish' ? gc.banish : (gc.price[HB.cardRarityKey(d)] ?? gc.price.common);
+  };
+  // bezahlen: true = bezahlt (oder kostenlos), false = zu wenig Gold (mit Hinweis)
+  HB.goldPay = (g, p, n) => {
+    if (!n) return true;
+    const have = HB.goldOf(g, p);
+    if (have < n) { g.notice(`Zu wenig Gold (${have}/${n})`, 'wave'); return false; }
+    HB.goldAdd(g, p, -n);
+    return true;
+  };
+  HB.goldAdd = (g, p, n) => {
+    if (!n) return;
+    p.gold = Math.max(0, HB.goldOf(g, p) + n);
+    g.emit('gold_changed', { unit: p.id, amount: n, gold: p.gold });
+    if (n > 0) g.fx(p.pos, `+${n} Gold`, 'gold');
+  };
+
+  HB.moduleHooks('gold', {
+    onEvent(g, ev) {
+      // geschaffter Kampf: nächste Welle angekündigt (wave_cleared) bzw. Ausgänge offen (route_open)
+      if (ev.type === 'wave_cleared' || ev.type === 'route_open') {
+        const n = HB.goldCfg(g.cfg).win;
+        for (const p of g.livePlayers) HB.goldAdd(g, p, n);
+        if (n) g.log(`Gold: +${n} für jeden Spieler.`);
+      }
+    },
+  });
 })(window.HB);
 
 </script>
@@ -6519,7 +6586,8 @@ window.HB = window.HB || {};
   const COMBAT_STATUS = { block: 'block', strength: 'strength' };
   const statusLabel = (k) => (HB.STATUSES[k] && HB.STATUSES[k].label) || k;
 
-  // Register der Wirkungen: ok(e) = geht hier (Standard ja), apply(g, p, e, ctx) – ctx.lines (Ergebnis-Text), ctx.next (Folge-Ereignis)
+  // Register der Wirkungen: ok(e, seen, cfg) = geht hier (Standard ja; cfg = Einstellung, z. B. Modul Gold an?), can(g, p, e) = dieser Spieler
+  // kann die Wahl gerade nehmen (z. B. genug Gold), apply(g, p, e, ctx) – ctx.lines (Ergebnis-Text), ctx.next (Folge-Ereignis)
   HB.CRYPT_EFFECTS = {
     nothing: { apply() {} },
     say: { apply() {} }, // UW-Textschlüssel (Stimme, Meister) – die Texte gibt es hier noch nicht
@@ -6538,28 +6606,37 @@ window.HB = window.HB || {};
       (p.cryptEventNext = p.cryptEventNext || []).push({ status: COMBAT_STATUS[e.arg], n: e.n });
       ctx.lines.push(`Nächster Kampf: ${statusLabel(COMBAT_STATUS[e.arg])} +${e.n}`);
     } },
-    next: { ok: (e, seen) => usable(e.arg, false, seen), apply(g, p, e, ctx) { ctx.next = e.arg; } },
+    next: { ok: (e, seen, cfg) => usable(e.arg, cfg, seen), apply(g, p, e, ctx) { ctx.next = e.arg; } },
+    // Gold (nur mit Modul Gold): Abgeben braucht genug Gold
+    gold: { ok: (e, seen, cfg) => HB.goldOn(cfg) && e.n !== 0, can: (g, p, e) => e.n > 0 || HB.goldOf(g, p) >= -e.n,
+      apply(g, p, e, ctx) { HB.goldAdd(g, p, e.n); ctx.lines.push(`${e.n > 0 ? '+' : '−'}${Math.abs(e.n)} Gold`); } },
+    // Karten aus dem eigenen Deck wählen (Kartenwahl HB.CHOICES 'bury' / 'copy' / 'transform', handlers.js); Zusätze wie :mark gibt es hier nicht
+    card_bury: { apply(g, p, e, ctx) { const k = g.as(p, () => g.addChoice('bury', Math.max(1, e.n || 1))); if (k) ctx.lines.push(`${k} ${k === 1 ? 'Karte' : 'Karten'} begraben`); } },
+    card_copy: { apply(g, p, e, ctx) { if (g.as(p, () => g.addChoice('copy', 1))) ctx.lines.push('Eine Karte kopieren'); } },
+    card_transform: { apply(g, p, e, ctx) { if (g.as(p, () => g.addChoice('transform', 1))) ctx.lines.push('Eine Karte umwandeln'); } },
   };
 
   const byId = (id) => (HB.CRYPT_EVENTS || []).find((x) => x.id === id);
-  function effOk(str, seen) {
-    return parts(str).every((e) => { const d = HB.CRYPT_EFFECTS[e.word]; return !!d && (!d.ok || d.ok(e, seen)); });
+  function effOk(str, seen, cfg) {
+    return parts(str).every((e) => { const d = HB.CRYPT_EFFECTS[e.word]; return !!d && (!d.ok || d.ok(e, seen, cfg)); });
   }
-  const optOk = (o, seen) => !o.hidden && effOk(o.ok, seen) && (o.chance >= 100 || effOk(o.fail, seen));
+  const optOk = (o, seen, cfg) => !o.hidden && effOk(o.ok, seen, cfg) && (o.chance >= 100 || effOk(o.fail, seen, cfg));
   // brauchbare Wahlen eines Ereignisses (Index in ev.opts bleibt erhalten)
-  HB.cryptOptions = (ev, seen = new Set([ev.id])) => ev.opts.map((o, i) => ({ o, i })).filter((x) => optOk(x.o, seen));
-  function usable(id, asStart, seen = new Set()) {
+  HB.cryptOptions = (ev, cfg, seen = new Set([ev.id])) => ev.opts.map((o, i) => ({ o, i })).filter((x) => optOk(x.o, seen, cfg));
+  // kann dieser Spieler die Wahl jetzt nehmen (z. B. genug Gold für den Erfolgsfall)?
+  HB.cryptCan = (g, p, o) => parts(o.ok).every((e) => { const d = HB.CRYPT_EFFECTS[e.word]; return !d || !d.can || d.can(g, p, e); });
+  function usable(id, cfg, seen = new Set()) {
     const ev = byId(id);
     if (!ev || seen.has(id)) return false; // Kreis in der Kette: nicht weiter folgen
     const s = new Set(seen); s.add(id);
-    if (ev.auto && !effOk(ev.auto, s)) return false;
-    return HB.cryptOptions(ev, s).length >= 2; // auch Folge-Ereignisse: eine echte Wahl, nicht nur „Ablehnen“
+    if (ev.auto && !effOk(ev.auto, s, cfg)) return false;
+    return HB.cryptOptions(ev, cfg, s).length >= 2; // auch Folge-Ereignisse: eine echte Wahl, nicht nur „Ablehnen“
   }
-  HB.cryptUsable = (id, asStart = true) => usable(id, asStart);
-  HB.cryptStartEvents = () => (HB.CRYPT_EVENTS || []).filter((ev) => ev.start && usable(ev.id, true));
+  HB.cryptUsable = (id, cfg) => usable(id, cfg);
+  HB.cryptStartEvents = (cfg) => (HB.CRYPT_EVENTS || []).filter((ev) => ev.start && usable(ev.id, cfg));
 
   function runEffects(g, p, str, ctx) {
-    for (const e of parts(str)) { const d = HB.CRYPT_EFFECTS[e.word]; if (d && (!d.ok || d.ok(e, new Set()))) d.apply(g, p, e, ctx); }
+    for (const e of parts(str)) { const d = HB.CRYPT_EFFECTS[e.word]; if (d && (!d.ok || d.ok(e, new Set(), g.cfg))) d.apply(g, p, e, ctx); }
   }
   function enter(g, p, id) {
     const ev = byId(id);
@@ -6570,7 +6647,7 @@ window.HB = window.HB || {};
   // Ort betreten: zufälliges Start-Ereignis (Gewicht), das in diesem Lauf noch nicht kam (außer „wiederholbar“)
   function begin(g, p) {
     const seen = g.cryptSeen || [];
-    const list = HB.cryptStartEvents().filter((ev) => ev.repeat || !seen.includes(ev.id));
+    const list = HB.cryptStartEvents(g.cfg).filter((ev) => ev.repeat || !seen.includes(ev.id));
     if (!list.length) { g.notice('Die Krypta schweigt.', 'wave'); g.log('Krypta: kein Ereignis mehr übrig.'); g.endFreeMove(p); return; }
     const sum = list.reduce((a, ev) => a + (ev.weight || 1), 0);
     let r = Math.random() * sum, ev = list[list.length - 1];
@@ -6581,8 +6658,8 @@ window.HB = window.HB || {};
   function pick(g, p, i) {
     const ev = p.cryptEvent && byId(p.cryptEvent.id);
     if (!ev || p.cryptEvent.result) return;
-    const opt = HB.cryptOptions(ev).find((x) => x.i === i);
-    if (!opt) return;
+    const opt = HB.cryptOptions(ev, g.cfg).find((x) => x.i === i);
+    if (!opt || !HB.cryptCan(g, p, opt.o)) return;
     const okRoll = opt.o.chance >= 100 || Math.random() * 100 < opt.o.chance;
     const ctx = { lines: [] };
     runEffects(g, p, okRoll ? opt.o.ok : opt.o.fail, ctx);
@@ -6593,8 +6670,8 @@ window.HB = window.HB || {};
   function done(g, p) {
     const c = p.cryptEvent, ev = c && byId(c.id);
     if (!c || !c.result) return;
-    const next = c.result.next || (ev && ev.next && usable(ev.next, false) ? ev.next : null);
-    if (next && usable(next, false)) { enter(g, p, next); return; }
+    const next = c.result.next || (ev && ev.next && usable(ev.next, g.cfg) ? ev.next : null);
+    if (next && usable(next, g.cfg)) { enter(g, p, next); return; }
     delete p.cryptEvent;
     g.endFreeMove(p);
   }
@@ -6636,8 +6713,9 @@ window.HB = window.HB || {};
           text: `${r.choice}${r.chance < 100 ? (r.ok ? ' – gelingt.' : ' – misslingt.') : '.'}`, lines: r.lines.length ? r.lines : ['Nichts geschieht.'],
           options: [{ label: 'Weiter', cmd: { type: 'cryptDone' }, primary: true }] };
       }
-      return { sig: `crypt:${c.id}`, icon: 'skull', title: ev.title, text: ev.text, lines: intro,
-        options: HB.cryptOptions(ev).map(({ o, i }) => ({ label: o.text, sub: o.chance < 100 ? `${o.chance} %` : '', cmd: { type: 'cryptPick', option: i } })) };
+      return { sig: `crypt:${c.id}:${HB.goldOf(g, p)}`, icon: 'skull', title: ev.title, text: ev.text, lines: intro,
+        options: HB.cryptOptions(ev, g.cfg).map(({ o, i }) => { const can = HB.cryptCan(g, p, o);
+          return { label: o.text, sub: !can ? 'zu wenig Gold' : o.chance < 100 ? `${o.chance} %` : '', disabled: !can, cmd: { type: 'cryptPick', option: i } }; }) };
     },
   });
 })(window.HB);
@@ -7310,7 +7388,8 @@ window.HB = window.HB || {};
       let e, dest = null, victim = null;
       if (grabbed && here !== grabbed) {
         e = grabbed;
-        if (here) { if (!atk) return { ok: false, text: 'Auf ein freies Feld ziehen' }; victim = here; }
+        if (here && psh && !mv) dest = h; // Stoßen: ein Gegner als Ziel = in seine Richtung stoßen (Aufprall)
+        else if (here) { if (!atk) return { ok: false, text: 'Auf ein freies Feld ziehen' }; victim = here; }
         else if (mv || psh) dest = h;
         else return null;
       } else if (here) e = here;
@@ -7318,14 +7397,17 @@ window.HB = window.HB || {};
       if (this.player.energy < (d.cost || 0)) return { ok: false, text: 'Zu wenig Energie' };
       const r = this.inRangeAndSight(this.player.pos, e.pos, this.cardRange(d));
       if (!r.ok) return { ok: false, text: r.why === 'keine Sicht' ? 'Keine Sichtlinie' : 'Außer Reichweite', blocker: r.blocker };
-      // Push mit selbst gewählter Richtung (Billard): nur Richtungen, die vom Spieler weg führen; Feld auf einer der Linien anklicken
+      // Push mit Richtung (Billard): nur Richtungen, die vom Spieler weg führen. Ohne gezogene Linie (nur den Gegner anklicken) gilt die
+      // Standard-Richtung gerade weg von dir – die Vorschau zeigt sie; Linie auf ein Feld oder einen Gegner in einer Richtung ändert sie.
       if (psh && !mv) {
         const lines = this.pushDirs(e, this.player.pos).map((dir) => ({ dir, plan: this.planForceDir(e, e.pos, dir, psh.amount) }));
         const shoveTiles = lines.flatMap((l) => l.plan.path.slice(1)).concat(lines.filter((l) => l.plan.path.length === 1 && l.plan.impact && l.plan.impact.at).map((l) => l.plan.impact.at)).filter((x) => this.board.has(x));
-        if (!dest) return { ok: true, action: 'pick', target: { enemy: e }, shoveTiles, grabbed: e, text: `${e.name}: loslassen, dann Richtung anklicken (Felder weg von dir)` };
-        const pick = lines.find((l) => l.plan.path.slice(1).some((x) => H.eq(x, dest)) || (l.plan.impact && l.plan.impact.at && H.eq(l.plan.impact.at, dest)));
+        const pick = !dest ? lines.find((l) => l.dir === this.pushDefaultDir(e, this.player.pos))
+          : lines.find((l) => l.plan.path.slice(1).some((x) => H.eq(x, dest)) || (l.plan.impact && l.plan.impact.at && H.eq(l.plan.impact.at, dest)))
+            || lines.find((l) => this.onPushRay(e.pos, l.dir, dest)); // weiter hinten auf derselben Linie (z. B. ein Gegner dahinter)
         if (!pick) return { ok: false, shoveTiles, grabbed: e, text: 'Nur Richtungen weg von dir (wie beim Billard)' };
-        return { ok: true, action: 'play', target: { hex: e.pos, enemy: e, pushDir: pick.dir }, grabbed: e, shoveTiles, forced: [pick.plan], text: `${d.name}: ${e.name} in diese Richtung stoßen${this.forcedText([pick.plan])}` };
+        return { ok: true, action: 'play', target: { hex: e.pos, enemy: e, pushDir: pick.dir }, grabbed: e, shoveTiles, forced: [pick.plan],
+          text: `${d.name}: ${e.name} ${dest ? 'in diese Richtung' : 'weg von dir'} stoßen${this.forcedText([pick.plan])}${dest ? '' : ' – Linie ziehen ändert die Richtung'}` };
       }
       let path = null, shoveTiles = null;
       if (mv) {
@@ -7444,6 +7526,7 @@ window.HB = window.HB || {};
       if (!ch) return [];
       const from = HB.CHOICES[ch.type].from;
       if (from === 'top') return this.drawPile.filter((c) => (ch.cards || []).includes(c.uid));
+      if (from === 'deck') return this.ownedCards(); // alle eigenen Karten (Hand, Stapel, Ablage, erschöpft)
       return { hand: this.hand, discard: this.discard, draw: this.drawPile }[from] || [];
     }
     // Wahl anstellen (n Karten). Gibt es keine passenden Karten, entfällt sie. Rückgabe: wirklich anstehende Anzahl
@@ -8420,11 +8503,12 @@ window.HB = window.HB || {};
 
   // ---------------------------------------------------------------------------------------------
   // KARTENWAHL: Karten auswählen und etwas mit ihnen tun (Game.addChoice / choose). Ein Eintrag je Art.
-  //   from     → 'hand' | 'discard' (Ablage) | 'draw' (Nachziehstapel) | 'top' (die beim Anstellen angesehenen obersten Karten)
+  //   from     → 'hand' | 'discard' (Ablage) | 'draw' (Nachziehstapel) | 'top' (die beim Anstellen angesehenen obersten Karten) | 'deck' (alle eigenen Karten)
   //   optional → darf vorzeitig beendet werden („Fertig“), sonst müssen alle gewählt werden
   //   prompt(ch) → Aufforderung; verb → Wort auf der Karte; apply(g, card, ch) → was mit der gewählten Karte passiert
   // ---------------------------------------------------------------------------------------------
   const moveCard = (g, card, from, to) => { g[from] = g[from].filter((c) => c !== card); g[to].push(card); };
+  const takeOut = (g, card) => { for (const k of ['hand', 'drawPile', 'discard', 'exhausted']) g[k] = g[k].filter((c) => c !== card); };
   const n1 = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   HB.CHOICES = {
     discard: { from: 'hand', verb: 'Abwerfen', icon: 'discard', prompt: (ch) => `${n1(ch.left, 'Karte', 'Karten')} abwerfen`,
@@ -8446,6 +8530,20 @@ window.HB = window.HB || {};
       apply(g, card) { moveCard(g, card, 'drawPile', 'hand'); HB.util.shuffle(g.drawPile); g.log(`${card.def.name} aus dem Nachziehstapel geholt (neu gemischt).`); } },
     scry: { from: 'top', optional: true, verb: 'Ablegen', icon: 'discard', prompt: () => 'Oberste Karten: beliebige ablegen, dann „Fertig“',
       apply(g, card) { moveCard(g, card, 'drawPile', 'discard'); g.log(`${card.def.name} abgelegt (Scry).`); } },
+    // aus dem ganzen Deck (z. B. Krypta-Ereignisse): für immer entfernen / kopieren / gegen eine zufällige Draft-Karte tauschen
+    bury: { from: 'deck', verb: 'Begraben', icon: 'skull', prompt: (ch) => `${n1(ch.left, 'Karte', 'Karten')} aus deinem Deck begraben (für immer weg)`,
+      apply(g, card) { takeOut(g, card); g.emit('card_removed', { card: card.def.name }); g.log(`${card.def.name} begraben.`); g.notice(`${card.def.name} begraben`, 'discard'); } },
+    copy: { from: 'deck', verb: 'Kopieren', icon: 'deck', prompt: () => 'Eine Karte deines Decks kopieren',
+      apply(g, card) { g.giveCard(card.def, 'discard'); g.log(`${card.def.name} kopiert (Kopie auf dem Ablagestapel).`); g.notice(`${card.def.name} kopiert`, 'discard'); } },
+    transform: { from: 'deck', verb: 'Umwandeln', icon: 'deck', prompt: () => 'Eine Karte deines Decks umwandeln (wird zu einer zufälligen anderen)',
+      apply(g, card) {
+        const pool = (g.cfg.deck || []).filter((d) => d.inDraft && !HB.cardCategory(d).noPool && d.name !== card.def.name);
+        takeOut(g, card);
+        const d = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+        if (d) g.giveCard(d, 'discard');
+        g.log(`${card.def.name} umgewandelt${d ? ` in ${d.name}` : ' (kein Ersatz im Draft-Pool)'}.`);
+        g.notice(d ? `${card.def.name} → ${d.name}` : `${card.def.name} verschwindet`, 'discard');
+      } },
   };
 
   // ---------------------------------------------------------------------------------------------
@@ -10352,7 +10450,7 @@ window.HB = window.HB || {};
       HB.moduleOn(c, 'rarity') ? rarityBox(c) : null,
       num('Heiler: Chance in %', () => c.healer.chance, (v) => c.healer.chance = Math.min(100, v), { icon: 'heal', max: 100 }),
       num('Heiler: heilt % der Max-Leben', () => c.healer.percent, (v) => c.healer.percent = v, { icon: 'heal' }),
-      check('Krypta-Ereignisse (Modul)', () => HB.moduleOn(c, 'crypt'), (v) => HB.module('crypt').set(c, v), `Weiterziehen: Feldart „Krypta“ öffnet ein Ereignis statt der Truhe. ${HB.cryptStartEvents().length} von ${(HB.CRYPT_EVENTS || []).filter((e) => e.start).length} UW-Ereignissen gehen schon (die anderen brauchen Gold, Runen …)`, true),
+      check('Krypta-Ereignisse (Modul)', () => HB.moduleOn(c, 'crypt'), (v) => HB.module('crypt').set(c, v), `Weiterziehen: Feldart „Krypta“ öffnet ein Ereignis statt der Truhe. ${HB.cryptStartEvents(c).length} von ${(HB.CRYPT_EVENTS || []).filter((e) => e.start).length} UW-Ereignissen gehen schon (die anderen brauchen Runen, Kämpfe …; Gold nur mit Modul Gold)`, true),
       HB.moduleOn(c, 'crypt') ? num('Krypta: Chance nach einer Welle in %', () => (c.crypt || {}).chance || 0, (v) => { c.crypt = { ...HB.defaultCrypt(), ...(c.crypt || {}), chance: Math.min(100, v) }; }, { icon: 'skull', max: 100, title: 'Ohne Weiterziehen: so oft erscheint nach einer Welle eine Krypta (0 = nie)' }) : null,
       el('p', { class: 'hint' }, 'Markt und Heiler erscheinen unabhängig voneinander. Benutzt du einen, verschwinden beide. Welche Karten im Markt angeboten werden, stellst du im Karteneditor mit „im Markt-Pool“ ein.'));
   }
@@ -10502,7 +10600,7 @@ window.HB = window.HB || {};
       el('p', { class: 'hint' }, 'Bänder von unten (Wurf 0–99 je Platz): legendär, Tafel, selten, Rest normal. Fehlt eine Seltenheit im Pool, kommt die nächst häufigere.'),
       el('div', { class: 'srow' }, el('span', { class: 'flbl' }, 'Kampf:'), band('fight', 'legendary', 'Legendär'), band('fight', 'power', 'Tafel'), band('fight', 'rare', 'Selten')),
       el('div', { class: 'srow' }, el('span', { class: 'flbl' }, 'Elite-Feld:'), band('elite', 'legendary', 'Legendär'), band('elite', 'power', 'Tafel'), band('elite', 'rare', 'Selten')),
-      el('div', { class: 'srow' }, el('span', { class: 'flbl' }, 'Markt:'), band('market', 'legendary', 'Legendär'), num('Selten: Chance % je Platz', () => rc.market.rare, (v) => { rc.market.rare = Math.min(100, v); }, { max: 100, small: true })),
+      el('div', { class: 'srow' }, el('span', { class: 'flbl' }, 'Markt:'), band('market', 'legendary', 'Legendär'), band('market', 'power', 'Tafel'), num('Selten: Chance % je Platz', () => rc.market.rare, (v) => { rc.market.rare = Math.min(100, v); }, { max: 100, small: true })),
       el('div', { class: 'srow' },
         num('Glückszähler Start', () => rc.pityStart, (v) => { rc.pityStart = v; }, { min: -20, max: 20, small: true, title: '+1 je Kampf-Angebot ohne Legendäre, verbreitert das Legendär-Band' }),
         num('Glückszähler Deckel', () => rc.pityMax, (v) => { rc.pityMax = v; }, { min: 0, max: 50, small: true }),
@@ -13389,6 +13487,7 @@ window.HB = window.HB || {};
       const toolsEnergy = app.liveActive && p.hp > 0 ? `<span class="hudtools" title="Test: Energie"><button class="mini sec" data-t="en" title="Energie auffüllen">${I.icon('energy')} voll</button></span>` : '';
       hud.innerHTML = `<div class="hud-left">${g.players.length > 1 ? `<span class="stat who" title="Dieser Spieler wird gesteuert (Taste 1–${g.players.length})">${g.unitName(p)}</span>` : ''}${toolsLife}${toolsEnergy}<span class="stat hp" title="Leben">${I.icon('heart')}${p.hp}/${p.maxHp}</span>`
         + `<span class="stat en" title="Energie">${I.icon('energy')}${p.energy}/${p.maxEnergy}</span>`
+        + (HB.goldOn(g.cfg) ? `<span class="stat gold" title="Gold">${I.icon('coin')}${HB.goldOf(g, p)}</span>` : '')
         + (p.poison ? `<span class="stat pz" title="Gift">${I.icon('poison')}${p.poison}</span>` : '')
         + (p.block ? `<span class="stat bl" title="Block: fängt Schaden ab, verfällt zu Beginn deines Zugs">${I.icon('block')}${p.block}</span>` : '')
         + (p.grace ? `<span class="stat gr" title="Schonfrist: Gift macht keinen Schaden, noch ${p.grace} Runde(n)">${I.icon('grace')}${p.grace}</span>` : '')
@@ -13609,7 +13708,7 @@ window.HB = window.HB || {};
       box.innerHTML = `<div class="mtitle">${I.icon(mm.icon || 'flag')} ${HB.esc(mm.title)}</div>` + (mm.text ? `<p class="mtext">${HB.esc(mm.text)}</p>` : '')
         + (mm.lines || []).map((l) => `<div class="msub">${HB.esc(l)}</div>`).join('');
       const opts = document.createElement('div'); opts.className = 'mopts';
-      (mm.options || []).forEach((o) => opts.append(button(o.label + (o.sub ? ` (${o.sub})` : ''), o.primary ? 'primary' : 'sec', () => g.apply({ ...o.cmd, player: me().id }))));
+      (mm.options || []).forEach((o) => { const b = button(o.label + (o.sub ? ` (${o.sub})` : ''), o.primary ? 'primary' : 'sec', () => g.apply({ ...o.cmd, player: me().id })); b.disabled = !!o.disabled; opts.append(b); });
       box.appendChild(opts);
     } else if (kind === 'choice') {
       // Karten aus Ablage/Nachziehstapel/obersten Karten wählen (Scry, Suchen, Zurückholen …)
@@ -13647,6 +13746,8 @@ window.HB = window.HB || {};
       box.innerHTML = `<div class="mtitle">${I.icon('market')} Markt</div>`
         + `<div class="msub">${g.marketPicked ? '✓ Karte genommen' : 'Eine Karte nehmen:'}</div>`;
       box.appendChild(offerRow(g.marketOffer, (i) => g.apply({ type: 'marketPick', player: me().id, index: i }), g.marketPicked));
+      if (HB.goldOn(g.cfg)) box.lastChild.querySelectorAll('.card').forEach((el, i) => { const pr = HB.goldPrice(g, 'card', g.marketOffer[i]);
+        el.insertAdjacentHTML('beforeend', `<div class="discard-tag${HB.goldOf(g, me()) < pr ? ' poor' : ''}">${I.icon('coin')} ${pr}</div>`); }); // Preis (Modul Gold)
       // Von Mitspielern verbannte Karten: zusätzlich zur normalen Wahl (einmal je Besuch), solange der Markt steht
       const extras = (g.marketBanished || []).map((b, i) => ({ b, i })).filter((x) => x.b.by !== me().id);
       if (extras.length) {
@@ -13664,7 +13765,7 @@ window.HB = window.HB || {};
         const groups = new Map();
         g.ownedCards().forEach((c) => { if (!groups.has(c.def.name)) groups.set(c.def.name, []); groups.get(c.def.name).push(c); });
         for (const [name, cards] of groups) {
-          const b = button(`${name} ×${cards.length}`, 'sec rm', () => g.apply({ type: 'marketRemove', player: me().id, card: cards[0].uid }));
+          const bp = HB.goldPrice(g, 'banish'), b = button(`${name} ×${cards.length}${bp ? ` (${bp} Gold)` : ''}`, 'sec rm', () => g.apply({ type: 'marketRemove', player: me().id, card: cards[0].uid }));
           b.disabled = g.marketRemoved;
           list.appendChild(b);
         }
