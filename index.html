@@ -1702,6 +1702,12 @@ body[data-kill="1"] #board { cursor: crosshair; }
 /* Klassenwahl: Klassen ohne eigene Karten sind nicht wählbar */
 .cpopt.off, .cpopt:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.6); }
 
+/* Editor-Vollbild (Knopf in der Tab-Leiste): über dem ganzen Fenster, Karten in mehr Spalten */
+body[data-editorfull="1"] #editor { position: fixed !important; inset: 8px; z-index: 300; width: auto; max-height: none !important; overflow-y: auto; box-shadow: 0 0 0 9999px rgba(8, 9, 12, .72); }
+body[data-editorfull="1"] #editor .cardgrid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+body[data-editorfull="1"] #editor .tabbody { max-width: none; }
+#editor .tab.fullbtn { margin-left: auto; color: var(--gold-title); }
+
 </style>
 </head>
 <body data-mode="setup" data-public="1">
@@ -15796,6 +15802,15 @@ window.HB = window.HB || {};
     return node;
   }
   const cardCell = (d, title) => cardHover(el('td', { title: title || '' }, d.name || '?'), d);
+  // Editor-Vollbild: der Editor liegt über dem ganzen Fenster (mehr Übersicht bei vielen Karten); Esc oder „Zurück“ beendet
+  function toggleEditorFull(on) {
+    const want = on === undefined ? document.body.dataset.editorfull !== '1' : on;
+    document.body.dataset.editorfull = want ? '1' : '';
+    render();
+  }
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && document.body.dataset.editorfull === '1' && !(ev.target.closest && ev.target.closest('input, textarea, select'))) toggleEditorFull(false);
+  });
   // Eigenes Startdeck einer Klasse: Anzahl je Karte (k.deck[cid]); aus = Startdeck wie bei den Karten eingestellt
   function classDeckBox(k, cards) {
     const box = el('div', {}, check('Eigenes Startdeck', () => k.ownDeck, (v) => {
@@ -16444,7 +16459,8 @@ window.HB = window.HB || {};
     root.innerHTML = '';
     root.append(el('div', { class: 'tabs' }, tabs.map(([id, t]) => el('button', {
       class: 'tab' + (tab === id ? ' on' : ''), onclick: () => { tab = id; try { localStorage.setItem('hexdb.tab', id); } catch (e) { /* egal */ } render(); },
-    }, t))));
+    }, t)), el('button', { class: 'tab fullbtn', title: 'Editor über das ganze Fenster ziehen bzw. wieder klein machen (Esc beendet)', onclick: () => { toggleEditorFull(); } },
+      document.body.dataset.editorfull === '1' ? '⤡ Zurück' : '⤢ Vollbild')));
     if (HB.app.mode !== 'setup') {
       const box = el('input', { type: 'checkbox', id: 'live-toggle', onchange: (e) => { HB.app.setLive(e.target.checked); if (e.target.checked) HB.app.syncLive(); HB.app.refresh(); render(); } });
       box.checked = HB.app.live;
