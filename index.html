@@ -1719,6 +1719,14 @@ body[data-editorfull="1"] #editor .tabbody { max-width: none; }
 #hud .hud-left .drawrow .pile-draw { order: -1; margin: 0 0 12px 6px; }
 #hud .hud-left .drawrow .relicbar { order: 1; }
 
+/* Wunsch-Fenster: Ziele zum Ankreuzen (Karte/Relikt) */
+#wishwin .wzbox { margin: 8px 0; padding: 6px 8px; border: 1px solid rgba(255, 255, 255, .15); border-radius: 6px; }
+#wishwin .wzbox[hidden] { display: none; }
+#wishwin .wzchk { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+#wishwin .wzrow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+#wishwin .wzrow select { flex: 1; min-width: 120px; }
+#wishwin .wz-sdn { width: 56px; }
+
 </style>
 </head>
 <body data-mode="setup" data-public="1">
@@ -17518,13 +17526,14 @@ window.HB = window.HB || {};
 // Kartenwünsche (nur Testfassung, im Claude-Artefakt): wie „Karte wünschen“ im alten UW. Der Nutzer diktiert eine Karte, sie landet als Dokument
 // in der Sammlung „kartenwuensche“ des Online-Speichers (Fähigkeit db). Eine wartende Claude-Sitzung baut sie (.claude/skills/kartenwuensche)
 // und schreibt `card` + `status: 'fertig'`; das Spiel beobachtet seine Wünsche und legt die Karte ohne Neuladen in Hand/Deck/Pool.
-// Status: offen → gebaut (Sitzung arbeitet) → fertig (Karte da) → geliefert (Spiel hat sie übernommen) | fehler. Doku: docs/mechaniken.md „Kartenwünsche“.
+// Zwei Arten: Karte (`art: 'karte'`, Ziele `ziele` = Hand / Draft / Markt / Startdecks, mehrere zugleich) und Relikt (`art: 'relikt'`, Ziele: sofort / Start-Relikt / Truhen;
+// das Relikt ist Code in HB.RELICS, den die Sitzung baut; `relic: { id }` meldet ihn).
+// Status: offen → gebaut (Sitzung arbeitet) → fertig (Karte/Relikt da) → geliefert (Spiel hat es übernommen) | fehler. Doku: docs/mechaniken.md „Kartenwünsche“.
 window.HB = window.HB || {};
 (function (HB) {
   const COLL = 'kartenwuensche', KEY = 'hexdb.wishes', TEXT_MAX = 1000;
   const $ = (s) => document.querySelector(s);
   const clean = (s, max) => HB.feedback ? HB.feedback.clean(s, max) : String(s == null ? '' : s).slice(0, max);
-  const TARGETS = [['hand', 'Auf die Hand'], ['deck', 'Ins Deck'], ['pool', 'In den Pool (Markt/Draft)']];
   const dbOf = async () => { try { return window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { return null; } };
   const mine = { get() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } },
     set(a) { try { localStorage.setItem(KEY, JSON.stringify(a.slice(-50))); } catch (e) { /* egal */ } } };
@@ -17560,30 +17569,92 @@ window.HB = window.HB || {};
     return d;
   }
 
-  // Fertige Karte übernehmen: Sicherung, Einstellung, Speichern, je nach Ziel Hand/Deck/Pool
+  // Ziele eines Wunsches säubern: { hand, draft, markt, startdeck: [{ klasse, anzahl }] } (alter Wunsch mit `ziel` = hand/deck/pool wird umgesetzt)
+  function normZiele(w, cfg) {
+    const classes = (cfg && cfg.classes) || [];
+    let z = w && w.ziele && typeof w.ziele === 'object' ? w.ziele : null;
+    if (!z) { const o = (w && w.ziel) || 'pool'; z = o === 'pool' ? { draft: true, markt: true } : o === 'deck' ? { startdeck: [{ klasse: '', anzahl: 1 }] } : { hand: true, startdeck: [{ klasse: '', anzahl: 1 }] }; }
+    const out = { hand: !!z.hand, draft: !!z.draft, markt: !!z.markt, startdeck: [] };
+    for (const e of (Array.isArray(z.startdeck) ? z.startdeck : []).slice(0, 8)) {
+      const klasse = clean((e && e.klasse) || '', 40), anzahl = Math.max(1, Math.min(10, Math.round(+(e && e.anzahl) || 1)));
+      if (klasse && !classes.some((k) => k.id === klasse)) throw new Error('unbekannte Klasse: ' + klasse);
+      out.startdeck.push({ klasse, anzahl });
+    }
+    return out;
+  }
+
+  // Ziele auf Karte d und Einstellung cfg anwenden (rein, ohne App): Draft → inDraft, Markt → inPool, Startdeck allgemein → d.count,
+  // Startdeck einer Klasse → eigenes Startdeck (Kopie des allgemeinen, wie im Editor) mit d.cid, dazu d.classes. d wird noch NICHT in cfg.deck eingetragen.
+  function applyZiele(cfg, d, z) {
+    d.inDraft = !!z.draft; d.inPool = !!z.markt; d.count = 0;
+    for (const e of z.startdeck) {
+      if (!e.klasse) { d.count = e.anzahl; continue; }
+      const k = (cfg.classes || []).find((x) => x.id === e.klasse); if (!k) continue;
+      if (!k.ownDeck) {
+        k.ownDeck = true;
+        if (!k.deck) { HB.ensureCardIds(cfg.deck); k.deck = {}; cfg.deck.forEach((c) => { if (c.count) k.deck[c.cid] = { count: c.count }; }); }
+      }
+      k.deck = k.deck || {}; k.deck[d.cid] = { count: e.anzahl };
+      d.classes = [...new Set([...(d.classes || []), k.id])];
+    }
+    return d;
+  }
+  const where = (z, cfg) => [z.hand && 'Hand', z.draft && 'Draft', z.markt && 'Markt',
+    ...z.startdeck.map((e) => 'Startdeck ' + (e.klasse ? (((cfg.classes || []).find((k) => k.id === e.klasse) || {}).name || e.klasse) : 'allgemein'))].filter(Boolean).join(', ') || 'nur in der Kartenliste';
+
+  // Fertige Karte übernehmen: Sicherung, Einstellung, Speichern, je nach Zielen Hand/Draft/Markt/Startdecks
   function deliver(wish, card) {
-    const app = HB.app, d = validate(card, wish), ziel = wish.ziel || 'pool';
+    const app = HB.app, d = validate(card, wish), z = normZiele(wish, app.config);
     app.pushBackup(JSON.stringify(app.config), 'Vor Kartenwunsch');
-    if (ziel === 'pool') { d.inPool = true; d.inDraft = true; }
-    else d.count = 1;
+    applyZiele(app.config, d, z);
     app.config.deck.push(d);
     app.save();
-    if (app.mode === 'combat' && app.game && ziel !== 'pool') {
-      const g = app.game; g.as(app.me(), () => g.giveCard(HB.util.clone(d), ziel === 'hand' ? 'hand' : 'discard'));
+    if (z.hand && app.mode === 'combat' && app.game) {
+      const g = app.game; g.as(app.me(), () => g.giveCard(HB.util.clone(d), 'hand'));
     }
     try { HB.editor.render(); app.renderAll(); } catch (e) { /* egal */ }
-    toast(`Karte „${d.name}“ ist da (${(TARGETS.find((t) => t[0] === ziel) || TARGETS[2])[1].toLowerCase()}).`);
+    toast(`Karte „${d.name}“ ist da (${where(z, app.config)}).`);
     return d;
+  }
+
+  // Relikt-Wunsch: der Code steht in HB.RELICS (die Sitzung hat ihn gebaut). Hier nur die Einstellung: Start-Relikt (Klasse / alle Spieler),
+  // Truhen (cfg.relics[id].enabled). Rein; gibt zurück, ob der Relikt-Code schon geladen ist.
+  function applyRelic(cfg, id, z) {
+    cfg.relics = cfg.relics || {};
+    const o = cfg.relics[id] = cfg.relics[id] || {};
+    if (z.truhe) delete o.enabled; else o.enabled = false;
+    if (typeof z.startKlasse === 'string') {
+      let list;
+      if (z.startKlasse === '') { cfg.player = cfg.player || {}; list = cfg.player.relics = cfg.player.relics || []; }
+      else { const k = (cfg.classes || []).find((x) => x.id === z.startKlasse); if (!k) throw new Error('unbekannte Klasse: ' + clean(z.startKlasse, 40)); list = k.relics = k.relics || []; }
+      if (!list.includes(id)) list.push(id);
+    }
+    return !!(HB.RELICS && HB.RELICS[id]);
+  }
+  function deliverRelic(wish, relic) {
+    const app = HB.app, id = clean((relic && relic.id) || '', 30), w = wish.ziele || {};
+    if (!/^[a-z][a-z0-9]{1,29}$/.test(id)) throw new Error('keine gültige Relikt-Kennung');
+    const z = { truhe: !!w.truhe, sofort: !!w.sofort, startKlasse: typeof w.startKlasse === 'string' ? clean(w.startKlasse, 40) : null };
+    app.pushBackup(JSON.stringify(app.config), 'Vor Reliktwunsch');
+    const da = applyRelic(app.config, id, z);
+    app.save();
+    let msg = `Relikt „${(HB.RELICS[id] || {}).label || id}“ eingetragen`;
+    if (!da) msg = `Relikt „${id}“ eingetragen – Relikt-Code erst nach Neuladen`;
+    else if (z.sofort && app.mode === 'combat' && app.game) { const g = app.game, P = app.me(); g.as(P, () => g.giveRelic(P, id)); msg = `Relikt „${HB.RELICS[id].label}“ erhalten`; }
+    else if (z.sofort) msg += ' (sofort nur im Kampf)';
+    try { HB.editor.render(); app.renderAll(); } catch (e) { /* egal */ }
+    toast(msg + '.');
+    return id;
   }
 
   // Ein Dokument aus der Beobachtung bearbeiten
   async function handle(id, data, db) {
     if (!data || !mine.get().includes(id) || done.has(id)) return;
     const set = (v) => db.collection(COLL).doc(id).update(v);
-    if (data.status === 'gebaut' && !told.has(id)) { told.add(id); toast('Kartenwunsch wird gebaut …'); }
+    if (data.status === 'gebaut' && !told.has(id)) { told.add(id); toast((data.art === 'relikt' ? 'Reliktwunsch' : 'Kartenwunsch') + ' wird gebaut …'); }
     if (data.status !== 'fertig') return;
     done.add(id);
-    try { deliver(data, data.card); await set({ status: 'geliefert' }); }
+    try { if (data.art === 'relikt') deliverRelic(data, data.relic); else deliver(data, data.card); await set({ status: 'geliefert' }); }
     catch (e) { const m = String(e.message || e).slice(0, 120); toast('Kartenwunsch fehlerhaft: ' + m); try { await set({ status: 'fehler', fehler: m }); } catch (e2) { /* egal */ } }
     mine.set(mine.get().filter((x) => x !== id));
   }
@@ -17610,28 +17681,57 @@ window.HB = window.HB || {};
     $('#wishwin')?.remove();
     const ov = document.createElement('div'); ov.id = 'wishwin';
     const sel = (cls, opts, cur) => `<select class="${cls}">` + opts.map(([v, l]) => `<option value="${v}"${v === cur ? ' selected' : ''}>${l}</option>`).join('') + '</select>';
-    ov.innerHTML = '<div class="modalbox"><div class="mtitle">Karte wünschen</div><p class="cphint">Beschreibe die Karte in deinen Worten. Eine wartende Claude-Sitzung baut sie; sie erscheint ohne Neuladen.</p>'
-      + `<textarea class="wtext" rows="5" maxlength="${TEXT_MAX}" placeholder="z. B. Schlage einen Gegner für 8 Schaden und gib ihm 3 Gift"></textarea>`
-      + '<label class="fbrow"><span>Ziel:</span>' + sel('wziel', TARGETS, sticky.get('ziel', 'hand')) + '</label>'
-      + '<label class="fbrow"><span>Kosten:</span><input class="wcost" type="number" min="0" max="9" placeholder="aus dem Text"></label>'
+    const classes = (HB.app && HB.app.config.classes) || [];
+    const clsOpts = (first) => [['', first], ...classes.map((k) => [k.id, k.name])];
+    const chk = (cls, label, on) => `<label class="wzchk"><input type="checkbox" class="${cls}"${on ? ' checked' : ''}> ${label}</label>`;
+    ov.innerHTML = '<div class="modalbox"><div class="mtitle">Wünschen</div><p class="cphint">Beschreibe die Karte oder das Relikt in deinen Worten. Eine wartende Claude-Sitzung baut es; Karten erscheinen ohne Neuladen (ein Relikt ist Code und braucht danach einen Neustart des Spiels).</p>'
+      + '<label class="fbrow"><span>Art:</span>' + sel('wart', [['karte', 'Karte'], ['relikt', 'Relikt']], sticky.get('art', 'karte')) + '</label>'
+      + `<textarea class="wtext" rows="5" maxlength="${TEXT_MAX}"></textarea>`
       + '<label class="fbrow"><span>Name:</span><input class="wname" maxlength="60" placeholder="leer = die KI denkt sich einen aus"></label>'
+      + '<div class="wzbox wz-karte"><b>Wohin mit der Karte?</b>'
+      + chk('wz-hand', 'Auf die Hand (im Kampf sofort)', sticky.get('z.hand', '1') === '1')
+      + chk('wz-draft', 'In den Pool: Draft', sticky.get('z.draft', '') === '1')
+      + chk('wz-markt', 'In den Pool: Markt', sticky.get('z.markt', '') === '1')
+      + '<div class="wzrow">' + chk('wz-sd', 'Ins Startdeck:', sticky.get('z.sd', '') === '1') + sel('wz-sdk', clsOpts('allgemeines Deck'), sticky.get('z.sdk', '')) + '<input class="wz-sdn" type="number" min="1" max="10" value="1" title="Anzahl"> ×</div>'
+      + '<label class="fbrow"><span>Kosten:</span><input class="wcost" type="number" min="0" max="9" placeholder="aus dem Text"></label>'
       + '<label class="fbrow"><span>Seltenheit:</span>' + sel('wrar', [['', 'aus dem Text'], ...Object.entries(HB.CARD_RARITIES).map(([k, v]) => [k, v.label])], sticky.get('rar', '')) + '</label>'
-      + '<label class="fbrow"><span>Art:</span>' + sel('wcat', [['', 'aus dem Text'], ...Object.entries(HB.CARD_CATEGORIES).filter(([k]) => k !== 'curse').map(([k, v]) => [k, v.label])], sticky.get('cat', '')) + '</label>'
+      + '<label class="fbrow"><span>Art:</span>' + sel('wcat', [['', 'aus dem Text'], ...Object.entries(HB.CARD_CATEGORIES).filter(([k]) => k !== 'curse').map(([k, v]) => [k, v.label])], sticky.get('cat', '')) + '</label></div>'
+      + '<div class="wzbox wz-relikt"><b>Wohin mit dem Relikt?</b>'
+      + chk('wr-sofort', 'Sofort bekommen (im Kampf)', sticky.get('r.sofort', '1') === '1')
+      + '<div class="wzrow">' + chk('wr-start', 'Start-Relikt von:', sticky.get('r.start', '') === '1') + sel('wr-sk', clsOpts('allen Spielern'), sticky.get('r.sk', '')) + '</div>'
+      + chk('wr-truhe', 'Kann in Truhen gefunden werden', sticky.get('r.truhe', '1') === '1') + '</div>'
       + '<p class="cphint wstatus" role="status"></p>'
       + '<div class="mopts"><button type="button" class="primary" data-m="send">Wünschen</button><button type="button" data-m="close">Schließen</button></div></div>';
     document.body.appendChild(ov);
     const q = (s) => ov.querySelector(s), st = q('.wstatus');
     const say = (m, bad) => { st.textContent = m; st.classList.toggle('bad', !!bad); };
+    const art = () => q('.wart').value;
+    const show = () => {
+      q('.wz-karte').hidden = art() !== 'karte'; q('.wz-relikt').hidden = art() !== 'relikt';
+      q('.wtext').placeholder = art() === 'karte' ? 'z. B. Schlage einen Gegner für 8 Schaden und gib ihm 3 Gift' : 'z. B. Vergiftest du einen Gegner, wird er auch verlangsamt';
+    };
+    q('.wart').onchange = show; show();
     q('[data-m="close"]').onclick = () => ov.remove();
     let busy = false;
     q('[data-m="send"]').onclick = async () => {
       if (busy) return;
       const text = clean(q('.wtext').value, TEXT_MAX);
       if (!text) { say('Bitte zuerst etwas schreiben.', true); return; }
-      const wish = { text, ziel: q('.wziel').value, kosten: q('.wcost').value === '' ? '' : Math.max(0, Math.min(9, Math.round(+q('.wcost').value || 0))), name: clean(q('.wname').value, 60), seltenheit: q('.wrar').value, kategorie: q('.wcat').value };
-      sticky.set('ziel', wish.ziel); sticky.set('rar', wish.seltenheit); sticky.set('cat', wish.kategorie);
+      const on = (c) => q(c).checked;
+      let wish;
+      if (art() === 'karte') {
+        const ziele = { hand: on('.wz-hand'), draft: on('.wz-draft'), markt: on('.wz-markt'), startdeck: on('.wz-sd') ? [{ klasse: q('.wz-sdk').value, anzahl: Math.max(1, Math.min(10, Math.round(+q('.wz-sdn').value || 1))) }] : [] };
+        wish = { art: 'karte', text, ziele, ziel: ziele.hand ? 'hand' : (ziele.startdeck.length ? 'deck' : 'pool'), kosten: q('.wcost').value === '' ? '' : Math.max(0, Math.min(9, Math.round(+q('.wcost').value || 0))), name: clean(q('.wname').value, 60), seltenheit: q('.wrar').value, kategorie: q('.wcat').value };
+        sticky.set('z.hand', ziele.hand ? '1' : '0'); sticky.set('z.draft', ziele.draft ? '1' : '0'); sticky.set('z.markt', ziele.markt ? '1' : '0'); sticky.set('z.sd', on('.wz-sd') ? '1' : '0'); sticky.set('z.sdk', q('.wz-sdk').value);
+        sticky.set('rar', wish.seltenheit); sticky.set('cat', wish.kategorie);
+      } else {
+        const ziele = { sofort: on('.wr-sofort'), startKlasse: on('.wr-start') ? q('.wr-sk').value : null, truhe: on('.wr-truhe') };
+        wish = { art: 'relikt', text, ziele, name: clean(q('.wname').value, 60) };
+        sticky.set('r.sofort', ziele.sofort ? '1' : '0'); sticky.set('r.start', on('.wr-start') ? '1' : '0'); sticky.set('r.sk', q('.wr-sk').value); sticky.set('r.truhe', ziele.truhe ? '1' : '0');
+      }
+      sticky.set('art', art());
       busy = true; say('Wird gespeichert …');
-      try { await save(wish); say('Gespeichert – die Karte wird gebaut und kommt von selbst.'); q('.wtext').value = ''; }
+      try { await save(wish); say(art() === 'karte' ? 'Gespeichert – die Karte wird gebaut und kommt von selbst.' : 'Gespeichert – das Relikt wird gebaut (Code); danach das Spiel neu laden.'); q('.wtext').value = ''; }
       catch (e) { say('Nicht gespeichert: ' + String(e.message || e).slice(0, 120), true); }
       busy = false;
     };
@@ -17642,12 +17742,12 @@ window.HB = window.HB || {};
     if (HB.isPublic()) return;
     const host = $('#devwin .hbtns');
     if (host && !$('#btn-wish')) {
-      const b = document.createElement('button'); b.id = 'btn-wish'; b.type = 'button'; b.className = 'sec'; b.textContent = 'Karte wünschen';
+      const b = document.createElement('button'); b.id = 'btn-wish'; b.type = 'button'; b.className = 'sec'; b.textContent = 'Karte/Relikt wünschen';
       b.title = 'Eine Karte diktieren – eine wartende Claude-Sitzung baut sie'; b.onclick = open; host.appendChild(b);
     }
     setTimeout(() => { if (mine.get().length) watch(); }, 1500); // offene Wünsche aus der letzten Sitzung weiter beobachten
   }
-  HB.wishes = { open, save, watch, handle, validate, deliver, init };
+  HB.wishes = { open, save, watch, handle, validate, deliver, deliverRelic, normZiele, applyZiele, applyRelic, init };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })(window.HB);
 
