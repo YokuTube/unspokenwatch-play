@@ -9244,7 +9244,9 @@ window.HB = window.HB || {};
       const minD = w.minDist ?? 4;
       this.setFloor(0); // neue Wellen kommen immer in der Oberwelt an (alle Spieler sind oben, siehe checkEnd)
       // Kampfende der Welle: Bodeneffekte und Leichen weg – VOR dem Kartenwechsel, sonst verschwinden auch die gesetzten Felder der neuen Karte
-      this.floors.forEach((f) => { f.tileEffects = []; f.corpses = []; });
+      this.floors.forEach((f) => { f.tileEffects = []; f.corpses = []; f.traps = []; }); // auch Fallen sind nach dem Kampf weg
+      // Erschöpfte Karten (und Tafeln, „bis Kampfende“) kommen zurück ins Deck: auf den Ablagestapel, der beim Nachziehen gemischt wird
+      for (const p of this.players) if ((p.exhausted || []).length) { p.discard.push(...p.exhausted); p.exhausted = []; }
       this.enterWaveMaps(def); // eigene Karte/Ebenen dieser Welle? dann neu aufbauen
       // Fiel der letzte Gegner in der GEGNERPHASE (z. B. Gift), ist der freie Zug erst der nächste – sonst käme die Welle sofort und man könnte nicht zum Markt laufen
       this.pendingWave = { no: this.waveNo + 1, spawnAfterTurn: this.turn + ((this.cfg.rules || {}).spawnPauseTurns ?? 1) + (this.phase === 'enemy' ? 1 : 0), spots: [] };
@@ -14361,13 +14363,16 @@ window.HB = window.HB || {};
       g.setAttribute('class', 'unit enemy' + (active ? ' active' : '') + (hovered ? ' hovered' : '') + (view.markUid === e.uid ? ' marked' : '') + (stunned ? ' stunned' : '') + (e.boss ? ' boss' : '') + (unseen ? ' unseen' : ''));
       const intent = view.intentFor ? view.intentFor(e) : null;
       if (pix) g.setAttribute('data-sprite', HB.pixi.spriteFor(e)); face(g, e);
+      // Höhe der Intention: knapp über dem Kopf der Figur (aus dem Bild gemessen), nie zu hoch/tief
+      const headH = pix && HB.pixi.headY ? HB.pixi.headY(HB.pixi.spriteFor(e), !!e.boss, SIZE) : null;
+      const chipY = pix ? -Math.max(SIZE * 1.25, Math.min(SIZE * 3.6, (headH == null ? SIZE * 1.9 : headH) + 14)) : -SIZE * 0.9;
       if (unseen) { split(g, e.uid, '', '', e.pos); continue; }
       split(g, e.uid, `<circle class="ring" r="${SIZE * 0.74}"/>` + body(view.enemyIcon ? view.enemyIcon(e) : 'enemy'), ''
         + `<g class="badge"><circle cx="${-SIZE * 0.42}" cy="${-SIZE * 0.44}" r="7"/><text x="${-SIZE * 0.42}" y="${-SIZE * 0.44 + 3.5}">${e.order}</text></g>`
         + `<g class="hpw${e.hp >= e.maxHp ? ' full' : ''}">` + hpBar(0, SIZE * 0.68, SIZE * 1.3, e.hp, e.maxHp, 'hp-enemy') + '</g>'
         + statusBadges(e)
-        + (view.setup ? '' : intentMini(intent, 0, pix ? -SIZE * 2.15 : -SIZE * 0.9)) // mit Bild: über dem Kopf
-        + (view.markUid === e.uid ? (() => { const my = pix ? -SIZE * 2.4 : -SIZE * 0.98; return `<g class="markarrow"><polygon points="${-6},${my - 9} ${6},${my - 9} 0,${my + 1}"/></g>`; })() : '')
+        + (view.setup ? '' : intentMini(intent, 0, chipY)) // mit Bild: über dem Kopf (Höhe je nach Figur)
+        + (view.markUid === e.uid ? (() => { const my = pix ? chipY - SIZE * 0.25 : -SIZE * 0.98; return `<g class="markarrow"><polygon points="${-6},${my - 9} ${6},${my - 9} 0,${my + 1}"/></g>`; })() : '')
         + (e.boss ? `<g class="crown">${I.svgIcon('crown', SIZE * 0.66, -SIZE * 0.5, 18)}</g>` : '')
         + (stunned ? `<g class="stun-stars">${I.svgIcon('stun', 0, -SIZE * 0.62, 16)}</g>` : ''), e.pos);
     }
@@ -14657,7 +14662,9 @@ window.HB = window.HB || {};
     rock: { file: 'fels', layer: 'units', scale: 1, foot: 0.78 },
     fence: { file: 'spalte', layer: 'ground', scale: 1, foot: 0.5, flat: true },
   };
-  const api = { on: false, spriteFor, hasObstacle: (kind) => !!(OBSTACLE_KINDS[kind] && obstTex[OBSTACLE_KINDS[kind].file]), obstacleKinds: OBSTACLE_KINDS, sprites: () => Object.keys(SHEETS).filter((k) => k !== 'hero' && k !== 'heroIdle'), sheetUrl: (k) => SHEETS[k], onEvent() {} };
+  const api = { on: false,
+    // Höhe der Kopfoberkante über dem Feldmittelpunkt in Pixeln (für Intention/Markierung); null = unbekannt
+    headY: (sprite, boss, size) => { const m = headTop[sprite]; if (!m) return null; const big = (boss ? 1.25 : 1) * (SPRITE_SIZE[sprite] || 1); return (0.94 * m.h - m.top) * (size * 2 / 64) * big; }, spriteFor, hasObstacle: (kind) => !!(OBSTACLE_KINDS[kind] && obstTex[OBSTACLE_KINDS[kind].file]), obstacleKinds: OBSTACLE_KINDS, sprites: () => Object.keys(SHEETS).filter((k) => k !== 'hero' && k !== 'heroIdle'), sheetUrl: (k) => SHEETS[k], onEvent() {} };
   HB.pixi = api;
   if (!P) return;
 
@@ -14679,7 +14686,7 @@ window.HB = window.HB || {};
       // Bilder über <img> laden, nicht über PixiJS-Assets: Die lesen per fetch, und das sperrt das Artefakt für data:-URIs
       const load = (src) => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
       const imgs = await Promise.all(Object.entries(SHEETS).map(async ([k, src]) => [k, await load(src)]));
-      for (const [k, im] of imgs) tex[k] = P.Texture.from(im);
+      for (const [k, im] of imgs) { tex[k] = P.Texture.from(im); measureHead(k, im); }
       for (const [art, files] of Object.entries(HB.OBSTACLE_LIST || {})) obstTex[art] = await Promise.all(files.map(async (f) => P.Texture.from(await load(f))));
     } catch (e) { console.warn('PixiJS nicht verfügbar, SVG-Bild bleibt', e); return; }
     canvas = app.canvas; canvas.className = 'pixiworld'; canvas.setAttribute('aria-hidden', 'true');
@@ -14754,6 +14761,19 @@ window.HB = window.HB || {};
 
   // ---------- Figuren ----------
   const NATIVE_RIGHT = /^(hero|challenger_|meister_)/; // diese Bögen schauen nach rechts, die Gegner-Bögen nach links
+  // Oberkante der sichtbaren Figur je Bilderbogen (erste nicht leere Pixelzeile über alle Bilder): danach richtet sich die Höhe der Intention
+  // über dem Kopf – große Figuren/Bosse höher, kleine tiefer (headY)
+  const headTop = {};
+  function measureHead(k, im) {
+    if (k === 'hero') return;
+    try {
+      const w = im.width, h = im.height, cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const cx = cv.getContext('2d', { willReadFrequently: true }); cx.drawImage(im, 0, 0);
+      const d = cx.getImageData(0, 0, w, h).data; let top = h;
+      for (let y = 0; y < h && top === h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 40) { top = y; break; }
+      headTop[k] = { top, h };
+    } catch (e) { /* Bild nicht lesbar: feste Höhe */ }
+  }
   function unitRec(uid, sprite, isPlayer) {
     let r = units.get(uid);
     if (r && r.sprite === sprite) return r;
