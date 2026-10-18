@@ -447,7 +447,7 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 /* ---------- Figuren kompakt ---------- */
 .hptext { font-size: 7.5px; font-weight: 700; stroke-width: 2px; }
 .sbadge circle { fill: #14161b; stroke-width: 1.2; }
-.sbadge text { font-size: 8.5px; font-weight: 800; paint-order: stroke; stroke: #000; stroke-width: 2.2px; text-anchor: middle; }
+.sbadge text { font-size: 8px; font-weight: 800; paint-order: stroke; stroke: #000; stroke-width: 2.2px; text-anchor: middle; }
 .sbadge.st-poison circle { stroke: var(--poison); } .sbadge.st-poison svg { color: var(--poison); } .sbadge.st-poison text { fill: var(--poison); }
 .sbadge.st-plague circle { stroke: #d6c94f; } .sbadge.st-plague svg { color: #d6c94f; } .sbadge.st-plague text { fill: #d6c94f; }
 .sbadge.st-slow circle { stroke: #8fd3ff; } .sbadge.st-slow svg { color: #8fd3ff; } .sbadge.st-slow text { fill: #8fd3ff; }
@@ -13399,11 +13399,11 @@ window.HB = window.HB || {};
       (st.side === 'left' ? left : right).push([st.css, st.icon, v, st.color]);
     }
     // Farbe aus dem Register (STATUSES[k].color) – neue Zustände brauchen keine eigene CSS-Regel
-    const badge = ([cls, ic, n, col], x, y) => `<g class="sbadge ${cls}${col ? ' sc' : ''}"${col ? ` style="--sc:${col}"` : ''}><circle cx="${x}" cy="${y}" r="7.5"/>${I.svgIcon(ic, x, y, 10)}`
+    const badge = ([cls, ic, n, col], x, y) => `<g class="sbadge ${cls}${col ? ' sc' : ''}"${col ? ` style="--sc:${col}"` : ''}><circle cx="${x}" cy="${y}" r="7"/>${I.svgIcon(ic, x, y, 9.5)}`
       + (n !== '' ? `<text x="${x + 6}" y="${y + 9}">${n}</text>` : '') + '</g>';
     let s = '';
-    left.forEach((b, i) => { s += badge(b, -SIZE * 0.78, -SIZE * 0.08 + i * 15); });
-    right.forEach((b, i) => { s += badge(b, SIZE * 0.78, -SIZE * 0.08 + i * 15); });
+    left.forEach((b, i) => { s += badge(b, -SIZE * 0.78, -SIZE * 0.08 + i * 20); });
+    right.forEach((b, i) => { s += badge(b, SIZE * 0.78, -SIZE * 0.08 + i * 20); });
     return s;
   }
 
