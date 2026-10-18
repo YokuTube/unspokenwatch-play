@@ -1696,6 +1696,9 @@ body[data-kill="1"] #board { cursor: crosshair; }
 #cardhover .card { margin: 0; transform: none; }
 .cardhoverable { cursor: help; text-decoration: underline dotted rgba(255, 255, 255, .35); text-underline-offset: 3px; }
 
+/* Editor: Kopfzeile der Klassen-/Familien-Tabelle bleibt beim Scrollen oben stehen (sonst weiß man nicht mehr, welche Spalte welche Klasse ist) */
+.classtbl th { position: sticky; top: var(--tabsH, 0px); z-index: 3; background: var(--panel); box-shadow: 0 2px 0 var(--line); }
+
 </style>
 </head>
 <body data-mode="setup" data-public="1">
@@ -16455,6 +16458,9 @@ window.HB = window.HB || {};
     }
     const body = { setup: () => (HB.app.mode === 'setup' ? mapTab(c) : combatMapNote()), test: () => el('div', {}, HB.app.liveActive ? livePlayer() : null, setupTab(HB.app.mapCfg())), values: valuesTab, waves: wavesTab, enemies: (x) => enemiesTab(x, false), bosses: (x) => enemiesTab(x, true), cards: (x) => cardsTab(x, false), relics: relicsTab, curses: (x) => cardsTab(x, true), traps: trapsTab, classes: classesTab, affinity: affinityTab, rules: rulesTab, data: dataTab }[tab](c);
     root.append(el('div', { class: 'tabbody' }, body));
+    // Höhe der angehefteten Tab-Leiste: darunter rasten die Spaltenköpfe der Klassen-Tabellen ein (CSS .classtbl th)
+    const tb = root.querySelector('.tabs');
+    if (tb) root.style.setProperty('--tabsH', Math.max(0, tb.offsetHeight + (parseFloat(getComputedStyle(tb).top) || 0)) + 'px');
   }
 
   HB.editor = { render, stairsTarget, linkStairs, goto(id) { tab = id; try { localStorage.setItem('hexdb.tab', id); } catch (e) { /* egal */ } render(); },
