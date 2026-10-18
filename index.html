@@ -207,7 +207,6 @@ body[data-mode="setup"] .tile:hover, body[data-live="1"] .tile:hover { fill: #36
 .im-heal { color: var(--ok); } .im-heal svg { color: var(--ok); }
 
 /* Karten-Editor */
-.ihead.clickable { cursor: pointer; }
 .ihead.off { opacity: .55; }
 .ihead .chev { color: var(--muted); width: 12px; }
 .fxlbl { font-size: 12px; color: var(--accent); margin: 8px 0 2px; }
@@ -377,15 +376,9 @@ button.mini.kill .ic { width: 14px; height: 14px; }
 
 
 /* Kartenliste: Deck/Start/Markt direkt in der Zeile */
-.deckhead { display: grid; grid-template-columns: 12px 1fr 46px 46px 40px 58px; gap: 4px; font-size: 11px; color: var(--muted); padding: 0 7px; margin-top: 6px; }
-.deckhead span:nth-child(n+3) { text-align: center; }
 .ihead .qnum { width: 46px; padding: 2px 4px; text-align: center; }
 .ihead .qchk { width: 40px; height: 16px; margin: 0; accent-color: var(--accent); }
 
-.ihead.clickable { display: grid; grid-template-columns: 12px 1fr 34px 46px 46px 40px 62px; gap: 4px; align-items: center; }
-.ihead.clickable > span { flex: none; }
-.ihead.clickable > .mini { justify-self: end; }
-.deckhead { grid-template-columns: 12px 1fr 34px 46px 46px 40px 62px !important; }
 .rowbtns { display: flex; gap: 3px; justify-content: flex-end; }
 .card.ghost:not(.touch) { transform: scale(.85); transform-origin: 50% 0; }
 .legend .lg-sep { margin-top: 4px; color: var(--text); }
@@ -522,7 +515,7 @@ body[data-orders="hidden"].peek-orders .unit.enemy .badge, body[data-orders="hid
 
 
 /* Gegnertypen- und Regeln-Tabelle */
-.typehead, .ihead.typerow { grid-template-columns: 12px 1fr 58px 44px 40px !important; }
+.ihead.typerow { grid-template-columns: 12px 1fr 58px 44px 40px !important; }
 .ihead.typerow input[type=text] { min-width: 0; width: 100%; }
 .rulestbl { display: grid; grid-template-columns: 1fr 70px; gap: 4px 10px; align-items: center; margin: 6px 0 10px; }
 .rulestbl .rl { font-size: 13px; font-weight: 600; }
@@ -662,7 +655,7 @@ body[data-fullhp="hidden"]:not(.peek-orders) .unit:not(.hovered) .hpw.full { dis
 .wavecard .ihead .rowbtns { margin-left: auto; }
 .wavecard .wgroup { display: flex; align-items: center; gap: 6px; padding: 2px 0 2px 10px; }
 .wavecard .wgroup .field { margin: 0; }
-.typehead, .ihead.typerow { grid-template-columns: 12px 1fr 52px 36px auto auto 40px !important; }
+.ihead.typerow { grid-template-columns: 12px 1fr 52px 36px auto auto 40px !important; }
 
 .backups .backuprow { display: grid; grid-template-columns: 90px 1fr; gap: 2px 8px; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--line); }
 .backups .backuprow .muted { grid-column: 1 / 2; font-size: 11px; color: var(--muted); }
@@ -687,13 +680,13 @@ body[data-fullhp="hidden"]:not(.peek-orders) .unit:not(.hovered) .hpw.full { dis
 .srow .rowbtns { margin-left: auto; flex: none; }
 .srow .field.small { flex: 0 0 auto; }
 .srow > select { max-width: 130px; }
-.ihead:not(.clickable) { flex-wrap: wrap; row-gap: 3px; }
+.ihead { flex-wrap: wrap; row-gap: 3px; }
 .ihead .idesc { min-width: 0; flex: 1 1 140px; }
 .ihead .iname { width: 110px; max-width: 100%; }
 .icard, .tabbody { min-width: 0; }
 
 /* Gegnertypen-Tabelle ohne Spalte „Eigene“ */
-.typehead, .ihead.typerow { grid-template-columns: 12px 1fr 52px auto auto 40px !important; }
+.ihead.typerow { grid-template-columns: 12px 1fr 52px auto auto 40px !important; }
 
 /* Linienangriff */
 .fxline.f-hit { stroke: #ff5a5a; }
@@ -706,7 +699,7 @@ body[data-fullhp="hidden"]:not(.peek-orders) .unit:not(.hovered) .hpw.full { dis
 body.dragging .aim text { display: none; }
 
 /* Gegnertypen-Tabelle mit Spalte „Aktiv“ */
-.typehead, .ihead.typerow { grid-template-columns: 12px 1fr 52px auto auto auto 40px !important; }
+.ihead.typerow { grid-template-columns: 12px 1fr 52px auto auto auto 40px !important; }
 
 /* Editor: Tab-Leiste bleibt beim Scrollen oben sichtbar */
 #editor .tabs { position: sticky; top: -8px; z-index: 8; margin: -8px -8px 8px; padding: 8px 8px 6px; background: var(--panel); }
@@ -745,10 +738,6 @@ body.dragging .aim text { display: none; }
 .th-ring { stroke: rgba(255, 122, 122, .5); stroke-width: 1.6; }
 
 /* Spawn-Leiste im Gegnermenü */
-.spawnrow { display: flex; flex-wrap: wrap; gap: 6px; }
-.spawnbtn { display: inline-flex; align-items: center; gap: 6px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); font-weight: 600; }
-.spawnbtn .spawnic .ic { width: 20px; height: 20px; color: var(--enemy); }
-.spawnbtn.on { border-color: var(--accent); color: var(--accent); }
 
 /* Intention je Gegner in der Liste rechts wählbar (Üben) */
 .orow { flex-wrap: wrap; }
@@ -830,11 +819,10 @@ body.dragging #hud { opacity: 1; }
 .unit.enemy .markarrow polygon { fill: #ffd24a; stroke: #3a2c00; stroke-width: 1; }
 
 /* Gegnertypen-Tabelle: feste Spalten, damit die Kopfzeile (Typ, Leben, Symbol) über den Feldern steht */
-.typehead, .ihead.typerow { grid-template-columns: 12px minmax(0, 1fr) 58px 130px 62px 66px 34px !important; gap: 6px; }
+.ihead.typerow { grid-template-columns: 12px minmax(0, 1fr) 58px 130px 62px 66px 34px !important; gap: 6px; }
 
 /* Schmale Fenster / Handy: Typname bekommt eine eigene breite Zeile, Werte darunter */
 @media (max-width: 640px) {
-  .typehead { display: none !important; }
   .ihead.typerow { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px; }
   .ihead.typerow > :nth-child(1) { order: 0; }
   .ihead.typerow > :nth-child(2) { order: 1; flex: 1 1 calc(100% - 90px); min-width: 0; }
@@ -1404,8 +1392,8 @@ html { scrollbar-color: var(--iron-deep) var(--ink1); }
 #editor .tab:hover { filter: brightness(1.05); color: var(--text); }
 #editor .tab.on { filter: none; color: var(--gold-title); }
 /* Werkzeug-/Kachelknöpfe im Editor */
-#editor .tool, #editor .spawnbtn, #editor .floorbtn, #editor .fxpickbtn { border-width: 3px 4px 4px 4px; border-image: var(--stone) 7 8 8 8 fill / 3px 4px 4px 4px stretch; background: none; color: var(--text); border-radius: 0; }
-#editor .tool.on, #editor .spawnbtn.on, #editor .floorbtn.on { filter: brightness(1.15) saturate(1.2); color: var(--gold-pale); box-shadow: 0 0 0 1px var(--rune-soft); }
+#editor .tool, #editor .floorbtn, #editor .fxpickbtn { border-width: 3px 4px 4px 4px; border-image: var(--stone) 7 8 8 8 fill / 3px 4px 4px 4px stretch; background: none; color: var(--text); border-radius: 0; }
+#editor .tool.on, #editor .floorbtn.on { filter: brightness(1.15) saturate(1.2); color: var(--gold-pale); box-shadow: 0 0 0 1px var(--rune-soft); }
 
 /* ---------- Tafeln: Steinrahmen um dunkle Tinte ---------- */
 .topbar, #devwin, .side > div, #editor, #routebox, #orderctl, #stairsprompt {
@@ -1785,7 +1773,6 @@ window.HB = window.HB || {};
   const eq = (a, b) => !!a && !!b && a.q === b.q && a.r === b.r;
 
   function offsetToAxial(col, row) { return { q: col - (row - (row & 1)) / 2, r: row }; }
-  function axialToOffset(h) { return { col: h.q + (h.r - (h.r & 1)) / 2, row: h.r }; }
 
   function distance(a, b) {
     const dq = a.q - b.q, dr = a.r - b.r;
@@ -1848,24 +1835,7 @@ window.HB = window.HB || {};
   // Das Feld ohne entfernte Felder (für das Werkzeug „Felder entfernen“)
   const boardBase = (bc) => makeBoard(bc.cols, bc.rows, { shape: bc.shape, size: bc.size });
 
-  // Breitensuche. passable(h) entscheidet, ob man ein Feld betreten/durchqueren darf.
-  function bfs(start, passable, maxSteps = Infinity) {
-    const dist = new Map([[key(start), 0]]);
-    const parent = new Map();
-    const queue = [start];
-    while (queue.length) {
-      const cur = queue.shift();
-      const d = dist.get(key(cur));
-      if (d >= maxSteps) continue;
-      for (const n of neighbors(cur)) {
-        const k = key(n);
-        if (dist.has(k) || !passable(n)) continue;
-        dist.set(k, d + 1); parent.set(k, key(cur)); queue.push(n);
-      }
-    }
-    return { dist, parent };
-  }
-  // Wie bfs, aber jedes betretene Feld kostet stepCost(h) (z. B. 2 für Leichen). dist = Bewegungskosten.
+  // Kürzeste Wege mit Kosten: passable(h) entscheidet, ob man ein Feld betreten/durchqueren darf; jedes betretene Feld kostet stepCost(h) (z. B. 2 für Leichen). dist = Bewegungskosten.
   function dijkstra(start, passable, maxCost = Infinity, stepCost = () => 1) {
     const dist = new Map([[key(start), 0]]);
     const parent = new Map();
@@ -1902,7 +1872,7 @@ window.HB = window.HB || {};
   }
   // Blickrichtung → Bildseite: 1 = nach rechts (O, NO, SO), -1 = nach links (NW, W, SW)
   const dirSide = (d) => (d === 2 || d === 3 || d === 4 ? -1 : 1);
-  HB.hex = { DIRS, dirTo, dirSide, SQ3, key, parse, eq, offsetToAxial, axialToOffset, distance, neighbors, toPixel, corners, line, makeBoard, boardFrom, boardBase, bfs, dijkstra, pathTo };
+  HB.hex = { DIRS, dirTo, dirSide, SQ3, key, parse, eq, offsetToAxial, distance, neighbors, toPixel, corners, line, makeBoard, boardFrom, boardBase, dijkstra, pathTo };
 })(window.HB);
 
 </script>
@@ -2032,6 +2002,12 @@ window.HB = window.HB || {};
     },
     // Nutzertexte (Namen) sicher in HTML/Attribute schreiben
     esc: (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])),
+    // In die Zwischenablage (Ersatzweg über execCommand, weil clipboard im Artefakt-Rahmen oft gesperrt ist); Knopf zeigt kurz das Ergebnis
+    copy(text, btn) {
+      const show = (ok) => { if (btn) { const o = btn.textContent; btn.textContent = ok ? 'Kopiert ✓' : 'Bitte markieren + Strg+C'; setTimeout(() => { btn.textContent = o; }, 1600); } };
+      const fallback = () => { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; } t.remove(); show(ok); };
+      try { navigator.clipboard.writeText(text).then(() => show(true), fallback); } catch (e) { fallback(); }
+    },
     // Merkmale eines Gegner-Schritts (HB.STEP_TYPES in handlers.js); unbekannter Typ = keine Merkmale
     // Reichweite: Zahl oder 'inf' (∞ = überall, ohne Sichtlinie). reach → Zahl zum Rechnen, rangeText → Anzeige
     reach: (r) => (r === 'inf' ? Infinity : (r || 1)),
@@ -2323,7 +2299,7 @@ window.HB = window.HB || {};
   ];
 
   HB.defaultConfig = () => withPool({
-    version: 19,
+    version: HB.CONFIG_VERSION, // Standard enthält alle Inhalte – keine Migrationsschritte nachholen
     board: { cols: 10, rows: 10 },
     player: { hp: 40, energy: 3, draw: 5, handLimit: 10, start: A(4, 8) },
     playerCount: 1, // Koop-Probe: 1–4 Spieler am selben Rechner (weitere Spieler starten neben dem Startfeld)
@@ -2420,8 +2396,8 @@ window.HB = window.HB || {};
 window.HB = window.HB || {};
 (function (HB) {
   const K = {
-    poison: { title: 'Gift', icon: 'poison', text: () => 'Macht zu Zugbeginn Schaden, dann −1.' },
-    plague: { title: 'Seuche', icon: 'plague', text: () => 'Tickt das Gift, springt es auf einen weiteren Gegner (R2) über. Hält, bis keiner mehr da ist.' },
+    poison: { title: 'Gift', icon: 'poison', text: (cfg) => `Macht zu Zugbeginn Schaden, dann −${(cfg.rules || {}).poisonDecay ?? 1}.` },
+    plague: { title: 'Seuche', icon: 'plague', text: () => 'Tickt das Gift, springt es auf einen weiteren Gegner in Ansteckweite (steht auf der Karte) über. Hält, bis keiner mehr da ist.' },
     poisonTick: { title: 'Gift tickt sofort', icon: 'poison', text: () => 'Gift macht sofort Schaden und sinkt – wie zu Zugbeginn.' },
     poisonZone: { title: 'Giftfeld', icon: 'poisonField', text: () => 'Wer drin steht oder reinläuft, bekommt Gift – auch du.' },
     poisonMult: { title: 'Gift vervielfachen', icon: 'multiply', text: () => 'Vervielfacht das Gift des Ziels.' },
@@ -2616,9 +2592,11 @@ window.HB = window.HB || {};
   // NEUE Bodenfelder immer über game.addTileEffect(...) anlegen, nie direkt in tileEffects schreiben.
   // info(fx, { who, left }) → Erklär-Kästchen { cls, icon, title, text }. warn: Hinweis beim Laufen über das Feld –
   //   { sum(fx) → Zahl (wird über den Weg addiert) | ohne sum: nur „kommt vor“, text(n) → Text }.
+  // Dauer beim Stapeln: fehlt eine der beiden (dauerhaft), bleibt das Feld dauerhaft; sonst die längere
+  const keepDuration = (a, b) => (a == null || b == null ? undefined : Math.max(a, b));
   HB.tileEffectTypes = {
     poisonField: {
-      label: 'Giftfeld', icon: 'poisonField', tags: ['poison'], look: 'mist', color: '#5fbf6e',
+      label: 'Giftfeld', icon: 'poisonField', tags: ['poison'], editDefaults: { amount: 2 }, look: 'mist', color: '#5fbf6e',
       stack(old, add) { old.amount += add.amount; old.duration = add.duration; }, // Gift addiert sich, Dauer = neuer Wert
       info: (t, x) => ({ cls: 'poison', icon: 'poisonField', title: `Giftfeld (${t.amount})`, text: `${x.who} hineinläuft oder zu Zugbeginn darin steht, bekommt ${t.amount} Gift.${x.left}` }),
       warn: { sum: (t) => t.amount, text: (n) => ` · Giftfeld: +${n} Gift!` },
@@ -2637,7 +2615,7 @@ window.HB = window.HB || {};
     // Schlamm: wer hineinläuft oder zu Beginn seines Zugs darin steht, ist verlangsamt
     slowField: {
       label: 'Schlamm', icon: 'slow', tags: ['mud'], look: 'mud', color: '#7a5a3a',
-      stack(old, add) { old.amount = Math.max(old.amount, add.amount); old.duration = Math.max(old.duration || 0, add.duration); },
+      stack(old, add) { old.amount = Math.max(old.amount, add.amount); old.duration = keepDuration(old.duration, add.duration); },
       info: (t, x) => ({ cls: 'slow', icon: 'slow', title: 'Schlamm', text: `${x.who} hineinläuft oder zu Zugbeginn darin steht, hat −${t.amount} Bewegung.${x.left}` }),
       warn: { text: () => ' · Schlamm: verlangsamt!' },
       onEnter(game, unit, fx) { HB.tileEffectTypes.slowField.apply(game, unit, fx); },
@@ -2652,7 +2630,7 @@ window.HB = window.HB || {};
   // Nebel: wer darin steht (Betreten, Zugbeginn), ist unsichtbar (mind. 1 Stapel, Zustand invis). Nebel + Gift → Giftwolke (HB.TILE_REACTIONS)
   HB.tileEffectTypes.fog = {
     label: 'Nebel', icon: 'fog', tags: ['fog'], color: '#b8c4d8', look: 'mist',
-    stack(old, add) { old.duration = Math.max(old.duration || 0, add.duration || 0); },
+    stack(old, add) { old.duration = keepDuration(old.duration, add.duration); },
     info: (t, x) => ({ cls: 'fog', icon: 'fog', title: 'Nebel', text: `${t.owner ? 'Spieler darin sind' : 'Gegner darin sind'} unsichtbar (${t.owner ? 'Gegner greifen sie nicht an und laufen nicht hin' : 'du kannst sie nicht anvisieren'}).${x.left}` }),
     onEnter(g, u, fx) { HB.tileEffectTypes.fog.hide(g, u, fx); },
     onTurnStart(g, u, fx) { HB.tileEffectTypes.fog.hide(g, u, fx); },
@@ -2668,7 +2646,7 @@ window.HB = window.HB || {};
     key: (f) => JSON.stringify([f.name || '', f.effects || [], f.renew || 'turn', f.who || 'all']),
     tagsOf: (f) => [...new Set((f.effects || []).map((e) => (HB.UNIT_EFFECTS[e.type] || {}).status || e.type))],
     iconOf: (f) => { const e = (f.effects || [])[0]; return (e && HB.UNIT_EFFECTS[e.type] && HB.UNIT_EFFECTS[e.type].icon) || 'blessField'; },
-    stack(old, add) { old.duration = Math.max(old.duration || 0, add.duration || 0); },
+    stack(old, add) { old.duration = keepDuration(old.duration, add.duration); },
     text: (f) => (f.effects || []).map((e) => (HB.UNIT_EFFECTS[e.type] ? HB.UNIT_EFFECTS[e.type].text(e) : e.type)).join(', ') || 'nichts',
     info(t, x) {
       const whoTxt = { friends: ' (nur eigene Seite)', foes: ' (nur Feinde)' }[t.who] || '';
@@ -2731,22 +2709,22 @@ window.HB = window.HB || {};
     swamp: {
       label: 'Giftsumpf', icon: 'poisonField', cls: 'swamp', rule: 'swamp', tags: ['poison', 'mud'], look: 'mud', color: '#4f7a3a',
       build(g, pos, fxs) {
-        const tag = (k) => fxs.find((f) => ((HB.tileEffectTypes[f.type] || {}).tags || []).includes(k)) || {};
+        const tag = (k) => fxs.find((f) => g.fxTags(f).includes(k)) || {};
         const p = tag('poison'), m = tag('mud');
-        return { pos, id: 'swamp', poison: p.amount, slow: m.amount, duration: p.duration != null && m.duration != null ? Math.min(p.duration, m.duration) : (p.duration ?? m.duration) };
+        return { pos, id: 'swamp', poison: amountOf(p, 'poison'), slow: m.amount, duration: p.duration != null && m.duration != null ? Math.min(p.duration, m.duration) : (p.duration ?? m.duration) };
       },
       text: (c) => `Wer hineinläuft oder zu Zugbeginn darin steht, bekommt ${c.poison} Gift und ist um ${c.slow} Bewegung verlangsamt. Das Gift sinkt hier nicht, wenn es tickt, und das Feld breitet sich jede Runde auf angrenzende Schlammfelder aus.`
         + (c.duration != null ? ` Noch ${c.duration} Runde${c.duration === 1 ? '' : 'n'}.` : ''),
       info(c) { return { cls: 'poison', icon: 'poisonField', title: `Giftsumpf (${c.poison} Gift)`, text: this.text(c) }; },
       spread(g) {
-        const hasTag = (f, k) => ((HB.tileEffectTypes[f.type] || {}).tags || []).includes(k);
+        const hasTag = (f, k) => g.fxTags(f).includes(k);
         const sources = g.tileEffects.filter((f) => hasTag(f, 'poison') && g.comboAt(f.pos) === this); // Stand VOR dem Ausbreiten: ein Schritt pro Runde
         let n = 0;
         for (const src of sources) for (const nb of H.neighbors(src.pos)) {
           if (!g.board.has(nb) || g.obstacleAt(nb)) continue;
           const here = g.effectsAt(nb);
           if (!here.some((f) => hasTag(f, 'mud')) || here.some((f) => hasTag(f, 'poison'))) continue;
-          g.addTileEffect(src.type, nb, { amount: src.amount, duration: src.duration, owner: src.owner });
+          g.addTileEffect(src.type, nb, { ...HB.util.clone(src), amount: src.amount, duration: src.duration, owner: src.owner });
           n++;
         }
         if (n) g.log(`Giftsumpf breitet sich aus: ${n} Schlammfeld${n === 1 ? '' : 'er'} vergiftet.`);
@@ -3865,6 +3843,17 @@ window.HB = window.HB || {};
     if (pl.impact) sim.hp -= pl.impact.dmg;
   };
 
+  // Vorschau Rückstoßwelle/Sog: alle Gegner im Radius um die Mitte nacheinander wegstoßen (away, äußere zuerst) bzw. heranziehen (innere zuerst);
+  // frei gewordene Felder zählen (Positionen kurz vorrücken, danach zurück)
+  const radialPreview = (away) => (g, sim, e) => {
+    const moved = [], sign = away ? -1 : 1;
+    try {
+      g.alive.filter((u) => { const dd = H.distance(u.pos, sim.h); return dd > 0 && dd <= (e.radius ?? 2); })
+        .sort((a, b) => sign * (H.distance(a.pos, sim.h) - H.distance(b.pos, sim.h)))
+        .forEach((u) => { const pl = g.planForce(u, u.pos, sim.h, e.amount, away); sim.out.push(pl); moved.push([u, u.pos]); u.pos = pl.path[pl.path.length - 1]; });
+    } finally { moved.forEach(([u, p]) => { u.pos = p; }); }
+  };
+
   // Karteneffekte: Reihenfolge in der Karte = Reihenfolge der Ausführung.
   // Optional je Effekt: badge(e) = Kurzzahl auf der Karte (Standard e.amount), iconOf/labelOf(e) = Symbol/Name abhängig von Werten,
   // keywords = Erklär-Kästchen (Standard [Typ]), notGround = Karte mit diesem Effekt ist keine Bodenkarte.
@@ -3881,14 +3870,7 @@ window.HB = window.HB || {};
       params: [['amount', 'Felder', 1]],
       text: (e) => `Push ${e.amount}` },
     pushWave: { label: 'Rückstoßwelle (alle im Umkreis wegstoßen)', icon: 'wave', keywords: ['pushWave', 'push'], area: (g, e, t) => radiusTiles(g, t, e.radius ?? 2),
-      preview(g, sim, e) {
-        const moved = [];
-        try {
-          g.alive.filter((u) => { const dd = H.distance(u.pos, sim.h); return dd > 0 && dd <= (e.radius ?? 2); })
-            .sort((a, b) => H.distance(b.pos, sim.h) - H.distance(a.pos, sim.h))
-            .forEach((u) => { const pl = g.planForce(u, u.pos, sim.h, e.amount, true); sim.out.push(pl); moved.push([u, u.pos]); u.pos = pl.path[pl.path.length - 1]; });
-        } finally { moved.forEach(([u, p]) => { u.pos = p; }); }
-      }, params: [['amount', 'Felder', 2], ['radius', 'Radius', 2]],
+      preview: radialPreview(true), params: [['amount', 'Felder', 2], ['radius', 'Radius', 2]],
       text: (e) => `Rückstoßwelle ${e.amount}, Radius ${e.radius ?? 2}` },
     // Bedingung: Wenn (Ziel/du hat Zustand X ≥ N | verbrauche N Stapel X | Ziel stirbt durch die Karte), dann Wirkungen. Wirkung: APPLY.cond
     cond: { label: 'Bedingung (wenn …, dann …)', icon: 'condition', noNest: true, badge: () => '?', keywords: [], // kein Erklärtext „Bedingung“ neben der Karte (Wunsch des Nutzers)
@@ -3917,16 +3899,8 @@ window.HB = window.HB || {};
       text: (e) => `Giftfeld ${e.amount} Gift, ${e.duration} Runden` },
     buffPoison: { label: 'Nächster Angriff +Gift', icon: 'poisonBuff', badge: (e) => '+' + e.amount, params: [['amount', 'Gift', 2]], text: (e) => `Nächster Angriff +${e.amount} Gift` },
     pullTo: { label: 'Sog (zur Mitte ziehen)', icon: 'vortex', area: (g, e, t) => radiusTiles(g, t, e.radius ?? 2),
-      // wie die echte Wirkung: nacheinander, frei gewordene Felder zählen (Positionen kurz vorrücken, danach zurück)
-      preview(g, sim, e) {
-        const moved = [];
-        try {
-          g.alive.filter((u) => { const dd = H.distance(u.pos, sim.h); return dd > 0 && dd <= (e.radius ?? 2); })
-            .sort((a, b) => H.distance(a.pos, sim.h) - H.distance(b.pos, sim.h))
-            .forEach((u) => { const pl = g.planForce(u, u.pos, sim.h, e.amount, false); sim.out.push(pl); moved.push([u, u.pos]); u.pos = pl.path[pl.path.length - 1]; });
-        } finally { moved.forEach(([u, p]) => { u.pos = p; }); }
-      }, params: [['amount', 'Felder', 1], ['radius', 'Radius', 2]],
-      text: (e) => `Sog ${e.amount}, Radius ${e.radius}` },
+      preview: radialPreview(false), params: [['amount', 'Felder', 1], ['radius', 'Radius', 2]],
+      text: (e) => `Sog ${e.amount}, Radius ${e.radius ?? 2}` },
     corpseExplosion: { label: 'Leiche sprengen (nur mit Modul Leichen)', icon: 'corpse', area: (g, e, t) => radiusTiles(g, t, e.radius ?? 1), badge: (e) => e.percent + '%', keywords: ['corpseExplosion', 'corpse'], params: [['percent', '% der Max-Leben', 75], ['radius', 'Radius', 1]],
       text: (e) => `Kadaverexplosion ${e.percent}%` + (e.radius ? `, Radius ${e.radius}` : '') },
     grace: { label: 'Schonfrist', icon: 'grace', orSelf: true, params: [['amount', 'Runden', 2]],
@@ -4054,7 +4028,6 @@ window.HB = window.HB || {};
   for (const [k, tags] of Object.entries(ART_TAGS)) DECOR[k] = { ...(DECOR[k] || {}), artTags: tags };
   for (const k of ['damage', 'move', 'leap']) DECOR[k].artWeak = true;
   for (const [k, v] of Object.entries(DECOR)) if (HB.CARD_EFFECTS[k]) Object.assign(HB.CARD_EFFECTS[k], v);
-  HB.CARD_TONES = TONES;
   // Stärke einer Wirkung nach k Sprüngen (Kette): amount wird kleiner (Prozent oder feste Zahl), nie unter 0
   HB.chainScale = (fx, e, k) => {
     if (typeof fx.amount !== 'number' || !k || !e.drop) return fx;
@@ -4126,7 +4099,7 @@ window.HB = window.HB || {};
   HB.cardHtml = (d) => HB.markKeywords(HB.cardText(d)).replace(/(<[^>]*>)|(\d+(?:[.,]\d+)?)/g, (m, tag, num) => (tag ? tag : `<b class="num">${num}</b>`));
   // Bild, Aderfarbe der Karte: Bild gewählt (d.art) > Hauptwirkung > Platzhalter der Kategorie
   const decorOf = (d) => {
-    const fx = (d.effects || []).map((e) => HB.CARD_EFFECTS[e.type]).filter((x) => x && x.art);
+    const fx = (d.effects || []).map((e) => fxDef(e.type)).filter((x) => x.art);
     return fx.find((x) => !x.weak) || fx[0] || HB.cardCategory(d);
   };
   // ---------- Eindeutige Bilder: jede Karte der Einstellung bekommt ein ANDERES Bild (Spieler erkennen Karten am Bild) ----------
@@ -4139,7 +4112,8 @@ window.HB = window.HB || {};
   const artPool = () => Object.keys(HB.CARD_ART_INFO || {}).filter((k) => !k.startsWith('platzhalter'));
   const TONE_FARBE = { attack: 'rot', block: 'blau', poison: 'gruen', curse: 'violett', heal: 'gruen', segen: 'gelb', support: 'grau' };
   const hash = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
-  const fxDef = (type) => HB.CARD_EFFECTS[type] || DECOR[type] || {};
+  // Register-Eintrag mit Bild-Merkmalen (DECOR): automatisch erzeugte Wirkungen (handlers.js) haben keine eigenen, DECOR ergänzt sie
+  const fxDef = (type) => ({ ...(DECOR[type] || {}), ...(HB.CARD_EFFECTS[type] || {}) });
   // Wirkungen der Karte für die Bildwahl: erst die „starken“, dann die allerwelts (artWeak); ohne Merkmale (Bedingung …) zählen sie nicht
   const artEffects = (d) => {
     const defs = (d.effects || []).map((e) => fxDef(e.type)).filter((x) => x.artTags || x.art);
@@ -4233,7 +4207,7 @@ window.HB = window.HB || {};
 
   // Felder, die beim Speichern/Wiederherstellen eines laufenden Kampfs 1:1 übernommen werden
   const SAVE_FIELDS = ['turn', 'kills', 'phase', 'typeIntents', 'typeIntentIdx', 'typePatternIdx', 'bossKilled',
-    'market', 'healer', 'marketBanished', 'waveNo', 'pendingWave', 'logLines', 'eventSeq', 'rewardsUntilTurn', 'floor'];
+    'market', 'healer', 'marketBanished', 'waveNo', 'pendingWave', 'logLines', 'eventSeq', 'rewardsUntilTurn', 'floor', 'startClasses', 'upNoticed'];
   // Gehören einer ETAGE (Karte): game.floors[i]. Zugriff über die aktive Ebene (game.floor), siehe game-floors.js.
   const FLOOR_FIELDS = ['board', 'obstacles', 'objects', 'tileEffects', 'traps', 'corpses', 'enemies'];
   // Gehören jedem Spieler einzeln (Koop): Hand, Stapel, Abwerf-Auswahl, Markt- und Draft-Angebot. Zugriff über den aktiven Spieler (Game.player).
@@ -4246,12 +4220,12 @@ window.HB = window.HB || {};
       const obId = (o) => { if (!o) return null; if (!obs.has(o)) obs.set(o, obs.size + 1); return obs.get(o); };
       const unit = (u) => ({ ...u, plague: obId(u.plague) });
       const data = { v: 3, cfg: this.cfg, players: this.players.map(unit),
-        floors: this.floors.map((f) => ({ mapId: f.mapId, name: f.name, start: f.start, board: f.board.bc, obstacles: f.obstacles, objects: f.objects,
+        floors: this.floors.map((f) => ({ mapId: f.mapId, name: f.name, start: f.start, starts: f.starts, board: f.board.bc, obstacles: f.obstacles, objects: f.objects,
           tileEffects: f.tileEffects, traps: f.traps, corpses: f.corpses, enemies: f.enemies.map(unit) })) };
       for (const f of [...SAVE_FIELDS, ...HB.moduleSaveFields()]) data[f] = this[f];
       // Mitten im Gegnerzug gespeichert: beim Laden geht es mit deinem Zug weiter
       if (data.phase === 'enemy') data.resumeEnemyPhase = true;
-      data.outbreaks = [...obs].map(([o, id]) => ({ id, jumpRange: o.jumpRange, roundsLeft: Number.isFinite(o.roundsLeft) ? o.roundsLeft : -1, infected: [...o.infected] }));
+      data.outbreaks = [...obs].map(([o, id]) => ({ id, jumpRange: o.jumpRange, infected: [...o.infected] }));
       return JSON.parse(JSON.stringify(data));
     }
     static restore(data, hooks, fixCfg) {
@@ -4262,7 +4236,7 @@ window.HB = window.HB || {};
       for (const f of [...SAVE_FIELDS, ...HB.moduleSaveFields()]) g[f] = data[f];
       g.floor = g.floor || 0;
       g.logLines = g.logLines || []; g.eventSeq = g.eventSeq || 0;
-      const obs = new Map((data.outbreaks || []).map((o) => [o.id, { id: uid(), jumpRange: o.jumpRange, roundsLeft: o.roundsLeft < 0 ? Infinity : o.roundsLeft, infected: new Set(o.infected) }]));
+      const obs = new Map((data.outbreaks || []).map((o) => [o.id, { id: uid(), jumpRange: o.jumpRange, infected: new Set(o.infected) }]));
       const unit = (u) => ({ ...u, plague: u.plague ? obs.get(u.plague) || null : null });
       // Alte Spielstände (v1) hatten nur einen Spieler und Stapel direkt im Spiel
       const list = data.players || [{ ...data.player, hand: data.hand, drawPile: data.drawPile, discard: data.discard, exhausted: data.exhausted,
@@ -4278,7 +4252,7 @@ window.HB = window.HB || {};
       // Ebenen (ab v3); ältere Spielstände hatten nur eine Karte
       g.floors = (data.floors || [{ mapId: 'main', name: '', start: g.cfg.player.start, board: g.cfg.board, obstacles: data.obstacles, objects: data.objects,
         tileEffects: data.tileEffects, traps: data.traps, corpses: data.corpses, enemies: data.enemies }]).map((f) => ({
-        mapId: f.mapId, name: f.name, start: f.start, board: H.boardFrom(f.board || { cols: f.cols, rows: f.rows }), obstacles: f.obstacles || [], objects: f.objects || [], tileEffects: f.tileEffects || [],
+        mapId: f.mapId, name: f.name, start: f.start, starts: f.starts, board: H.boardFrom(f.board || { cols: f.cols, rows: f.rows }), obstacles: f.obstacles || [], objects: f.objects || [], tileEffects: f.tileEffects || [],
         traps: f.traps || [], corpses: f.corpses || [], enemies: (f.enemies || []).map(unit) }));
       g.players.forEach((p) => { p.floor = p.floor | 0; });
       [...g.floors.flatMap((f) => f.enemies), ...g.players.flatMap((p) => [...p.hand, ...p.drawPile, ...p.discard, ...p.exhausted])].forEach((x) => bumpUid(x.uid));
@@ -4423,7 +4397,7 @@ window.HB = window.HB || {};
         this.emit('move_step', { unit: this.unitId(u), from: { ...u.pos }, to: { ...h }, kind: away ? 'fear' : 'lure' });
         u.pos = { ...h }; moved++;
         this.enterTile(u, h, i === steps - 1);
-        if (!this.isLive(u) || (u.isPlayer && u.hp <= 0)) break;
+        if (!this.isLive(u)) break;
       }
       if (moved) this.log(`${this.unitName(u)}: ${moved} Feld${moved === 1 ? '' : 'er'} ${away ? 'zurück (Furcht)' : 'heran (angelockt)'}.`);
       return moved;
@@ -4615,12 +4589,11 @@ window.HB = window.HB || {};
       for (const key of HB.STATUS_ORDER) {
         const st = HB.STATUSES[key];
         if (st && st[hook] && st[hook](this, u)) any = true;
-        if (!this.isLive(u) || (u.isPlayer && u.hp <= 0)) break;
+        if (!this.isLive(u)) break;
       }
       return any;
     }
-    uidOf(u) { return u.isPlayer ? u.id : u.uid; }
-    isLive(u) { return !!u && (u.isPlayer || u.alive); }
+    isLive(u) { return !!u && (u.isPlayer ? u.hp > 0 : u.alive); }
 
     startPlayerTurn() {
       if (this.phase === 'won' || this.phase === 'lost') return;
@@ -4679,7 +4652,16 @@ window.HB = window.HB || {};
       // Ende deines Zugs: Zustände (z. B. Verlangsamung läuft ab)
       if (this.as(p, () => this.runStatuses(p, 'onTurnEnd'))) { this.changed(); await this.wait(900 / speed); }
       if (!last) { this.busy = false; this.changed(); return; }
-      await this.enemyPhase(speed);
+      await this.runEnemyPhase(speed);
+    }
+    // Gegnerzug mit Absicherung: wirft ein (selbstgebauter) Baustein mitten drin, hängt der Kampf nicht – der Rest wird übersprungen
+    async runEnemyPhase(speed = this.cfg.speed || 1) {
+      this.phase = 'enemy'; this.busy = true; this.changed();
+      try { await this.enemyPhase(speed); } catch (err) {
+        console.warn('Fehler im Gegnerzug', err);
+        this.activeEnemy = null; this.log('Fehler im Gegnerzug – der Rest wurde übersprungen.');
+        if (this.phase === 'enemy') { this.phase = 'player'; this.rollIntent(); this.startPlayerTurn(); }
+      } finally { this.busy = false; this.changed(); }
     }
 
     async enemyPhase(speed) {
@@ -4687,9 +4669,11 @@ window.HB = window.HB || {};
       await this.wait(250 / speed);
 
       this.planNextIntents();
+      const floors0 = this.floors;
       for (let fi = 0; fi < this.floors.length; fi++) {
         this.setFloor(fi);
         if (await this.enemyFloorPhase(speed)) return; // true = Kampf zu Ende
+        if (this.floors !== floors0) break; // mitten drin kam eine Welle mit neuen Karten: die neuen Ebenen handeln erst in der nächsten Gegnerphase
       }
       this.activeEnemy = null;
       this.actorIdx = 0;
@@ -4704,7 +4688,7 @@ window.HB = window.HB || {};
     async enemyFloorPhase(speed) {
       const noPlayers = !this.floorPlayers.length;
       for (const e of [...this.enemies]) {
-        if (!e.alive) continue;
+        if (!e.alive || e.arrivedTurn === this.turn) continue; // gerade erst über die Höhle angekommen: handelt erst in der nächsten Gegnerphase
         if (noPlayers) { this.activeEnemy = e; this.changed(); await this.wait(200 / speed); await this.enemyTransit(e, speed); if (this.checkEnd()) { this.activeEnemy = null; this.busy = false; this.changed(); return true; } continue; }
         this.activeEnemy = e; this.changed();
         await this.wait(200 / speed);
@@ -4772,7 +4756,6 @@ window.HB = window.HB || {};
       }
       this.activeEnemy = null; this.curFoe = null;
       this.actorIdx = 0;
-      this.tickOutbreaks();
       this.tickZones();
       this.tickSpawners();
       return false;
@@ -4832,7 +4815,7 @@ window.HB = window.HB || {};
     }
     // Dornen: Nahkampf-Angreifer (direkt daneben) nimmt den Wert als Schaden (kein Angriff – löst nichts weiter aus)
     thornsBack(t, src, n) {
-      if (!(n > 0) || !src || this.isObj(src) || !this.isLive(src) || (src.isPlayer && src.hp <= 0) || H.distance(src.pos, t.pos) !== 1) return;
+      if (!(n > 0) || !src || this.isObj(src) || !this.isLive(src) || H.distance(src.pos, t.pos) !== 1) return;
       this.fx(src.pos, 'Dornen', 'hit');
       this.log(`${this.unitName(src)}: ${n} Schaden durch Dornen.`);
       this.damage(src, n, 'thorns');
@@ -4915,7 +4898,7 @@ window.HB = window.HB || {};
     // Alle Eingaben der Spieler laufen als Befehl durch apply(): { type, player: 'player' | 'p2' …, … }. Befehle werden NACHEINANDER
     // abgearbeitet (Warteschlange) – bei gleichzeitigen Zügen entscheidet die Reihenfolge des Eintreffens (der Erste gewinnt, z. B. beim
     // selben Feld). Typen: play { card: uid, hex, mode }, endTurn, discard { card }, draft { index }, marketPick { index },
-    // marketRemove { card }, marketClose, armMove { card }, followMove { hex }, freeWalk { hex }, cancelMove. Gibt ein Promise mit true/false zurück (ausgeführt oder abgelehnt).
+    // marketRemove { card }, marketClose, armMove { card }, followMove { hex }, freeWalk { hex }, cancelMove, setIntent { typeId, idx } … Gibt ein Promise mit true/false zurück (ausgeführt oder abgelehnt).
     apply(cmd) {
       const next = (this.cmdQueue || Promise.resolve()).then(() => this.runCommand(cmd)).catch((err) => { console.warn('Befehl fehlgeschlagen', cmd, err); return false; });
       this.cmdQueue = next;
@@ -4926,6 +4909,7 @@ window.HB = window.HB || {};
       if (p.hp <= 0 && !['endTurn', 'leave', 'join'].includes(cmd.type)) return false;
       const prev = this.actorIdx;
       this.actorIdx = p.idx;
+      this.setFloor(p.floor | 0); // Befehl gilt auf der Ebene des Spielers (Koop mit Treppen)
       try {
         const card = cmd.card != null ? [...p.hand, ...p.drawPile, ...p.discard, ...p.exhausted].find((c) => c.uid === cmd.card) : null;
         switch (cmd.type) {
@@ -4948,9 +4932,10 @@ window.HB = window.HB || {};
           case 'stairs': return this.useStairs(p);
           case 'join': return this.joinPlayer();
           case 'leave': return await this.leavePlayer(p);
+          case 'setIntent': { if (this.phase !== 'player' || this.busy) return false; this.setTypeIntent(cmd.typeId, cmd.idx); return true; } // Üben: Intention eines Typs wählen
           default: { const fn = HB.moduleCommand(this, cmd.type); return fn ? await fn(this, p, cmd) : false; } // Befehle der Module (modules.js)
         }
-      } finally { this.actorIdx = Math.min(prev || 0, this.players.length - 1); }
+      } finally { this.actorIdx = Math.min(prev || 0, this.players.length - 1); this.setFloor(this.player.floor | 0); }
     }
 
     // ---------- Skalierung mit der Spielerzahl ----------
@@ -5013,10 +4998,10 @@ window.HB = window.HB || {};
     aimStrikesHere(all) {
       for (const e of this.alive) {
         if (!all && e.aims) continue;
-        e.aims = {};
         const steps = this.intentFor(e).steps;
         const T = this.targetOf(e);
-        if (!T) continue; // kein Ziel (alle unsichtbar): keine Markierung
+        if (!T) { delete e.aims; continue; } // kein Ziel (alle unsichtbar / kein Spieler auf der Ebene): keine Markierung, später neu versuchen
+        e.aims = {};
         steps.forEach((s, i) => {
           if (!this.lockedAttack(steps, i)) return;
           // Linienangriff: Richtungen werden beim Würfeln festgelegt (Anfangsfeld wandert mit dem Gegner)
@@ -5716,7 +5701,7 @@ window.HB = window.HB || {};
     get waveCount() { const w = this.cfg.waves; return w && w.enabled ? Math.max(1, (w.list || []).length) : 1; }
     freeTile(h) {
       return this.board.has(h) && !this.blocksMove(h) && !this.enemyAt(h) && !this.isPlayerAt(h) && !this.trapAt(h) && !this.objectAt(h)
-        && !this.placeAt(h)
+        && !(this.floor === 0 && this.placeAt(h)) // Orte gibt es nur in der Oberwelt
         && !(this.pendingWave && this.pendingWave.spots.some((s) => (s.floor | 0) === this.floor && H.eq(s.pos, h)));
     }
     pickRandom(list) { return list[Math.floor(Math.random() * list.length)]; }
@@ -5751,6 +5736,8 @@ window.HB = window.HB || {};
       if (!def) return false;
       const minD = w.minDist ?? 4;
       this.setFloor(0); // neue Wellen kommen immer in der Oberwelt an (alle Spieler sind oben, siehe checkEnd)
+      // Kampfende der Welle: Bodeneffekte und Leichen weg – VOR dem Kartenwechsel, sonst verschwinden auch die gesetzten Felder der neuen Karte
+      this.floors.forEach((f) => { f.tileEffects = []; f.corpses = []; });
       this.enterWaveMaps(def); // eigene Karte/Ebenen dieser Welle? dann neu aufbauen
       this.pendingWave = { no: this.waveNo + 1, spawnAfterTurn: this.turn + ((this.cfg.rules || {}).spawnPauseTurns ?? 1), spots: [] };
       // Liste der Typen dieser Welle (aus den Gruppen; alte Form: count + type)
@@ -5771,8 +5758,7 @@ window.HB = window.HB || {};
         this.pendingWave.spots.push({ pos: { ...this.pickRandom(cands) }, hp: queue[i].hp, type: queue[i].type, floor: fi });
       }
       this.emit('wave_cleared', { wave: this.waveNo, next: this.pendingWave.no, spots: this.pendingWave.spots.map((sp) => ({ ...sp.pos })) });
-      // Kampfende der Welle: Bodeneffekte weg, deine Zustände weg
-      this.floors.forEach((f) => { f.tileEffects = []; f.corpses = []; }); // Leichen weg, damit Markt/Heiler frei erreichbar sind
+      // Kampfende der Welle: deine Zustände weg (Bodeneffekte und Leichen siehe oben, damit Markt/Heiler frei erreichbar sind)
       // alle schlechten Zustände der Spieler weg (Gift, Seuche, Verlangsamt … und neue automatisch), dazu Schonfrist und Gift-Bonus
       for (const p of this.players) { HB.CLEANSE_ORDER.forEach((k) => HB.STATUSES[k].clear(p)); Object.assign(p, { grace: 0, nextAttackPoison: 0 }); }
       const bossNext = this.pendingWave.spots.some((sp) => ((this.cfg.enemyTypes || []).find((t) => t.id === sp.type) || {}).boss);
@@ -5801,8 +5787,9 @@ window.HB = window.HB || {};
       if (!path) return false;
       delete this.player.pendingMove;
       this.busy = true;
-      await this.walkPlayer(path);
-      this.busy = false; this.checkEnd(); this.changed();
+      try { await this.walkPlayer(path); } finally { this.busy = false; }
+      this.checkEnd(); this.changed();
+      await this.advanceIfAllEnded(); // starb der letzte noch nicht fertige Spieler beim Laufen: Gegner sind dran
       return true;
     }
     spawnWave() {
@@ -5923,6 +5910,7 @@ window.HB = window.HB || {};
     takeBanished(i) {
       const b = (this.marketBanished || [])[i];
       if (!this.marketOffer || this.marketExtraTaken || !b || b.by === this.player.id) return;
+      if (!HB.goldPay(this, this.player, HB.goldPrice(this, 'card', b.def))) return; // kostet wie eine Marktkarte (Modul Gold)
       this.marketBanished.splice(i, 1);
       this.marketExtraTaken = true;
       this.gainCard(HB.migrateCard(clone(b.def)), 'Markt (verbannt)');
@@ -6134,6 +6122,8 @@ window.HB = window.HB || {};
       const msg = `Feld ${r.stage}: ${kind.label}!${kind.boss ? ' Der Boss erwartet euch.' : ''} Ihr seid zuerst dran.`;
       this.log(msg); this.notice(msg, 'wave');
       this.emit('wave_spawned', { wave: r.stage, spots: this.enemies.map((e) => ({ ...e.pos })) });
+      // erster Zug des neuen Felds = Zugbeginn wie sonst (Module, Relikte „zu Beginn jedes Zugs“) – nach wave_spawned, damit Krypta-Wirkungen schon scharf sind
+      for (const p of this.livePlayers) this.as(p, () => { HB.moduleTurnStart(this, p); HB.relicHook(this, p, 'onTurnStart'); });
     }
     // Gegner des neuen Felds: Wellenliste der Reihe nach (Feld n = Welle n, danach von vorn), Boss = Bosswelle,
     // Elite = Elite-Typen (Haken „Elite“ beim Gegnertyp; ohne Elite-Typen: normale), leichte Felder (Markt/Heiler) = weniger Gegner
@@ -6304,7 +6294,7 @@ window.HB = window.HB || {};
 
   HB.moduleHooks('affinity', {
     onEvent(g, ev) {
-      if (ev.type === 'card_gained') record(g, g.player, defByName(g, ev.card));
+      if (ev.type === 'card_gained' && !ev.temp) record(g, g.player, defByName(g, ev.card));
       else if (ev.type === 'card_played') {
         const p = g.player, d = defByName(g, ev.card), key = d && (d.cid || d.name);
         if (!p || !d || (p.affPlayed || []).includes(key)) return;
@@ -8558,7 +8548,7 @@ window.HB = window.HB || {};
       const dir = ti > fi ? 'hinein' : 'hinaus';
       if (u.isPlayer) { u.floor = ti; u.pos = { ...pos }; this.setFloor(ti); }
       else { from.enemies = from.enemies.filter((x) => x !== u); u.pos = { ...pos }; delete u.aims; to.enemies.push(u); }
-      this.withFloor(fi, () => this.renumber()); this.withFloor(ti, () => { this.renumber(); if (!u.isPlayer) this.aimStrikes(false); });
+      this.withFloor(fi, () => this.renumber()); this.withFloor(ti, () => { this.renumber(); this.aimStrikes(false); });
       this.emit('floor_changed', { unit: this.unitId(u), from: fi, to: ti, pos: { ...pos } });
       const verb = u.isPlayer && this.players.length === 1 ? 'gehst' : 'geht';
       this.log(`${this.unitName(u)} ${verb} ${dir}: ${this.floorName(ti)}.`);
@@ -8595,7 +8585,7 @@ window.HB = window.HB || {};
       path = path.slice(0, cut);
       while (path.length > 1 && this.enemyAt(path[path.length - 1]) && this.enemyAt(path[path.length - 1]) !== e) path.pop();
       await this.walkPath(e, path, speed);
-      if (e.alive && H.eq(e.pos, best.o.pos)) this.moveUnitToFloor(e, this.floors.findIndex((f) => f.mapId === best.o.to));
+      if (e.alive && H.eq(e.pos, best.o.pos) && this.moveUnitToFloor(e, this.floors.findIndex((f) => f.mapId === best.o.to))) e.arrivedTurn = this.turn; // kommt an, handelt aber erst in der nächsten Gegnerphase
     }
     // Für die Anzeige: je Ebene Name, Gegnerzahl, Spieler
     floorInfo() {
@@ -8627,7 +8617,7 @@ window.HB = window.HB || {};
     heart: { label: 'Eisenherz', icon: 'heart', params: [['amount', 'Max. Leben', 5]],
       text: (v) => `+${v.amount} maximales Leben (du wirst sofort um so viel geheilt).`,
       onGain(g, p, v) { p.maxHp += v.amount; p.hp += v.amount; },
-      onLose(g, p, v) { p.maxHp = Math.max(1, p.maxHp - v.amount); p.hp = Math.min(p.hp, p.maxHp); } },
+      onLose(g, p, v) { p.maxHp = Math.max(1, p.maxHp - v.amount); p.hp = Math.min(Math.max(1, p.hp - v.amount), p.maxHp); } }, // genau zurücknehmen (sonst Heilung durch Ablegen/Aufheben)
     crystal: { label: 'Energiekristall', icon: 'energy', params: [['amount', 'Energie', 1]],
       text: (v) => `+${v.amount} Energie in jedem Zug.`,
       onGain(g, p, v) { p.maxEnergy += v.amount; },
@@ -8744,6 +8734,8 @@ window.HB = window.HB || {};
         e.maxHp = Math.max(1, Math.round(e.maxHp * k));
         e.hp = Math.min(e.maxHp, Math.max(1, Math.round(e.hp * k)));
       }
+      // Wartende Welle (Pause zwischen den Wellen): ihr Leben wurde beim Planen mit der alten Spielerzahl berechnet
+      if (this.pendingWave) for (const s of this.pendingWave.spots) s.hp = Math.max(1, Math.round(s.hp * k));
     }
     // Freies Feld für einen neuen Spieler auf Ebene 0: sein eigener Start, sonst nahe beim Start / bei den Mitspielern
     joinPos(num) {
@@ -8765,6 +8757,8 @@ window.HB = window.HB || {};
       for (const id of HB.startRelics(this.cfg, p)) this.giveRelic(p, id, true); // für alle + Klasse
       this.setupDeck(p);
       this.as(p, () => { p.energy = p.maxEnergy; this.draw(this.cfg.player.draw + HB.relicStat(this, p, 'draw')); HB.relicHook(this, p, 'onTurnStart'); });
+      // Pause zwischen den Wellen: der Neue darf wie die anderen frei laufen und bekommt seinen Kartendraft
+      if (this.pendingWave) { p.freeMove = true; this.as(p, () => this.startDraft()); }
       this.rescaleEnemies(oldHp);
       this.aimStrikes(false);
       this.log(`${this.unitName(p)} ist dem Kampf beigetreten – Gegner werden stärker.`);
@@ -8785,12 +8779,11 @@ window.HB = window.HB || {};
       this.log(`${name} hat den Kampf verlassen.${this.players.length === 1 ? ' Du kämpfst jetzt allein weiter.' : ''}`);
       this.notice(`${name} verlässt den Kampf`, 'wave');
       this.emit('player_left', { unit: p.id });
+      // Gegner auf der Ebene des Gegangenen zielen neu (ihre Markierungen zeigten auf ihn)
+      this.withFloor(p.floor | 0, () => this.alive.forEach((e) => { delete e.aims; }));
       this.aimStrikes(false);
       if (this.checkEnd()) { this.changed(); return true; }
-      if (this.livePlayers.length && this.livePlayers.every((q) => q.ended)) {
-        this.phase = 'enemy'; this.busy = true; this.changed();
-        await this.enemyPhase(this.cfg.speed || 1);
-      } else this.changed();
+      if (this.livePlayers.length && this.livePlayers.every((q) => q.ended)) await this.advanceIfAllEnded(); else this.changed();
       return true;
     }
   }
@@ -8816,14 +8809,20 @@ window.HB = window.HB || {};
       return reach ? [...reach.dist].filter(([, dist]) => dist > 0).map(([k, dist]) => { const h = H.parse(k); return { h, dist, threat: this.predictThreat(h) }; }) : [];
     }
     async followMove(h) {
-      const reach = this.phase === 'player' && !this.busy ? this.pendingMoveReach() : null;
+      const reach = this.phase === 'player' && !this.busy && !this.player.ended && this.player.hp > 0 ? this.pendingMoveReach() : null;
       const path = reach && h && reach.dist.has(H.key(h)) ? H.pathTo(reach, h) : null;
       if (!path || path.length < 2) return false;
       delete this.player.pendingMove;
       this.busy = true;
-      await this.walkPlayer(path);
-      this.busy = false; this.checkEnd(); this.changed();
+      try { await this.walkPlayer(path); } finally { this.busy = false; }
+      this.checkEnd(); this.changed();
+      await this.advanceIfAllEnded();
       return true;
+    }
+    // Starb der letzte noch nicht fertige Spieler mitten im Zug (Falle, Dornen …), beendet niemand mehr den Zug: dann sind die Gegner dran
+    async advanceIfAllEnded() {
+      if (this.phase !== 'player' || this.busy || !this.livePlayers.length || !this.livePlayers.every((q) => q.ended)) return;
+      await this.runEnemyPhase();
     }
     cancelMove() { if (!this.player.pendingMove) return false; delete this.player.pendingMove; this.log('Nachbewegung verfällt.'); this.changed(); return true; }
     // Spieler läuft einen Weg (Feld für Feld, Fallen/Bodenfelder wirken)
@@ -9179,7 +9178,7 @@ window.HB = window.HB || {};
     }
 
     async dropCard(card, h, mode, via, grab) {
-      if (this.phase !== 'player' || this.busy) return false;
+      if (this.phase !== 'player' || this.busy || this.player.ended || this.player.hp <= 0) return false;
       const ev = this.evaluateDrop(card, h, mode, via, grab);
       if (!ev.ok || ev.action === 'pick') return false; // 'pick' = Zielfeld muss noch gewählt werden (Oberfläche)
       delete this.player.pendingMove; // andere Karte gespielt: offene Nachbewegung verfällt
@@ -9192,10 +9191,10 @@ window.HB = window.HB || {};
         const cost = this.moveCost(card);
         this.player.energy -= cost;
         this.log(`${d.name} geopfert: Bewegung${cost ? ` (−${cost} Energie)` : ''}.`);
-        await this.walkPlayer(ev.path);
-        this.busy = false;
+        try { await this.walkPlayer(ev.path); } finally { this.busy = false; }
         this.checkEnd();
         this.changed();
+        await this.advanceIfAllEnded();
         return true;
       }
       this.player.energy -= d.cost || 0;
@@ -9215,13 +9214,15 @@ window.HB = window.HB || {};
         }
       }
       const wasInvis = this.player.invis > 0;
-      await this.resolveCard(d, target);
-      // Angriff: −1 Unsichtbar (erst danach – „wenn du unsichtbar bist“ zählt noch); nur, wer schon VOR der Karte unsichtbar war
-      // (Unsichtbar, das die Karte selbst gibt – z. B. Hinterhalt tötet von hinten –, bleibt)
-      if (HB.cardFlag(d, 'attack') && wasInvis) HB.spendInvis(this, this.player);
-      this.busy = false;
+      try {
+        await this.resolveCard(d, target);
+        // Angriff: −1 Unsichtbar (erst danach – „wenn du unsichtbar bist“ zählt noch); nur, wer schon VOR der Karte unsichtbar war
+        // (Unsichtbar, das die Karte selbst gibt – z. B. Hinterhalt tötet von hinten –, bleibt)
+        if (HB.cardFlag(d, 'attack') && wasInvis) HB.spendInvis(this, this.player);
+      } finally { this.busy = false; }
       this.checkEnd();
       this.changed();
+      await this.advanceIfAllEnded();
       return true;
     }
 
@@ -9303,11 +9304,10 @@ window.HB = window.HB || {};
     // diesem Ausbruch noch nicht betroffen war – der nächste zuerst; sein Gift (Wert beim Tick) wird addiert, er wird selbst Träger.
     // Gibt es keinen solchen Gegner (niemand in der Nähe oder alle schon angesteckt), verfällt die Seuche beim Träger.
     newOutbreak(e, fx) {
-      const ob = { id: uid(), jumpRange: fx.jumpRange || 2, roundsLeft: Infinity, infected: new Set([this.uidOf(e)]) };
+      const ob = { id: uid(), jumpRange: fx.jumpRange || 2, infected: new Set([this.unitId(e)]) };
       e.plague = ob;
       return ob;
     }
-    tickOutbreaks() { /* Seuche hält dauerhaft – nichts zu zählen (Spielstände vor dem Umbau hatten Runden) */ }
     // amount = Gift des Trägers beim Tick. true = jemand angesteckt
     spreadPlague(e, amount = e.poison) {
       const ob = e.plague;
@@ -9409,21 +9409,22 @@ window.HB = window.HB || {};
         return;
       }
       if (tool === 'erase') { if (!pAt) clear(); }
-      else if (tool === 'start') { if (ei < 0 && oi < 0) this.player.pos = { ...h }; }
+      else if (tool === 'start') { if (ei < 0 && !pAt && !this.blocksMove(h)) this.player.pos = { ...h }; }
       else if (pAt) return;
       else if (tool === 'enemy') {
         if (ei < 0) { // nur setzen (mehrfach klicken); Löschen mit dem Radierer
           clear();
-          this.enemies.push(this.newEnemy(this.placeTypeId(), h));
+          const tt = (this.cfg.enemyTypes || []).find((x) => x.id === this.placeTypeId());
+          this.enemies.push(this.newEnemy(this.placeTypeId(), h, null, tt ? this.scaledHp(tt.hp) : undefined)); // Leben skaliert wie bei Wellen
         }
       } else if (tool === 'rock' || tool === 'fence') {
         const sight = tool === 'rock';
         if (oi >= 0 && this.obstacles[oi].blocksSight === sight) this.obstacles.splice(oi, 1);
         else { clear(); this.obstacles.push({ pos: { ...h }, blocksSight: sight }); }
-      } else if (tool === 'poisonField') {
+      } else if (HB.tileEffectTypes[tool] && HB.tileEffectTypes[tool].editDefaults) { // Bodenfeld-Werkzeug: Typ und Werte (editDefaults) aus dem Register
         const had = this.tileEffects.some((t) => H.eq(t.pos, h));
         this.tileEffects = this.tileEffects.filter((t) => !H.eq(t.pos, h));
-        if (!had) { if (oi >= 0) this.obstacles.splice(oi, 1); this.addTileEffect('poisonField', h, { amount: 2 }); }
+        if (!had) { if (oi >= 0) this.obstacles.splice(oi, 1); this.addTileEffect(tool, h, { ...HB.tileEffectTypes[tool].editDefaults }); }
       }
       if (this.obstacleAt(h)) this.traps = this.traps.filter((t) => !H.eq(t.pos, h));
       this.renumber();
@@ -9432,7 +9433,6 @@ window.HB = window.HB || {};
 
     // Test: Gegner sofort töten (wie ein normaler Tod: Leiche, Seuche springt, Markt-Zähler)
     killEnemy(e) { if (e && e.alive) this.damage(e, e.hp); }
-    // Test: Kopie einer Karte direkt auf die Hand (Handlimit gilt hier nicht)
     // Karten im Kampf (Hand, Stapel, Ablage …) auf den Stand der Einstellung bringen – Änderungen im Editor gelten sofort
     refreshCardDefs() {
       const byId = new Map((this.cfg.deck || []).filter((d) => d.cid).map((d) => [d.cid, d]));
@@ -9443,6 +9443,7 @@ window.HB = window.HB || {};
           const src = card.def && byId.get(card.def.cid); if (src) card.def = HB.migrateCard(clone(src)); }
       }
     }
+    // Test: Kopie einer Karte direkt auf die Hand (Handlimit gilt hier nicht)
     addCardToHand(def) {
       this.hand.push(this.newCard(def));
       this.changed();
@@ -9450,10 +9451,11 @@ window.HB = window.HB || {};
     // Aktuelle Kampfaufstellung als Aufbau-Konfiguration
     toSetupConfig(base) {
       const c = clone(base);
-      c.enemies = this.alive.map((e) => ({ name: e.name, hp: e.maxHp, pos: { ...e.pos } }));
+      c.enemies = this.alive.map((e) => ({ type: e.type, name: e.name, hp: e.maxHp, pos: { ...e.pos } }));
       c.obstacles = this.obstacles.map((o) => ({ pos: { ...o.pos }, blocksSight: o.blocksSight }));
       c.tileEffects = this.tileEffects.map((t) => ({ ...t, pos: { ...t.pos } }));
       c.traps = this.traps.map((t) => ({ ...t, pos: { ...t.pos } }));
+      c.objects = this.objects.map((o) => ({ ...o, pos: { ...o.pos } })); // Kisten, Truhen, Höhlen … gehören zur Aufstellung
       HB.setStarts(c.player, this.players.map((p) => ({ ...p.pos }))); // Starts aller Spieler aus der jetzigen Aufstellung
       return c;
     }
@@ -9560,6 +9562,8 @@ window.HB = window.HB || {};
       kind: 'curse', label: 'Seuche', icon: 'plague', css: 'st-plague', side: 'left',
       value: (u) => (u.plague ? '' : null),
       bad: (u) => (u.plague ? 1.5 : 0), gone: () => 'Seuche', clear(u) { u.plague = null; },
+      // Seuchensaat: dieselbe Ausbreitung (Objekt) teilen, der neue Träger gilt als angesteckt
+      copy(g, a, b, v) { b.plague = v; if (v.infected && b.uid) v.infected.add(b.uid); },
       info: (u) => `Tickt sein Gift, springt es auf einen weiteren Gegner (bis ${u.plague.jumpRange || 2} Felder) über. Hält, bis niemand Neues mehr in Reichweite ist.`,
       // Ausbreitung: Game.spreadPlague, ausgelöst beim Gift-Tick (STATUSES.poison.tick)
     },
@@ -9625,7 +9629,7 @@ window.HB = window.HB || {};
   const nudgeTurn = (key, away) => (g, u) => {
     const st = u[key]; if (!st || !(st.n > 0)) return false;
     const src = g.unitById(st.by);
-    if (src && g.isLive(src) && !(src.isPlayer && src.hp <= 0)) g.nudge(u, src.pos, st.steps || 1, away);
+    if (src && g.isLive(src)) g.nudge(u, src.pos, st.steps || 1, away);
     if (--st.n <= 0) u[key] = null;
     return true;
   };
@@ -9690,11 +9694,10 @@ window.HB = window.HB || {};
   };
   // Zustand hinzufügen (eine Stelle für alle): HB.addStatus(g, u, 'poison', 3) / (g, u, 'slow', { amount, turns })
   HB.addStatus = (g, u, key, p, opts) => HB.STATUSES[key].add(g, u, p, opts);
-  // Reihenfolge beim Reinigen (Text „… entfernt“)
   Object.assign(HB.STATUSES, {
     // Seuchensaat: stirbt der Träger, bekommen alle anderen im Radius eine Kopie seiner Zustände (kind 'curse') und selbst eine Saat
     seed: {
-      kind: 'curse', label: 'Seuchensaat', icon: 'seed', css: 'st-seed', color: '#c7e05a', side: 'left', field: 'seed',
+      kind: 'curse', label: 'Seuchensaat', icon: 'seed', css: 'st-seed', color: '#c7e05a', side: 'left', field: 'seed', noCopy: true, // Saat wird in onDeath selbst weitergegeben
       value: (u) => (u.seed ? '' : null),
       info: (u) => `Stirbt der Träger, bekommen alle ${u.seed.who === 'all' ? 'Figuren' : 'Gegner'} im Radius ${HB.util.rangeText(u.seed.radius ?? 2)} seine Zustände – und selbst eine Seuchensaat.`,
       add(g, u, p = {}) { u.seed = { radius: p.radius ?? 2, who: p.who || 'foes' }; g.fx(u.pos, 'Seuchensaat', 'plague'); },
@@ -9777,10 +9780,10 @@ window.HB = window.HB || {};
   // Alle schlechten Zustände (kind 'curse') von a auf b kopieren (Zahlen addieren sich) – Seuchensaat
   HB.copyStatuses = (g, a, b) => {
     for (const k of HB.STATUS_ORDER) {
-      const st = HB.STATUSES[k]; if (st.kind !== 'curse' || k === 'seed') continue;
+      const st = HB.STATUSES[k]; if (st.kind !== 'curse' || st.noCopy) continue;
       const v = a[st.field]; if (!v) continue;
-      if (typeof v === 'number') b[st.field] = (b[st.field] || 0) + v;
-      else if (k === 'plague') { b.plague = v; if (v.infected && b.uid) v.infected.add(b.uid); }
+      if (st.copy) st.copy(g, a, b, v); // eigene Kopierregel des Zustands (z. B. Seuche)
+      else if (typeof v === 'number') b[st.field] = (b[st.field] || 0) + v;
       else if (!b[st.field]) b[st.field] = HB.util.clone(v);
     }
     g.fx(b.pos, 'Saat', 'plague');
@@ -9789,6 +9792,7 @@ window.HB = window.HB || {};
     'wound', 'confuse', 'thorns', 'dodge', 'fly', 'haste', 'bleed', 'invis', 'lure', 'fear', 'taunt', 'seed', 'corpseBomb', 'aura'];
   // Auswahl „Zustand“ für Bedingungen (Karteneffekt cond)
   HB.COND_STATUSES.splice(0, HB.COND_STATUSES.length, ['any', 'beliebige Zustände (zufällig)'], ...HB.STATUS_ORDER.map((k) => [k, HB.STATUSES[k].label]));
+  // Reihenfolge beim Reinigen (Text „… entfernt“): erst die wichtigsten, dann alle weiteren schlechten Zustände
   // Reinigen entfernt alle schlechten Zustände (Art 'curse' mit bad/clear) – neue Zustände automatisch
   const CLEANSE_FIRST = ['poison', 'plague', 'slow', 'stun', 'disarm'];
   HB.CLEANSE_ORDER = [...CLEANSE_FIRST, ...HB.STATUS_ORDER.filter((k) => !CLEANSE_FIRST.includes(k) && HB.STATUSES[k].kind === 'curse' && HB.STATUSES[k].bad)];
@@ -9860,22 +9864,22 @@ window.HB = window.HB || {};
       text: (e) => `Furcht ${e.steps || 1} Feld${(e.steps || 1) === 1 ? '' : 'er'}, ${e.amount} Züge`, apply: sourcedFx('fear', 'fürchtet sich') },
     taunt: { status: 'taunt', label: 'Verspotten', icon: 'taunt', radius: true, params: [['amount', 'Züge', 1]],
       text: (e) => `Verspotten ${e.amount}`, apply: sourcedFx('taunt', 'verspottet') },
-    seed: { status: 'seed', label: 'Seuchensaat', icon: 'seed', params: [['radius', 'Radius', 2, null, { inf: true }], ['who', 'Verteilt auf', 'foes', [['foes', 'nur Gegner'], ['all', 'auch Spieler']]]],
+    seed: { status: 'seed', label: 'Seuchensaat', icon: 'seed', noEnemyStep: true, params: [['radius', 'Radius', 2, null, { inf: true }], ['who', 'Verteilt auf', 'foes', [['foes', 'nur Gegner'], ['all', 'auch Spieler']]]],
       text: (e) => `Seuchensaat (Radius ${HB.util.rangeText(e.radius ?? 2)}${e.who === 'all' ? ', auch Spieler' : ''})`,
       apply(g, u, e) { HB.addStatus(g, u, 'seed', { radius: e.radius, who: e.who }); return 'Seuchensaat'; } },
-    corpseBomb: { status: 'corpseBomb', label: 'Kadaver (explodiert beim Tod)', icon: 'corpse', params: [['percent', '% Max-Leben', 100], ['radius', 'Radius', 2, null, { inf: true }]],
+    corpseBomb: { status: 'corpseBomb', label: 'Kadaver (explodiert beim Tod)', icon: 'corpse', noEnemyStep: true, params: [['percent', '% Max-Leben', 100], ['radius', 'Radius', 2, null, { inf: true }]],
       text: (e) => `Kadaver: stirbt es, ${e.percent ?? 100}% seiner Max-Leben als Schaden an alle im Radius ${HB.util.rangeText(e.radius ?? 2)}`,
       apply(g, u, e) { HB.addStatus(g, u, 'corpseBomb', { radius: e.radius, percent: e.percent }); return 'Kadaver'; } },
-    aura: { status: 'aura', label: 'Aura', icon: 'aura',
+    aura: { status: 'aura', label: 'Aura', icon: 'aura', noEnemyStep: true,
       params: [['radius', 'Radius', 2, null, { inf: true }], ['who', 'Trifft', 'friends', [['friends', 'eigene Seite (auch du)'], ['foes', 'Feinde'], ['all', 'alle']]], ['turns', 'Züge', 3],
         ['mode', 'Wirkt', 'while', [['while', 'solange man drin steht (stapelt nicht)'], ['tick', 'jede Runde einmal (z. B. Gift)']]],
         ['effects', 'Wirkung', [{ type: 'strength', amount: 1 }], null, { nested: true, unit: true }]],
       text: (e) => `Aura (Radius ${HB.util.rangeText(e.radius ?? 2)}, ${e.turns ?? 3} Züge): ${(e.effects || []).map((f) => (HB.UNIT_EFFECTS[f.type] ? HB.UNIT_EFFECTS[f.type].text(f) : f.type)).join(' + ') || 'nichts'}${({ foes: ' für Feinde', all: ' für alle' })[e.who] || ''}${e.mode === 'tick' ? ', jede Runde' : ''}`,
       apply(g, u, e, src) { HB.addStatus(g, u, 'aura', { ...e, by: src ? g.unitId(src) : null }); return 'Aura'; } },
   };
-  // Auswahlliste der Wirkungen (Gegner-Aktion „Wirkung“)
+  // Auswahlliste der Wirkungen (Gegner-Aktion „Wirkung“). noEnemyStep = braucht Werte, die der Gegner-Schritt nicht einstellen kann (Radius, Wirkungsliste …)
   HB.UNIT_EFFECT_CHOICES = HB.UNIT_EFFECT_CHOICES || [];
-  HB.UNIT_EFFECT_CHOICES.splice(0, HB.UNIT_EFFECT_CHOICES.length, ...Object.entries(HB.UNIT_EFFECTS).map(([k, v]) => [k, v.label]));
+  HB.UNIT_EFFECT_CHOICES.splice(0, HB.UNIT_EFFECT_CHOICES.length, ...Object.entries(HB.UNIT_EFFECTS).filter(([, v]) => !v.noEnemyStep).map(([k, v]) => [k, v.label]));
   // Segen = Wirkungen, deren Zustand (status) in HB.STATUSES die Art 'blessing' hat (Block, Schonfrist, Kraft …)
   HB.isBlessing = (type) => { const u = HB.UNIT_EFFECTS[type]; return !!(u && u.status && HB.STATUSES[u.status] && HB.STATUSES[u.status].kind === 'blessing'); };
   HB.BLESSING_CHOICES = HB.UNIT_EFFECT_CHOICES.filter(([k]) => HB.isBlessing(k));
@@ -10020,7 +10024,7 @@ window.HB = window.HB || {};
       const src = srcOf(g, c), who = fx.who || 'foes', bounce = fx.mode === 'bounce', always = fx.selfBounce === 'always';
       const friends = () => [...friendsOf(g, src), ...(src.isPlayer ? g.objects.filter((o) => g.objDef(o).decoy) : [])];
       const pool = () => (who === 'friends' ? friends() : [...foesOf(g, src), ...(who === 'all' ? friends() : [])]);
-      const alive = (x) => (g.isObj(x) ? g.objects.includes(x) : g.isLive(x) && !(x.isPlayer && x.hp <= 0));
+      const alive = (x) => (g.isObj(x) ? g.objects.includes(x) : g.isLive(x));
       const onSelf = !!c.target.self || c.e === src;
       let u = onSelf ? src : c.live(c.e) && pool().includes(c.e) ? c.e
         : c.target.object && pool().includes(c.target.object) ? c.target.object
@@ -10159,7 +10163,7 @@ window.HB = window.HB || {};
         if (g.hand.length < limit) g.addCardToHand(d);
         else { g.discard.push(g.newCard(d)); toDiscard++; }
       }
-      g.emit('card_gained', { card: d.name, source: 'Karte', count: n });
+      g.emit('card_gained', { card: d.name, source: 'Karte', count: n, temp: true }); // temp: nur bis Kampfende im Deck (Neigung/Telemetrie zählen es nicht)
       c.parts.push(`${n}× ${d.name} auf die Hand` + (toDiscard ? ` (${toDiscard} auf die Ablage, Hand voll)` : ''));
     },
     // Falle (Schablone aus dem Tab „Fallen“) auf das Zielfeld legen. Steht dort eine Figur, löst sie sofort aus.
@@ -10203,7 +10207,7 @@ window.HB = window.HB || {};
   // Wer wirkt (ctx.src, Standard: aktiver Spieler) – Gegner können Karteneffekte nutzen (Gegner-Aktionen aus cardStep).
   // foes = Gegenseite, friends = eigene Seite (Spieler: Mitspieler je nach Eigenbeschuss-Regel)
   const srcOf = (g, c) => c.src || g.player;
-  const foesOf = (g, src) => (src.isPlayer ? g.alive : g.livePlayers);
+  const foesOf = (g, src) => (src.isPlayer ? g.alive : g.floorPlayers);
   const friendsOf = (g, src) => (src.isPlayer ? g.hitPlayers() : g.alive);
   const ownerOf = (g, c) => (srcOf(g, c).isPlayer ? srcOf(g, c).id : undefined);
   // Karteneffekte ohne eigenen APPLY-Eintrag, die eine Wirkung auf eine Figur sind (HB.UNIT_EFFECTS): wirken auf das Ziel;
@@ -10401,7 +10405,7 @@ window.HB = window.HB || {};
           if (!aim) { g.fx(e.pos, 'verpufft', 'miss'); g.changed(); await g.wait(250 / speed); return; }
           const r = g.inRangeAndSight(e.pos, aim, s.range, s.minRange);
           const hpObj = (h) => { const o = g.objectAt(h); return o && g.objDef(o).hp ? o : null; };
-          const victim = r.ok ? [...g.livePlayers, ...(g.enemyFire() ? g.alive : [])].find((u) => u !== e && H.eq(u.pos, aim)) || hpObj(aim) : null;
+          const victim = r.ok ? [...g.floorPlayers, ...(g.enemyFire() ? g.alive : [])].find((u) => u !== e && H.eq(u.pos, aim)) || hpObj(aim) : null;
           g.emit('enemy_attack', { unit: e.uid, from: { ...e.pos }, to: { ...aim }, amount: s.amount, range: s.range || 1, hit: !!victim, aimed: true });
           if (victim && (victim.isPlayer || victim === g.foe)) e.hitAny = true;
           const dmg = HB.attackDamage(g, e, s.amount);
@@ -10439,7 +10443,7 @@ window.HB = window.HB || {};
         const tiles = g.lineTiles(e, s, dirs);
         HB.spendInvis(g, e);
         // getroffen: Spieler, (mit Regel) Gegner und zerstörbare Objekte (Puppe, Wand …) auf den Feldern
-        const victims = [...g.livePlayers, ...(g.enemyFire() ? g.alive : []), ...g.objects.filter((o) => g.objDef(o).hp)].filter((u) => u !== e && tiles.some((h) => H.eq(h, u.pos)));
+        const victims = [...g.floorPlayers, ...(g.enemyFire() ? g.alive : []), ...g.objects.filter((o) => g.objDef(o).hp)].filter((u) => u !== e && tiles.some((h) => H.eq(h, u.pos)));
         g.emit('enemy_line', { unit: e.uid, from: { ...e.pos }, tiles: tiles.map((h) => ({ ...h })), amount: s.amount, hit: victims.length > 0 });
         tiles.forEach((h) => g.hooks.fxLine && g.hooks.fxLine(e.pos, h, 'hit'));
         // zählt als Angriff für „nach verfehltem Angriff bewegen“ (Gegnertyp-Feld approach)
@@ -10718,10 +10722,10 @@ window.HB = window.HB || {};
     }
     receive(msg) {
       if (msg.t === 'lobby') { this.me = msg.you || this.me; if (this.hooks.lobby) this.hooks.lobby(msg); return; }
-      if (msg.t === 'hello') { this.cfg = msg.cfg; this.me = msg.you; return; }
+      if (msg.t === 'hello') { this.cfg = msg.cfg; this.me = msg.you; HB.syncCatalogs(this.cfg); return; } // Fallen-/Karten-Listen des Gastgebers
       if (msg.t === 'state' && msg.seq > this.seq && this.cfg) {
         this.seq = msg.seq;
-        this.game = HB.Game.restore({ ...msg.snap, cfg: this.cfg }, this.hooks);
+        this.game = HB.Game.restore({ ...msg.snap, resumeEnemyPhase: false, cfg: this.cfg }, this.hooks); // Zwischenstand im Gegnerzug: Kopie spielt NICHT selbst weiter (rechnet nur der Gastgeber)
         this.game.apply = (cmd) => this.apply(cmd); // Befehle gehen an den Gastgeber
         if (msg.active != null) this.game.activeEnemy = this.game.enemies.find((e) => e.uid === msg.active) || null; // wer gerade zieht
         (msg.events || []).forEach((ev) => this.hooks.event && this.hooks.event(ev));
@@ -10975,7 +10979,7 @@ window.HB = window.HB || {};
     }
     for (const c of view.corpses || []) {
       const p = px(c.pos);
-      obj += `<g class="corpse"><title>Leiche: ${c.name} (Max-Leben ${c.maxHp}) – Betreten kostet +1 Bewegung</title>`
+      obj += `<g class="corpse"><title>Leiche: ${HB.esc(c.name)} (Max-Leben ${c.maxHp}) – Betreten kostet +1 Bewegung</title>`
         + `<polygon points="${tc(p.x, p.y, SIZE - 3)}"/>${I.svgIcon('skull', p.x, p.y - 3, 26)}<text x="${p.x}" y="${p.y + 19}">+1</text></g>`;
     }
     for (const t of (view.traps || []).filter(onB)) {
@@ -13088,7 +13092,12 @@ window.HB = window.HB || {};
           catch (e) { HB.app.toast('Text ist markiert – mit Strg+C kopieren.'); }
         }),
         btn('Übernehmen', () => {
-          try { HB.app.config = HB.app.migrate(JSON.parse(ta.value)); HB.app.toSetup(); changed(true); HB.app.toast('Einstellung übernommen.'); }
+          try {
+            const raw = JSON.parse(ta.value);
+            if (!raw || typeof raw !== 'object' || Array.isArray(raw) || !Array.isArray(raw.deck)) throw new Error('keine Einstellung (Kartenliste fehlt)');
+            HB.app.pushBackup(JSON.stringify(HB.app.config), 'Vor Übernehmen'); // eigene Gegner/Karten nie ohne Sicherung ersetzen
+            HB.app.config = HB.app.migrate(raw); HB.app.toSetup(); changed(true); HB.app.toast('Einstellung übernommen (vorher gesichert).');
+          }
           catch (e) { HB.app.toast('JSON fehlerhaft: ' + e.message); }
         }),
         resetBtn()),
@@ -13120,7 +13129,8 @@ window.HB = window.HB || {};
   function resetBtn() {
     const b = btn('Auf Standard zurück', () => {
       if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Wirklich alles zurücksetzen?'; setTimeout(() => { delete b.dataset.armed; b.textContent = 'Auf Standard zurück'; }, 4000); return; }
-      HB.app.config = HB.defaultConfig(); HB.app.toSetup(); changed(true); HB.app.toast('Auf Standard zurückgesetzt.');
+      HB.app.pushBackup(JSON.stringify(HB.app.config), 'Vor Zurücksetzen');
+      HB.app.config = HB.defaultConfig(); HB.app.toSetup(); changed(true); HB.app.toast('Auf Standard zurückgesetzt (vorher gesichert).');
     }, 'sec del');
     return b;
   }
@@ -13179,8 +13189,8 @@ window.HB = window.HB || {};
       c.deck = c.deck.map(HB.migrateCard);
       c.traps = c.traps || [];
       c.collision = Object.assign(HB.defaultConfig().collision, c.collision || {});
-      if (!c.dwellMs || c.dwellMs === 500) c.dwellMs = 750; // alter Standard → neuer Standard
-      if (!c.tilt || c.tilt === 0.72) c.tilt = 0.85;
+      if (!c.tilt) c.tilt = 0.85;
+      delete c.dwellMs; // Verweilen gibt es nicht mehr
     } },
     { before: 2, name: 'Neue Karten und Intentionen', run(c) { c.deck.push(...HB.newCards()); c.intents.push(...HB.newIntents()); } },
     { before: 3, name: 'Karten v3', run(c) { c.deck.push(...HB.newCardsV3()); } },
@@ -13310,7 +13320,7 @@ window.HB = window.HB || {};
     const v = saved.version || 1;
     for (const m of HB.MIGRATIONS) if (m.before == null || v < m.before) m.run(c, saved);
     HB.syncCatalogs(c);
-    c.version = HB.CONFIG_VERSION;
+    c.version = Math.max(HB.CONFIG_VERSION, Number(saved.version) || 0); // neuerer Stand aus einer neueren Fassung: Version nicht zurückdrehen (sonst laufen Schritte dort doppelt)
     return c;
   };
 })(window.HB);
@@ -13366,8 +13376,9 @@ window.HB = window.HB || {};
             + (own === false ? '. Wahrscheinlich mit einem anderen Account angemeldet als dem, dem das Artefakt gehört' : '');
           return;
         }
-        c.ref = db.doc('data/users/' + id + '/settings');
-        const snap = await c.ref.get();
+        const ref = db.doc('data/users/' + id + '/settings');
+        const snap = await ref.get();
+        c.ref = ref; // erst nach dem Lesen: sonst könnte ein Speichern in der Wartezeit den neueren Online-Stand überschreiben
         const remote = snap.exists ? snap.data() : null;
         let hasLocal = false;
         try { hasLocal = !!localStorage.getItem(STORE); } catch (e) { /* kein Speicher */ }
@@ -13452,7 +13463,7 @@ window.HB = window.HB || {};
         // Nie still auf Standard zurückfallen: eigene Daten behalten, Fehler melden
         app.pushBackup(s, 'Ladefehler');
         app.loadError = 'Beim Laden ist ein Fehler aufgetreten (' + e.message + '). Deine Einstellung ist unter „Daten“ gesichert.';
-        return Object.assign(HB.defaultConfig(), saved, { version: HB.CONFIG_VERSION });
+        return Object.assign(HB.defaultConfig(), saved, { version: saved.version || 1 }); // alte Version behalten: nächstes Laden migriert erneut
       }
     },
   });
@@ -13566,7 +13577,7 @@ window.HB = window.HB || {};
         out.push({ cls: st.css.replace('st-', ''), icon: st.icon, title: `${st.labelOf ? st.labelOf(pu) : st.label}${v !== '' ? ` (${v})` : ''}${st.kind ? ' · ' + HB.STATUS_KINDS[st.kind] : ''}${g.players.length > 1 ? ' – ' + g.unitName(pu) : ''}`, text: st.info(pu, g) });
       }
     }
-    const place = g.placeAt(h), pl = place && HB.PLACES[place];
+    const place = g.floor === 0 && g.placeAt(h), pl = place && HB.PLACES[place]; // Orte nur in der Oberwelt
     if (pl) out.push({ cls: pl.infoCls, icon: pl.icon, title: pl.label, text: pl.info(g) });
     for (const m of g.strikeMarks()) if (H.eq(m.h, h)) out.push({ cls: 'aim', icon: 'sword', title: `Schlag von ${m.e.name}: ${m.amount}`,
       text: `Wer beim Schlag hier steht, wird getroffen${g.enemyFire() ? ' – auch andere Gegner' : ' (andere Gegner nicht)'}. Geh weg, dann geht er ins Leere.` });
@@ -13699,11 +13710,7 @@ window.HB = window.HB || {};
   // Raum eröffnen → Code + Einladungslink (Kopieren-Knöpfe); Mitspieler treten mit Code bei (Einfügen-Knopf) oder über den Link
   // (#join=CODE); in der Lobby wählt jeder seine Klasse; der Gastgeber startet den Kampf für alle.
   const inviteLink = (code) => location.href.split('#')[0] + '#join=' + code;
-  async function copyText(txt, btn) {
-    let ok = false;
-    try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) { ok = false; }
-    if (btn) { const t = btn.textContent; btn.textContent = ok ? 'Kopiert ✓' : 'Bitte markieren + Strg+C'; setTimeout(() => { btn.textContent = t; }, 1600); }
-  }
+  const copyText = (txt, btn) => HB.util.copy(txt, btn);
   function showOnline(autoCode) {
     $('#classpick')?.remove();
     const ov = document.createElement('div'); ov.id = 'classpick';
@@ -13928,11 +13935,7 @@ window.HB = window.HB || {};
     throw new Error(String((doc && doc.fehler) || 'unbekannter Fehler').slice(0, 120));
   }
 
-  function copy(text, btn) {
-    const done = () => { if (btn) { const o = btn.textContent; btn.textContent = 'Kopiert'; setTimeout(() => { btn.textContent = o; }, 1500); } };
-    const fallback = () => { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch (e) { /* egal */ } t.remove(); };
-    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
-  }
+  const copy = (text, btn) => HB.util.copy(text, btn);
 
   // Fenster: def = Karte (Kartenkommentar) oder nichts (allgemein)
   function open(def) {
@@ -14055,8 +14058,11 @@ window.HB = window.HB || {};
     d.name = clean(d.name, 60); if (!d.name) throw new Error('Karte ohne Namen');
     if (!Array.isArray(d.effects) || !d.effects.length || d.effects.length > 8) throw new Error('Karte ohne (oder mit zu vielen) Wirkungen');
     for (const fx of d.effects) {
-      if (!fx || typeof fx !== 'object' || !HB.CARD_EFFECTS[fx.type]) throw new Error('unbekannter Effekt: ' + clean(fx && fx.type, 40));
-      for (const k of Object.keys(fx)) if (typeof fx[k] === 'number' && !(Math.abs(fx[k]) <= 99)) throw new Error('Zahl außer Rahmen bei ' + fx.type);
+      if (!fx || typeof fx !== 'object' || !Object.prototype.hasOwnProperty.call(HB.CARD_EFFECTS, fx.type)) throw new Error('unbekannter Effekt: ' + clean(fx && fx.type, 40));
+      for (const k of Object.keys(fx)) {
+        if (typeof fx[k] === 'number' && !(Math.abs(fx[k]) <= 99)) throw new Error('Zahl außer Rahmen bei ' + fx.type);
+        if (typeof fx[k] === 'string') fx[k] = clean(fx[k], 60); // Fremdtext: Länge/Steuerzeichen begrenzen
+      }
     }
     d.cost = Number.isFinite(+d.cost) ? Math.max(0, Math.min(9, Math.round(+d.cost))) : 1;
     d.range = Number.isFinite(+d.range) ? Math.max(0, Math.min(12, Math.round(+d.range))) : 0;
@@ -14065,8 +14071,8 @@ window.HB = window.HB || {};
     if (wish) {
       if (wish.name) d.name = clean(wish.name, 60);
       if (wish.kosten !== '' && wish.kosten != null && Number.isFinite(+wish.kosten)) d.cost = Math.max(0, Math.min(9, Math.round(+wish.kosten)));
-      if (HB.CARD_RARITIES[wish.seltenheit]) d.rarity = wish.seltenheit;
-      if (HB.CARD_CATEGORIES[wish.kategorie]) d.category = wish.kategorie;
+      if (Object.prototype.hasOwnProperty.call(HB.CARD_RARITIES, wish.seltenheit)) d.rarity = wish.seltenheit;
+      if (Object.prototype.hasOwnProperty.call(HB.CARD_CATEGORIES, wish.kategorie)) d.category = wish.kategorie;
     }
     if (!HB.CARD_CATEGORIES[d.category]) d.category = HB.cardCategoryKey(d);
     d.cid = 'w' + Math.random().toString(36).slice(2, 9);
@@ -14196,7 +14202,7 @@ window.HB = window.HB || {};
   T.consent = () => { const v = store.get('consent', null); return v === '1' ? true : v === '0' ? false : null; };
   // Netz geht nur in der Webfassung; Test darf übersteuern (testOnline)
   T.available = () => HB.isPublic() && (T.testOnline != null ? !!T.testOnline : !(HB.feedback ? HB.feedback.embedded() : true));
-  const active = () => T.available() && T.consent() === true;
+  const active = () => T.available() && T.consent() === true && (!HB.app || !HB.app.config || HB.moduleOn(HB.app.config, 'telemetry'));
   T.setConsent = (v) => {
     store.set('consent', v ? '1' : '0');
     if (!v) { events.length = 0; store.del('outbox'); cur = null; started = false; } // Nein/Abschalten leert alles, was noch zum Senden bereitlag (wie UW)
@@ -14263,7 +14269,7 @@ window.HB = window.HB || {};
           case 'enemy_attack': { const e = g.enemies.find((x) => x.uid === ev.unit); if (e && !ev.forced) cur.lastAttacker = clip(e.name || e.type); break; }
           case 'death': { const e = g.enemies.find((x) => x.uid === ev.unit); if (e) { const n = clip(e.name || e.type); cur.kills[n] = (cur.kills[n] || 0) + 1; } break; }
           case 'boss_spawned': cur.boss = true; break;
-          case 'card_gained': rec('deck_change', { added: clip(ev.card), source: clip(ev.source, 30), turn: ev.turn }); break;
+          case 'card_gained': if (ev.temp) break; rec('deck_change', { added: clip(ev.card), source: clip(ev.source, 30), turn: ev.turn }); break;
           case 'card_removed': rec('deck_change', { removed: clip(ev.card), turn: ev.turn }); break;
           case 'relic_gained': rec('relic_gained', { relic: clip(ev.relic), turn: ev.turn }); break;
           case 'crypt_choice': rec('crypt_choice', { event: clip(ev.event), option: ev.option, ok: ev.ok }); break;
@@ -14303,7 +14309,7 @@ window.HB = window.HB || {};
     const list = outbox(); if (!list.length) return;
     sending = true;
     try {
-      while (list.length && active()) { await T.upload(list[0].name, list[0].doc); list.shift(); saveOutbox(list); }
+      while (list.length && active()) { await T.upload(list[0].name, list[0].doc); if (!active()) break; list.shift(); saveOutbox(list); } // Widerruf während des Sendens: nichts zurückschreiben
     } catch (e) { /* bleibt liegen bis zum nächsten Anlass */ }
     sending = false;
   }
@@ -16056,13 +16062,13 @@ window.HB = window.HB || {};
         + HB.STATUS_ORDER.map((k) => { const S = HB.STATUSES[k], v = S.value(e); return v == null ? '' : `<span class="ost ${S.css}" title="${HB.esc((S.labelOf ? S.labelOf(e) : S.label) + ' – ' + S.info(e, view))}">${I.icon(S.icon)}${v}</span>`; }).join('');
       row.querySelector('.nm').textContent = e.name;
       // Zum Üben: Intention dieses Typs selbst wählen (in deinem Zug; gilt für alle Gegner dieses Typs)
-      if (g && app.mode === 'combat' && g.phase === 'player' && e.alive) {
+      if (g && !PUBLIC && app.mode === 'combat' && g.phase === 'player' && e.alive) {
         const t = g.typeOf(e);
         if (t && t.intents && t.intents.length) {
           const sel = document.createElement('select');
           sel.className = 'intsel'; sel.title = 'Intention jetzt wählen (gilt für alle Gegner dieses Typs)';
           t.intents.forEach((it, i) => { const o = document.createElement('option'); o.value = i; o.textContent = `${i + 1}. ${HB.intentTitle(it)}`; if (i === e.intentIdx) o.selected = true; sel.appendChild(o); });
-          sel.onchange = () => { if (!g.busy) g.setTypeIntent(t.id, +sel.value); else renderAll(); };
+          sel.onchange = () => { g.apply({ type: 'setIntent', player: me().id, typeId: t.id, idx: +sel.value }).then((ok) => { if (!ok) renderAll(); }); };
           row.appendChild(sel);
         }
       }
@@ -16431,7 +16437,7 @@ window.HB = window.HB || {};
       const blocked = !top || top.closest('.card, button, input, select, #modal, #hud, #editor, #pileview') || (top.closest('.unit') && !top.closest('.unit.player'));
       if (!blocked) { const t = stack.find((el) => el.closest && el.closest('#board [data-key]')); if (t) h = H.parse(t.closest('[data-key]').getAttribute('data-key')); }
     }
-    const items = h && g.board.has(h) ? tileInfo(g, h) : [];
+    const items = h ? asMe(() => (g.board.has(h) ? tileInfo(g, h) : [])) : []; // Ebene des gesteuerten Spielers (Koop/Treppen)
     if (!items.length) { tip.hidden = true; tipKey = null; return; }
     const k = H.key(h) + '|' + items.map((i) => i.title + i.text).join('|');
     if (k !== tipKey) {
@@ -16680,19 +16686,19 @@ window.HB = window.HB || {};
       return;
     }
     // Zwischen den Wellen: Feld anklicken = frei dorthin laufen (keine Karte nötig)
-    if (app.mode === 'combat' && app.game.phase === 'player' && me().freeMove && !me().ended && (app.tool === 'inspect' || !app.live) && !app.game.enemyAt(h)) {
-      app.game.apply({ type: 'freeWalk', player: me().id, hex: h }).then((ok) => { if (!ok && !app.game.isSelfAt(h)) app.toast('Dort kannst du nicht hinlaufen'); });
+    if (app.mode === 'combat' && app.game.phase === 'player' && me().freeMove && !me().ended && (app.tool === 'inspect' || !app.live) && !asMe(() => app.game.enemyAt(h))) {
+      app.game.apply({ type: 'freeWalk', player: me().id, hex: h }).then((ok) => { if (!ok && !asMe(() => app.game.isSelfAt(h))) app.toast('Dort kannst du nicht hinlaufen'); });
       return;
     }
     if (app.mode === 'setup' && Date.now() - paintEnd < 400) return; // schon beim Malen (Maus gedrückt) gesetzt
     if (app.mode === 'combat') {
       if (app.tool === 'inspect' || !app.live) {
         // Klick auf einen Gegner markiert ihn als Ziel für den Schnellzug (nochmal klicken = Markierung weg)
-        const clicked = app.game.enemyAt(h);
+        const clicked = asMe(() => app.game.enemyAt(h));
         if (clicked && ((app.game.cfg.rules || {}).quickCast ?? 1) !== 0) { app.marks[me().id] = app.marks[me().id] === clicked.uid ? null : clicked.uid; renderAll(); }
         // Mit der Maus zeigt schon das Drüberfahren den Bereich; Antippen (Handy) hält ihn fest
         if (ev.pointerType === 'mouse') return;
-        const e = app.game.enemyAt(h);
+        const e = asMe(() => app.game.enemyAt(h));
         app.inspect = e && !(app.inspectPinned && app.inspect === e.uid) ? e.uid : null;
         app.inspectPinned = !!app.inspect;
         if (!app.inspect) R.clearOverlay();
@@ -16937,7 +16943,7 @@ window.HB = window.HB || {};
       if (app.pick) { endPick(); return; }
       if (app.game && me().pendingMove) { app.game.apply({ type: 'cancelMove', player: me().id }); return; }
       // Rechtsklick auf ein eigenes Objekt (Wand, Puppe …): abreißen
-      const h = hexUnder(ev.clientX, ev.clientY), o = h && app.game && app.game.objectAt(h);
+      const h = hexUnder(ev.clientX, ev.clientY), o = h && app.game && asMe(() => app.game.objectAt(h));
       if (o && o.owner === me().id) app.game.apply({ type: 'destroyObject', player: me().id, hex: h });
     });
     $('#board').addEventListener('pointerleave', () => {
@@ -17022,7 +17028,9 @@ window.HB = window.HB || {};
     document.addEventListener('fullscreenchange', () => { $('#btn-full').textContent = document.fullscreenElement ? 'Vollbild aus' : 'Vollbild'; renderAll(); });
     window.addEventListener('resize', () => { renderAll(); placeHudNearBoard(); });
     document.addEventListener('keydown', (e) => {
-      if (e.target.matches('input, textarea, select')) return;
+      if (e.target.matches('input, textarea, select') || e.ctrlKey || e.metaKey || e.altKey) return;
+      // Offenes Fenster (Menü, Online, Optionen, Feedback, Wünsche …) fängt die Tasten ab – nichts im Kampf dahinter auslösen
+      if (document.querySelector('#mainmenu, #classpick, #mmcredits, #mmdiscord, #mmoptions, #fbwin, #wishwin')) return;
       if (e.key === 'Escape' && app.pick) { endPick(); return; }
       if (e.key === 'Escape' && app.liveActive && app.tool === 'enemy') { app.tool = 'inspect'; app.toast('Platzieren beendet.'); HB.editor && HB.editor.render(); return; }
       if (e.key === 'Escape' && app.game && app.mode === 'combat' && me().pendingMove) { app.game.apply({ type: 'cancelMove', player: me().id }); return; }
