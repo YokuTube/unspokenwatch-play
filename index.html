@@ -8857,6 +8857,11 @@ window.HB = window.HB || {};
     rollEnemyIntent(e) {
       const t = this.typeOf(e);
       if (!(t && t.intents && t.intents.some((it) => !it.off))) { e.intent = null; return; }
+      // Typ-Schalter „individual“: jeder Gegner dieses Typs hat seine EIGENE Intention (zufällig, oder sein eigenes Muster mit zufälligem Start)
+      if (t.individual) {
+        const n = t.intents.length, idx = t.pattern === 'sequence' ? this.seqNext(t, e.intentIdx ?? Math.floor(Math.random() * n) - 1) : this.randomOn(t);
+        e.intent = JSON.parse(JSON.stringify(t.intents[idx])); e.intentIdx = idx; this.applyWindup(e); return;
+      }
       this.typeIntents = this.typeIntents || {};
       this.typeIntentIdx = this.typeIntentIdx || {};
       if (!this.typeIntents[t.id]) {
@@ -8893,6 +8898,10 @@ window.HB = window.HB || {};
       for (const e of this.allAlive) {
         const t = this.typeOf(e);
         if (!t || !t.intents || !t.intents.some((it) => !it.off)) { e.intent = null; continue; }
+        if (t.individual) { // eigene Intention je Gegner: behalten, solange sie noch an ist
+          if (e.intentIdx != null && this.intentOn(t, e.intentIdx)) { e.intent = JSON.parse(JSON.stringify(t.intents[e.intentIdx])); this.applyWindup(e); } else { e.intentIdx = null; this.rollEnemyIntent(e); }
+          continue;
+        }
         const keep = this.typeIntentIdx[t.id];
         if (keep != null && this.intentOn(t, keep)) {
           this.typeIntents[t.id] = t.intents[keep];
@@ -8914,7 +8923,7 @@ window.HB = window.HB || {};
       this.nextPlan = {};
       for (const e of this.allAlive) {
         const t = this.typeOf(e);
-        if (!t || !t.intents || !t.intents.some((it) => !it.off) || this.nextPlan[t.id] != null) continue;
+        if (!t || t.individual || !t.intents || !t.intents.some((it) => !it.off) || this.nextPlan[t.id] != null) continue; // eigene Intention je Gegner: keine gemeinsame Vorschau
         this.nextPlan[t.id] = t.pattern === 'sequence' ? this.seqNext(t, (this.typePatternIdx || {})[t.id]) : this.randomOn(t);
       }
     }
@@ -16752,7 +16761,8 @@ window.HB = window.HB || {};
       check('Fliegt immer', () => !!t.flying, (v) => { if (v) t.flying = true; else delete t.flying; }, 'Fliegt über Hindernisse und Objekte hinweg (landet nicht darauf); Bodenfelder und Fallen wirken nicht', true),
       el('div', { class: 'srow patternrow' },
         select('Ablauf', [['random', 'Zufällig'], ['sequence', 'Muster (der Reihe nach, dann von vorn)']], () => t.pattern || 'random', (v) => { t.pattern = v; }, true)),
-      el('p', { class: 'hint' }, t.pattern === 'sequence'
+      check('Jeder Gegner dieses Typs hat seine eigene Intention', () => !!t.individual, (v) => { if (v) t.individual = true; else delete t.individual; }, 'Aus (Standard): alle Gegner dieses Typs machen in einer Runde dasselbe. An: jeder würfelt für sich (Muster: jeder läuft sein eigenes Muster, Start zufällig) – so wirkt eine Gruppe unabgestimmt. Gilt nur für diesen Typ.', true),
+      el('p', { class: 'hint' }, t.individual ? 'Eigene Intention je Gegner: ' + (t.pattern === 'sequence' ? 'jeder Gegner geht die Liste für sich der Reihe nach durch, mit zufälligem Start.' : 'jeder Gegner würfelt jede Runde für sich.') : t.pattern === 'sequence'
         ? 'Muster: Die Intentionen kommen von oben nach unten, danach wieder von vorn – alle Gegner dieses Typs gemeinsam. Beim Gegner-Kärtchen steht, was als Nächstes kommt. Mit ↑ und ↓ umsortieren.'
         : 'Zufällig: Jede Runde wird eine dieser Intentionen gewürfelt (für alle Gegner dieses Typs gemeinsam).'),
       intro);
