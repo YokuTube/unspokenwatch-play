@@ -19690,7 +19690,16 @@ HB.USER_BACKUP = {
   {
    "id": "dieb",
    "name": "Dieb",
-   "relics": []
+   "relics": [],
+   "ownDeck": false,
+   "deck": {
+    "cd1wfnsj": {
+     "count": 4
+    },
+    "cc7izvdd": {
+     "count": 4
+    }
+   }
   },
   {
    "id": "krieger",
@@ -19705,7 +19714,27 @@ HB.USER_BACKUP = {
   {
    "id": "giftmagier",
    "name": "Giftmagier",
-   "relics": []
+   "relics": [
+    "venomchill"
+   ],
+   "ownDeck": true,
+   "deck": {
+    "cd1wfnsj": {
+     "count": 3
+    },
+    "cc7izvdd": {
+     "count": 4
+    },
+    "ca41bnoc": {
+     "count": 1
+    },
+    "c77fqftk": {
+     "count": 1
+    },
+    "ca2z1dyy": {
+     "count": 1
+    }
+   }
   },
   {
    "id": "blutmagier",
@@ -19721,7 +19750,7 @@ HB.USER_BACKUP = {
  "playerClasses": [],
  "classMarket": false,
  "route": {
-  "enabled": true,
+  "enabled": false,
   "bossAfter": 5,
   "exitsMin": 2,
   "exitsMax": 3,
@@ -19810,7 +19839,6 @@ HB.USER_BACKUP = {
     }
    ],
    "icon": "foeBoss",
-   "disabled": false,
    "startEffects": []
   },
   {
@@ -19869,12 +19897,7 @@ HB.USER_BACKUP = {
      "steps": [
       {
        "type": "move",
-       "amount": 3
-      },
-      {
-       "type": "attack",
-       "amount": 5,
-       "range": 1
+       "amount": 4
       }
      ],
      "name": "Charge"
@@ -19890,11 +19913,23 @@ HB.USER_BACKUP = {
       }
      ],
      "name": "Rundumschlag"
+    },
+    {
+     "steps": [
+      {
+       "type": "bless",
+       "effect": "block",
+       "amount": 10,
+       "duration": 2,
+       "hits": 1,
+       "target": "self",
+       "range": 3
+      }
+     ]
     }
    ],
    "icon": "foeMelee",
    "pattern": "sequence",
-   "disabled": false,
    "approach": 1,
    "startEffects": []
   },
@@ -19917,21 +19952,449 @@ HB.USER_BACKUP = {
     {
      "steps": [
       {
-       "type": "attack",
-       "amount": 10,
-       "range": 7,
-       "minRange": 4
+       "type": "bless",
+       "effect": "reach",
+       "amount": 1,
+       "duration": 2,
+       "hits": 1,
+       "target": "self",
+       "range": 3
+      }
+     ]
+    }
+   ],
+   "icon": "foeRanged",
+   "approach": 1,
+   "startEffects": []
+  },
+  {
+   "id": "seuchentraeger",
+   "name": "Seuchenträger",
+   "hp": 34,
+   "icon": "foeMelee",
+   "sprite": "grabfresser",
+   "elite": true,
+   "ownIntents": true,
+   "pattern": "sequence",
+   "startEffects": [
+    {
+     "type": "corpseBomb",
+     "percent": 30,
+     "radius": 1
+    }
+   ],
+   "intents": [
+    {
+     "name": "Giftspur",
+     "steps": [
+      {
+       "type": "move",
+       "amount": 2
+      },
+      {
+       "type": "trap",
+       "kind": "poisonTrap"
       }
      ]
     },
     {
-     "steps": []
+     "name": "Pestschlag",
+     "steps": [
+      {
+       "type": "move",
+       "amount": 1
+      },
+      {
+       "type": "attack",
+       "amount": 7,
+       "range": 1
+      }
+     ]
+    },
+    {
+     "name": "Seuchenbiss",
+     "steps": [
+      {
+       "type": "attack",
+       "amount": 9,
+       "range": 1
+      },
+      {
+       "type": "trap",
+       "kind": "poisonTrap"
+      }
+     ]
     }
    ],
+   "disabled": true
+  },
+  {
+   "id": "splitterwache",
+   "name": "Splitterwache",
+   "hp": 44,
+   "icon": "foeMelee",
+   "sprite": "schieferlaeufer",
+   "elite": true,
+   "ownIntents": true,
+   "pattern": "sequence",
+   "startEffects": [
+    {
+     "type": "thorns",
+     "amount": 3
+    }
+   ],
+   "intents": [
+    {
+     "name": "Splitterlinie",
+     "steps": [
+      {
+       "type": "line",
+       "amount": 8,
+       "range": 3,
+       "shape": "line",
+       "aim": "player"
+      }
+     ]
+    },
+    {
+     "name": "Vorrücken",
+     "steps": [
+      {
+       "type": "move",
+       "amount": 1
+      },
+      {
+       "type": "attack",
+       "amount": 5,
+       "range": 1
+      }
+     ]
+    },
+    {
+     "name": "Verschnaufen",
+     "steps": [
+      {
+       "type": "rest"
+      }
+     ]
+    }
+   ],
+   "disabled": true
+  },
+  {
+   "id": "seuchenwind",
+   "name": "Seuchenwind",
+   "hp": 38,
+   "icon": "foeMage",
+   "sprite": "zwiehauch",
+   "elite": true,
+   "ownIntents": true,
+   "pattern": "sequence",
+   "flying": true,
+   "startEffects": [
+    {
+     "type": "thorns",
+     "amount": 2
+    }
+   ],
+   "intents": [
+    {
+     "name": "Gifthauch",
+     "steps": [
+      {
+       "type": "move",
+       "amount": 2
+      },
+      {
+       "type": "trap",
+       "kind": "poisonTrap"
+      }
+     ]
+    },
+    {
+     "name": "Windschneise",
+     "steps": [
+      {
+       "type": "line",
+       "amount": 6,
+       "range": 4,
+       "shape": "line",
+       "aim": "player"
+      }
+     ]
+    },
+    {
+     "name": "Sturzflug",
+     "steps": [
+      {
+       "type": "move",
+       "amount": 3
+      },
+      {
+       "type": "attack",
+       "amount": 7,
+       "range": 1
+      }
+     ]
+    }
+   ],
+   "disabled": true
+  },
+  {
+   "id": "graeber",
+   "name": "Der Gräber",
+   "hp": 17,
+   "icon": "foeMelee",
+   "sprite": "graeber",
+   "ownIntents": true,
+   "pattern": "sequence",
+   "intents": [
+    {
+     "name": "Schaufeln",
+     "steps": [
+      {
+       "type": "effect",
+       "effect": "strength",
+       "amount": 2,
+       "target": "self"
+      },
+      {
+       "type": "charge"
+      }
+     ]
+    },
+    {
+     "name": "Spatenhieb",
+     "steps": [
+      {
+       "type": "move",
+       "amount": 2
+      },
+      {
+       "type": "attack",
+       "amount": 8,
+       "range": 1
+      }
+     ]
+    }
+   ],
+   "disabled": true
+  },
+  {
+   "id": "wurzelkriecher",
+   "name": "Wurzelkriecher",
+   "hp": 17,
+   "icon": "foeMelee",
+   "sprite": "wurzelkriecher",
+   "ownIntents": true,
+   "pattern": "sequence",
+   "startEffects": [
+    {
+     "type": "aura",
+     "radius": 1,
+     "who": "friends",
+     "mode": "while",
+     "turns": 99,
+     "effects": [
+      {
+       "type": "block",
+       "amount": 2
+      }
+     ]
+    }
+   ],
+   "intents": [
+    {
+     "name": "Verwurzeln",
+     "steps": [
+      {
+       "type": "block",
+       "amount": 4
+      }
+     ]
+    },
+    {
+     "name": "Wurzelhieb",
+     "steps": [
+      {
+       "type": "move",
+       "amount": 2
+      },
+      {
+       "type": "attack",
+       "amount": 6,
+       "range": 1
+      }
+     ]
+    }
+   ],
+   "disabled": true
+  },
+  {
+   "id": "zwiehauch",
+   "name": "Zwiehauch",
+   "hp": 17,
+   "icon": "foeMage",
+   "sprite": "zwiehauch",
+   "ownIntents": true,
+   "pattern": "sequence",
+   "flying": true,
+   "intents": [
+    {
+     "name": "Doppelschlag",
+     "steps": [
+      {
+       "type": "move",
+       "amount": 2
+      },
+      {
+       "type": "attack",
+       "amount": 4,
+       "hits": 2,
+       "range": 1
+      }
+     ]
+    },
+    {
+     "name": "Verwehen",
+     "steps": [
+      {
+       "type": "effect",
+       "effect": "dodge",
+       "amount": 1,
+       "target": "self"
+      },
+      {
+       "type": "move",
+       "amount": 2,
+       "toward": "away"
+      }
+     ]
+    }
+   ],
+   "disabled": true
+  },
+  {
+   "id": "brandwerfer",
+   "name": "Brandwerfer",
+   "hp": 18,
    "icon": "foeRanged",
-   "disabled": false,
-   "approach": 1,
-   "startEffects": []
+   "sprite": "brandwerfer",
+   "ownIntents": true,
+   "pattern": "sequence",
+   "intents": [
+    {
+     "name": "Feuer sammeln",
+     "steps": [
+      {
+       "type": "windup",
+       "amount": 9,
+       "hits": 1,
+       "range": 4,
+       "minRange": 2,
+       "move": 1
+      }
+     ]
+    },
+    {
+     "name": "Brandwurf",
+     "steps": [
+      {
+       "type": "move",
+       "amount": 1
+      },
+      {
+       "type": "attack",
+       "amount": 4,
+       "range": 3,
+       "minRange": 2
+      }
+     ]
+    }
+   ],
+   "disabled": true
+  },
+  {
+   "id": "rindenwicht",
+   "name": "Rindenwicht",
+   "hp": 9,
+   "icon": "foeMelee",
+   "sprite": "grabmoos",
+   "ownIntents": true,
+   "intents": [
+    {
+     "steps": [
+      {
+       "type": "move",
+       "amount": 2
+      },
+      {
+       "type": "attack",
+       "amount": 9,
+       "range": 1
+      }
+     ]
+    }
+   ],
+   "disabled": true
+  },
+  {
+   "id": "knochenbeter",
+   "name": "Knochenbeter",
+   "hp": 22,
+   "icon": "foeHealer",
+   "sprite": "knochenbeter",
+   "ownIntents": true,
+   "pattern": "sequence",
+   "intents": [
+    {
+     "name": "Wiederraunen",
+     "steps": [
+      {
+       "type": "healAlly",
+       "amount": 6,
+       "range": 3
+      }
+     ]
+    },
+    {
+     "name": "Reinigen",
+     "steps": [
+      {
+       "type": "cleanseAlly",
+       "range": 3
+      }
+     ]
+    },
+    {
+     "name": "Grabkälte",
+     "steps": [
+      {
+       "type": "effect",
+       "effect": "slow",
+       "amount": 1,
+       "duration": 2,
+       "target": "player",
+       "range": 3
+      }
+     ]
+    },
+    {
+     "name": "Knochenstoß",
+     "steps": [
+      {
+       "type": "move",
+       "amount": 1
+      },
+      {
+       "type": "attack",
+       "amount": 6,
+       "range": 1
+      }
+     ]
+    }
+   ],
+   "disabled": true
   }
  ],
  "bossSets": [],
@@ -19947,7 +20410,13 @@ HB.USER_BACKUP = {
   "poisonCloud": 1,
   "woundPct": 50,
   "confusePct": 50,
+  "slowAmount": 1,
   "hasteBonus": 1,
+  "stallRounds": 3,
+  "stallSpawn": 1,
+  "stallReach": 1,
+  "stallStrength": 1,
+  "stallRush": 1,
   "graceDecay": 1,
   "corpseMoveCost": 2,
   "spawnPauseTurns": 1,
@@ -20147,6 +20616,10 @@ HB.USER_BACKUP = {
    "inPool": false,
    "effects": [
     {
+     "type": "move",
+     "amount": 1
+    },
+    {
      "type": "damage",
      "amount": 6
     }
@@ -20170,7 +20643,10 @@ HB.USER_BACKUP = {
    ],
    "cid": "c4ygwkwb",
    "startHand": 1,
-   "inDraft": false
+   "inDraft": false,
+   "classes": [
+    "dieb"
+   ]
   },
   {
    "name": "Vergiftete Klinge",
@@ -20182,7 +20658,7 @@ HB.USER_BACKUP = {
    "effects": [
     {
      "type": "damage",
-     "amount": 5
+     "amount": 4
     },
     {
      "type": "poison",
@@ -20192,11 +20668,15 @@ HB.USER_BACKUP = {
    "inPool": true,
    "startHand": 0,
    "cid": "ca41bnoc",
-   "inDraft": true
+   "inDraft": true,
+   "classes": [
+    "dieb",
+    "giftmagier"
+   ]
   },
   {
    "name": "Rückstoß",
-   "count": 1,
+   "count": 0,
    "cost": 1,
    "target": "enemy",
    "range": 3,
@@ -20232,7 +20712,10 @@ HB.USER_BACKUP = {
    "inPool": true,
    "startHand": 0,
    "cid": "cktwkm3w",
-   "inDraft": true
+   "inDraft": true,
+   "classes": [
+    "giftmagier"
+   ]
   },
   {
    "name": "Heuschreckenplage",
@@ -20256,19 +20739,22 @@ HB.USER_BACKUP = {
    "cid": "c74ztgk8",
    "exhaust": true,
    "inDraft": true,
-   "rarity": "legendary"
+   "rarity": "legendary",
+   "classes": [
+    "giftmagier"
+   ]
   },
   {
    "name": "Giftpfütze",
    "count": 0,
-   "cost": 2,
+   "cost": 1,
    "target": "tile",
    "range": 3,
    "isAttack": false,
    "effects": [
     {
      "type": "poisonZone",
-     "amount": 4,
+     "amount": 3,
      "duration": 3,
      "shape": "arc3",
      "cells": [
@@ -20294,7 +20780,10 @@ HB.USER_BACKUP = {
    "inPool": true,
    "startHand": 0,
    "cid": "ca2z1dyy",
-   "inDraft": true
+   "inDraft": true,
+   "classes": [
+    "giftmagier"
+   ]
   },
   {
    "name": "Umsortieren",
@@ -20334,7 +20823,10 @@ HB.USER_BACKUP = {
    "inPool": true,
    "startHand": 0,
    "cid": "csy2emj6",
-   "inDraft": true
+   "inDraft": true,
+   "classes": [
+    "giftmagier"
+   ]
   },
   {
    "name": "Schlammloch",
@@ -20354,10 +20846,16 @@ HB.USER_BACKUP = {
    "inPool": true,
    "startHand": 0,
    "cid": "ctyhh085",
-   "inDraft": true
+   "inDraft": true,
+   "classes": [
+    "giftmagier",
+    "heiler",
+    "blutmagier",
+    "bogenschuetze"
+   ]
   },
   {
-   "name": "Schonfrist",
+   "name": "Sicherheit",
    "count": 0,
    "cost": 1,
    "target": "self",
@@ -20367,12 +20865,20 @@ HB.USER_BACKUP = {
     {
      "type": "grace",
      "amount": 2
+    },
+    {
+     "type": "exhaustCard",
+     "amount": 1
     }
    ],
    "inPool": true,
    "startHand": 0,
    "cid": "c3xgbpzr",
-   "inDraft": true
+   "inDraft": true,
+   "classes": [
+    "heiler",
+    "giftmagier"
+   ]
   },
   {
    "name": "Kadaverexplosion",
@@ -20396,9 +20902,6 @@ HB.USER_BACKUP = {
    "startHand": 0,
    "cid": "cjf6jt3t",
    "inDraft": true,
-   "classes": [
-    "blutmagier"
-   ],
    "category": "attack"
   },
   {
@@ -20418,11 +20921,15 @@ HB.USER_BACKUP = {
    "inPool": true,
    "startHand": 0,
    "cid": "cq1d5m9o",
-   "inDraft": true
+   "inDraft": true,
+   "classes": [
+    "heiler",
+    "giftmagier"
+   ]
   },
   {
    "name": "Schild",
-   "count": 4,
+   "count": 0,
    "cost": 1,
    "target": "self",
    "range": 1,
@@ -20436,21 +20943,18 @@ HB.USER_BACKUP = {
    "cid": "cz1959j8",
    "startHand": 0,
    "inPool": false,
-   "inDraft": false,
-   "classes": [
-    "blutmagier"
-   ]
+   "inDraft": false
   },
   {
    "name": "Sprint",
-   "count": 1,
+   "count": 4,
    "cost": 1,
    "target": "enemy",
    "range": 1,
    "effects": [
     {
      "type": "move",
-     "amount": 4
+     "amount": 3
     }
    ],
    "cid": "cc7izvdd",
@@ -20517,9 +21021,12 @@ HB.USER_BACKUP = {
    ],
    "cid": "coq1kvtp",
    "exhaust": true,
-   "ethereal": true,
    "inDraft": true,
-   "inPool": true
+   "inPool": true,
+   "classes": [
+    "giftmagier"
+   ],
+   "rarity": "legendary"
   },
   {
    "name": "Gifttick",
@@ -20536,7 +21043,10 @@ HB.USER_BACKUP = {
    "cid": "c3e9iz47",
    "rarity": "rare",
    "inPool": true,
-   "inDraft": true
+   "inDraft": true,
+   "classes": [
+    "giftmagier"
+   ]
   },
   {
    "name": "Knochenwand",
@@ -20582,7 +21092,11 @@ HB.USER_BACKUP = {
    ],
    "inPool": true,
    "inDraft": true,
-   "startHand": 0
+   "startHand": 0,
+   "classes": [
+    "dieb",
+    "bogenschuetze"
+   ]
   },
   {
    "name": "Nebelbombe",
@@ -20665,7 +21179,10 @@ HB.USER_BACKUP = {
    ],
    "inPool": true,
    "inDraft": true,
-   "startHand": 0
+   "startHand": 0,
+   "classes": [
+    "giftmagier"
+   ]
   },
   {
    "name": "Spottschrei",
@@ -20799,7 +21316,11 @@ HB.USER_BACKUP = {
    ],
    "inPool": true,
    "inDraft": true,
-   "startHand": 0
+   "startHand": 0,
+   "classes": [
+    "giftmagier",
+    "dieb"
+   ]
   },
   {
    "name": "Hinterhalt",
@@ -20843,9 +21364,64 @@ HB.USER_BACKUP = {
    "inPool": true,
    "inDraft": true,
    "startHand": 0
+  },
+  {
+   "name": "Giftnova",
+   "count": 0,
+   "cost": 1,
+   "target": "self",
+   "range": 0,
+   "category": "skill",
+   "exhaust": true,
+   "effects": [
+    {
+     "type": "poison",
+     "amount": 5,
+     "radius": 2
+    }
+   ],
+   "inPool": true,
+   "inDraft": true,
+   "classes": [
+    "giftmagier"
+   ],
+   "cid": "cvclaucd"
+  },
+  {
+   "name": "Giftstachel",
+   "count": 0,
+   "cost": 0,
+   "target": "enemy",
+   "range": 2,
+   "category": "attack",
+   "effects": [
+    {
+     "type": "damage",
+     "amount": 3
+    },
+    {
+     "type": "cond",
+     "test": "has",
+     "of": "target",
+     "status": "poison",
+     "amount": 1,
+     "to": "self",
+     "effects": [
+      {
+       "type": "draw",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "inPool": true,
+   "inDraft": true,
+   "classes": [
+    "giftmagier"
+   ],
+   "cid": "c90kh9y0"
   }
  ],
- "startHandEnabled": true,
  "waves": {
   "enabled": true,
   "minDist": 4,
@@ -20955,8 +21531,8 @@ HB.USER_BACKUP = {
   "enabled": true,
   "damage": 8
  },
+ "startHandEnabled": true,
  "intentMode": "shared",
- "dwellMs": 750,
  "trapDefaults": {
   "poisonTrap": {
    "amount": 4
@@ -20966,7 +21542,7 @@ HB.USER_BACKUP = {
    "duration": 2
   }
  },
- "placeType": "kaempfer",
+ "placeType": "brandwerfer",
  "maps": [
   {
    "id": "mmvcdug6o54",
@@ -21032,9 +21608,22 @@ HB.USER_BACKUP = {
   "lens": {},
   "satchel": {},
   "amulet": {},
-  "fang": {}
+  "fang": {},
+  "venomchill": {
+   "stacks": 1,
+   "turns": 1
+  }
  },
- "deletedTypes": []
+ "deletedTypes": [],
+ "families": [],
+ "affinity": {
+  "enabled": false,
+  "decay": 80,
+  "ramp": 3,
+  "pull": 6,
+  "ratio": 67,
+  "doorMin": 5
+ }
 };
 
 </script>
